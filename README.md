@@ -13,7 +13,7 @@ pip3 install -U alex-ber-utils
 ```
 
 
-### Installing from Githib
+### Installing from Github
 
 ```bash
 python3 -m pip install -U https://github.com/alex-ber/AlexBerUtils/archive/master.zip
