@@ -65,7 +65,7 @@ try:
         include_package_data=True,
         install_requires=install_requires,
         # entry_points={"console_scripts": [
-        #     f"python-package-sync-tool=alexber.{SHORT_NAME}.data.__main__:main"
+        #     f"python-{SHORT_NAME}-tool=alexber.{SHORT_NAME}.data.__main__:main"
         # ]},
         # $ setup.py publish support.
         # python3 setup.py upload
@@ -78,7 +78,9 @@ try:
         setup_requires=['pytest-runner'],
         namespace_packages=('alexber',),
         license='Apache 2.0',
-        keywords='tools tool utils enum enums',
+        keywords='tools tool utils enum enums threadlocal UploadCommand upload uuid1mc uuid UUID UUID1 UUID4 UU1DMC ' \
+                 'issetdescriptor ismethod ' \
+                 'importer new_instance safe_eval is_empty parse_boolean Properties java.util.Properties',
         classifiers=[
             # See: https://pypi.python.org/pypi?:action=list_classifiers
             'Development Status :: 5 - Production/Stable',

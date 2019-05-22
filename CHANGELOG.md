@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
+## [0.2.0] - 2019-05-22
+### Changed
+- setup.py - keywords added.
+
 ## [0.1.1] - 2019-05-22
 ### Changed
 - README.md fixed typo.
