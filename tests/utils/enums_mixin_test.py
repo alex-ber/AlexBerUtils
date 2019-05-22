@@ -2,8 +2,8 @@
 import logging
 import pytest
 
-from alexber.utils import StrAsReprMixinEnum, LookUpMixinEnum, AutoNameMixinEnum, MissingNoneMixinEnum
-from alexber.utils.enums import enum, Enum, auto
+from alexber.utils import StrAsReprMixinEnum, LookUpMixinEnum, AutoNameMixinEnum, MissingNoneMixinEnum, Enum
+from alexber.utils.enums import enum, auto
 
 # #use standard Enum.__new__
 def _orig_enum_new(cls, value):

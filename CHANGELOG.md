@@ -4,8 +4,11 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## [Unrelased]
+
+## [0.2.1] - 2019-05-22
 ### Changed
 - setup url fixed.
+- Added import of Enum to alexber.utils package.
 
 ## [0.2.0] - 2019-05-22
 ### Changed
