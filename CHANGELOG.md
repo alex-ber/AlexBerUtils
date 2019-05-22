@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
-## [0.2.3] - 2019-05-22
+## [0.2.4] - 2019-05-22
 ### Changed
 - Fixed bug in setup.py, incorrect order between VERSION and UploadCommand (no tag was created on upload)
 
