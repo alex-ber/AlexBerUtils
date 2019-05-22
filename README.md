@@ -40,7 +40,7 @@ python3 -m pip install . # only installs "required"
 python3 -m pip install .[test] # installs dependencies for tests
 ```
 ```bash
-python3 -m pip install .[md]   # installs mutltidispathcer (used in method_overloading_test.py)
+python3 -m pip install .[md]   # installs multidispatcher (used in method_overloading_test.py)
 ```
 ##
 

@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## [Unrelased]
+### Changed
+- README.md fixed typo.
 
 ## [0.1.0] - 2019-05-22
 ### Changed
