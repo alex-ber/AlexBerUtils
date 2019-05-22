@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## [Unrelased]
+### Changed
+- setup url fixed.
 
 ## [0.2.0] - 2019-05-22
 ### Changed
