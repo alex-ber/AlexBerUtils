@@ -25,7 +25,7 @@ install_requires = get_content('requirements.txt')
 tests_require = get_content('requirements-tests.txt')
 
 extras = {
-    #'ws': get_content('requirements-ws.txt'),
+    'md': get_content('requirements-md.txt'),
     'tests': tests_require
 }
 
