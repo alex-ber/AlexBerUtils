@@ -5,7 +5,7 @@ from setuptools import setup
 
 from alexber.utils import UploadCommand
 
-VERSION = '0.1.1'
+VERSION = '0.2.0'
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
 VCS_URL = 'https://github.com/alex-ber/AlexBerUtils.git'
