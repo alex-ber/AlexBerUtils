@@ -5,9 +5,9 @@ from setuptools import setup
 
 from alexber.utils import UploadCommand
 
+VERSION = '0.1.1'
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
-VERSION = '0.1.0'
 VCS_URL = 'https://github.com/alex-ber/AlexBerUtils.git'
 DESCRIPTION = 'AlexBerUtils is collection of the small utilities'
 AUTHOR = 'Alexander Berkovich'
