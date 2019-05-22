@@ -3,9 +3,10 @@ import os
 import setuptools
 from setuptools import setup
 
-from alexber.utils import UploadCommand
 
-VERSION = '0.2.1'
+#VERSION should be defined before importing UploadCommand
+VERSION = '0.2.2'
+from alexber.utils import UploadCommand
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
 VCS_URL = 'https://github.com/alex-ber/AlexBerUtils'
