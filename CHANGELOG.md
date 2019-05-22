@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
-
+## [0.1.0] - 2019-05-22
+### Changed
+- alexber.utils.UploadCommand - bug fixed, failed on git tag, because VERSION was undefined.
 
 
 ## [0.0.1] - 2019-05-22
@@ -77,10 +79,7 @@ Otherwise, return true iff signature has 2 params.
    
    Also there are some tweeks that was done by Alex.
 
-
-
-
-
+<!--
 ### Changed
 ### Removed
-
+-->

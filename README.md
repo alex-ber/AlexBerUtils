@@ -13,11 +13,15 @@ pip3 install -U alex-ber-utils
 ```
 
 
-
 ### Installing from Githib
 
 ```bash
 python3 -m pip install -U https://github.com/alex-ber/AlexBerUtils/archive/master.zip
+```
+Optionally installing tests requirements.
+
+```bash
+python3 -m pip install -U https://github.com/alex-ber/AlexBerUtils/archive/master.zip#egg=alex-ber-utils[tests]
 ```
 
 Or explicitly:
@@ -34,6 +38,9 @@ python3 -m pip install . # only installs "required"
 ```
 ```bash
 python3 -m pip install .[test] # installs dependencies for tests
+```
+```bash
+python3 -m pip install .[md]   # installs mutltidispathcer (used in method_overloading_test.py)
 ```
 ##
 

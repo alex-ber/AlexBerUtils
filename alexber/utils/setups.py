@@ -6,7 +6,10 @@ import sys
 
 logger = logging.getLogger(__name__)
 
-_setup_dir = os.path.dirname(os.path.realpath(sys.modules['__main__'].__file__))
+_setup_module = sys.modules['__main__']
+
+_setup_dir = os.path.dirname(os.path.realpath(_setup_module.__file__))
+VERSION = getattr(_setup_module, 'VERSION', None)
 
 def _my_rmtree(path, ignore_errors=False, onerror=None):
     try:
@@ -56,9 +59,10 @@ class UploadCommand(setuptools.Command):
         self.status('Pushing git tags...')
         os.system('git fetch')
         os.system('git commit -m "setup.py changed" setup.py')
-        os.system(f'git tag v{VERSION}')
-        os.system(f'git push origin v{VERSION}')
-        #os.system(f'git tag -d vT{VERSION}')
+        if VERSION is not None:
+            os.system(f'git tag v{VERSION}')
+            os.system(f'git push origin v{VERSION}')
+        #os.system(f'git tag -d v{VERSION}')
         #os.system(f'git push --delete origin v{VERSION}')
         #os.system('git push --tags')
         os.system('git push')

@@ -1,14 +1,13 @@
+import os
+
 import setuptools
 from setuptools import setup
-import os
-from alexber.utils import UploadCommand
 
-import sys
-from shutil import rmtree
+from alexber.utils import UploadCommand
 
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
-VERSION = '0.0.1'
+VERSION = '0.1.0'
 VCS_URL = 'https://github.com/alex-ber/AlexBerUtils.git'
 DESCRIPTION = 'AlexBerUtils is collection of the small utilities'
 AUTHOR = 'Alexander Berkovich'
@@ -82,7 +81,7 @@ try:
         keywords='tools tool utils enum enums',
         classifiers=[
             # See: https://pypi.python.org/pypi?:action=list_classifiers
-            'Development Status :: 4 - Beta',
+            'Development Status :: 5 - Production/Stable',
             'Environment :: Console',
             'Intended Audience :: Developers',
             'Intended Audience :: Education',

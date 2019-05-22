@@ -1,10 +1,22 @@
 import logging
 import sys
+import pytest
 
 logger = logging.getLogger(__name__)
 
-#pip install multidispatch==0.2
-from multidispatch import multimethod
+try:
+    #python3 -m pip uninstall multidispatch==0.2
+    from multidispatch import multimethod
+except ImportError:
+    class _dummy(object):
+        def dispatch(self, *types):
+            return self
+
+    def multimethod(func):
+        def with_md(*args, **kwargs):
+            return _dummy
+        return with_md
+
 from alexber.utils.importer import importer
 
 
@@ -41,6 +53,7 @@ class Player(object):
     def say(self):
         logging.debug('hello')
 
+@pytest.mark.md
 def test_overloading_object(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     namespace = sys.modules[__name__]
@@ -55,7 +68,7 @@ def test_overloading_object(request, mocker):
                                                             # #we shouldn't use  importer when we have explicit object."
     logger.info(dir(importer))
 
-
+@pytest.mark.md
 def test_overloading_str(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     namespace = sys.modules[__name__]
