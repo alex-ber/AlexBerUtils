@@ -16,7 +16,9 @@ def test_parse_java_properties_alternative_delim(request, mocker):
 
 
     p = Properties()
-    with open_text('tests_data.' + __package__, 'config2.properties') as f:
+    pck = '.'.join(['tests_data', __package__])
+
+    with open_text(pck, 'config2.properties') as f:
         p.load(f)
     dd = p.as_dict()
 
@@ -31,7 +33,8 @@ def test_parse_java_properties(request):
              'playerb.cls': 'alexber.rpsgame.players.ConstantPlayer',}
 
     p = Properties()
-    with open_text('tests_data.' + __package__, 'config.properties') as f:
+    pck = '.'.join(['tests_data', __package__])
+    with open_text(pck, 'config.properties') as f:
         p.load(f)
     dd = p.as_dict()
     #we want to ignore key inner.*
