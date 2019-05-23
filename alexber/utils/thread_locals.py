@@ -1,5 +1,5 @@
 #inspired by https://stackoverflow.com/questions/1408171/thread-local-storage-in-python
-#TODO: Alex add tests
+
 
 def threadlocal_var(thread_locals, varname, factory, *args, **kwargs):
   v = getattr(thread_locals, varname, None)
