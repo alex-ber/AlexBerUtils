@@ -16,7 +16,9 @@ def test_parse_config(request):
 
     parser = ConfigParser()
 
-    with path('tests_data.' + __package__+ '.parser', 'config.ini') as f:
+    pck = '.'.join(['tests_data', __package__, 'parser'])
+
+    with path(pck, 'config.ini') as f:
         parser.read(f)
 
     dd = parser.as_dict()
