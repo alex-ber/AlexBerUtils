@@ -27,8 +27,8 @@ def test_parse_config(request):
     namea = da['name']
 
     db = dd['playerb']
-    clsb = da['cls']
-    nameb = da['name']
+    clsb = db['cls']
+    nameb = db['name']
 
     assert clsa==clsb
     assert namea == nameb
