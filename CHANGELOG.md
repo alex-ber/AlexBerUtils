@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 ## [Unrelased]
 ### Changed
 - Tests minor improvements.
+- Excluded tests, data from setup.py (from being installed from the sdist.)
+- Created MANIFEST.in
 
 ### Added
 - Tests for alexber.utils.thread_locals added.
