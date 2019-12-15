@@ -52,7 +52,7 @@ try:
             open(os.path.join(base_dir, "CHANGELOG.md"), "r").read()
         ]),
         long_description_content_type="text/markdown",
-        packages=setuptools.find_packages(exclude=('tests*',)),
+        packages=setuptools.find_packages(exclude=('tests', 'tests.*', 'data')),
         # see https://stackoverflow.com/a/26533921
         # see also https://stackoverflow.com/questions/24347450/how-do-you-add-additional-files-to-a-wheel
         # data_files=[(f'Lib/site-packages/alexber/{SHORT_NAME}', ['data/config.yml', 'data/requirements-src.txt',
