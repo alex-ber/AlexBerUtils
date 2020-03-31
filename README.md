@@ -52,7 +52,14 @@ python3 setup.py test #run all tests
 pytest
 ```
 
+##
 
+Installing new version
+See https://docs.python.org/3.1/distutils/uploading.html 
+
+```bash
+python3 setup.py sdist upload
+```
 
 ## Requirements
 

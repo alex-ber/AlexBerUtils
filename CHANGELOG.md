@@ -4,12 +4,18 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## [Unrelased]
+### Changed
+- To REAMDE.md add `Installing new version` section
+
+
 
 ## [0.3.1] - 2020-04-01
 ### Changed
 - Tests minor improvements.
 - Excluded tests, data from setup.py (from being installed from the sdist.)
 - Created MANIFEST.in
+
+### Added
 - `warns `module is added:
  
 It provides better integration between warnings and logger. 
