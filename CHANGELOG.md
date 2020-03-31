@@ -3,12 +3,45 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
-
 ## [Unrelased]
+
+## [0.3.1] - 2020-04-01
 ### Changed
 - Tests minor improvements.
 - Excluded tests, data from setup.py (from being installed from the sdist.)
 - Created MANIFEST.in
+- `warns `module is added:
+ 
+It provides better integration between warnings and logger. 
+Unlike `logging._showwarning()` this variant will always go through logger. 
+
+`warns.initConfig()` has optional file parameter (it's file-like object) to redirect warnings. 
+Default value is `sys.stderr`.
+ 
+If logger for `log_name` (default is `py.warnings`) will be configured before call to `showwarning()` method, 
+than warning will go to the logger's handler with `log_level` (default is `logging.WARNING`).
+
+If logger for `log_name` (default is `py.warnings`) willn't be configured before call to showwarning() method, 
+than warning will be done to `file` (default is `sys.stderr`) with `log_level` (default is `logging.WARNING`).
+ 
+- `main` module is added:
+
+`main.fixabscwd()` changes `os.getcwd()` to be the directory of the `__main__` module.
+
+`main.warnsInitConfig()` reexports `warns.initConfig()` for convenience.   
+
+Usage example, in `app.py` file
+ ```python
+import sys
+import logging
+from alexber.utils.mains import fixabscwd, warnsInitConfig
+warnsInitConfig(file=sys.stdout, log_level=logging.INFO)
+fixabscwd()
+```
+  
+
+
+
 
 ### Added
 - Tests for alexber.utils.thread_locals added.
