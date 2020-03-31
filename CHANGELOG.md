@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ## [Unrelased]
 ### Changed
 - To REAMDE.md add `Installing new version` section
+- Fix typo in REAMDE.md (tests, not test). 
 
 
 

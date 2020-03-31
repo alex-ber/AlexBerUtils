@@ -37,7 +37,7 @@ And then installing from source (see below).
 python3 -m pip install . # only installs "required"
 ```
 ```bash
-python3 -m pip install .[test] # installs dependencies for tests
+python3 -m pip install .[tests] # installs dependencies for tests
 ```
 ```bash
 python3 -m pip install .[md]   # installs multidispatcher (used in method_overloading_test.py)
