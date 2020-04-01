@@ -3,7 +3,12 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
-## [Unrelased]
+## [0.3.3] - 2020-04-02
+- CHANGELOG.md fixed
+- Article about `warns` module is published. See https://medium.com/@alex_ber/integrating-pythons-logging-and-warnings-packages-7748a760cde3
+
+
+## [0.3.2] - 2020-04-01
 ### Changed
 - To REAMDE.md add `Installing new version` section
 - Fix typo in REAMDE.md (tests, not test). 
