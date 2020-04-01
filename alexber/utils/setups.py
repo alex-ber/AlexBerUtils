@@ -8,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 _setup_module = sys.modules['__main__']
 
-_setup_dir = os.path.dirname(os.path.realpath(_setup_module.__file__))
+_setup_dir = os.path.dirname(os.path.realpath(_setup_module.__file__)) if hasattr(_setup_module, '__file__') \
+                                                                        else os.getcwd()
 VERSION = getattr(_setup_module, 'VERSION', None)
 
 def _my_rmtree(path, ignore_errors=False, onerror=None):

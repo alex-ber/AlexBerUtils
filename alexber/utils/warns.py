@@ -23,11 +23,12 @@ def showwarning(message, *, filename, category=UserWarning, lineno='', line=''):
 
     h = _py_warnings_handler
     if not _py_warnings_logger.handlers:
-        _py_warnings_logger.addHandler(h)
-
-    file_is_not_supplied = isinstance(h, logging.NullHandler)
-    if not file_is_not_supplied:
-        _py_warnings_logger.setLevel(log_level)
+        logging._acquireLock()
+        try:
+            _py_warnings_logger.addHandler(h)
+            _py_warnings_logger.setLevel(log_level)
+        finally:
+            logging._releaseLock()
 
     _py_warnings_logger.log(log_level, f"{s}")
 
@@ -75,6 +76,4 @@ def initConfig(**kwargs):
     log_level_p = kwargs.get('log_level', _default_log_level)
     global log_level
     log_level = log_level_p
-
-
 

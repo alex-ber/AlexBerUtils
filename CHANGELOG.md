@@ -7,14 +7,38 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - To REAMDE.md add `Installing new version` section
 - Fix typo in REAMDE.md (tests, not test). 
+- Fixing bug: now, you're able to import package in the Python interpreter (`setups.py` fixed)
+- Fixing bug: `warns` module now doesn't change log_level in the preconfigured logger in any cases.
+- **BREAKING CHANGE**: In`mains` module method `warnsInitConfig()` was renamed to `mainInitConfig()` 
+Also singature was changed.  
+- `mains` module minor refactored.
+
+Usage example, in `app.py` file
+ ```python
+import sys
+import logging
+from alexber.utils.mains import fixabscwd, initConfig as mainInitConfig
+mainInitConfig(warns={'file':sys.stdout, 'log_level':logging.INFO})
+fixabscwd()
+
+from alexber.utils.warns import initConfig as warnsInitConfig
+import warnings
+warnsInitConfig(file=sys.stderr, log_level=logging.WARNING)
+warnings.showwarning(f"This is last warning", filename=__name__)
 
 
+```
+ 
+### Added
+- Unit tests are added for `warns` module 
+- Unit tests are added for `mains` module
 
 ## [0.3.1] - 2020-04-01
 ### Changed
 - Tests minor improvements.
 - Excluded tests, data from setup.py (from being installed from the sdist.)
 - Created MANIFEST.in
+ 
 
 ### Added
 - `warns `module is added:

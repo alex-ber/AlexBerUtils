@@ -1,6 +1,7 @@
 import os as _os
 import sys
-from .warns import warnings, initConfig as warnsInitConfig
+from .warns import initConfig as _warnsInitConfig
+import warnings
 
 
 
@@ -24,3 +25,9 @@ def fixabscwd():
         warnings.showwarning(f"Going to change os.chdir('{main_dir}')", filename=__name__)
 
         _os.chdir(main_dir)
+
+def initConfig(**kwargs):
+    warns_d =kwargs.pop('warns', {})
+
+    _warnsInitConfig(**{'log_name':__name__,
+                   **warns_d})
