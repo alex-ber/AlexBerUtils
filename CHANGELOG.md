@@ -3,7 +3,31 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
+## [Unrelased]
+
+## [0.4.1] - 2020-04-02
+### Changed
+**BREAKING CHANGE** I highly recommend not to use 0.3.X versions.
+
+- *Limitation:*:
+
+`mains` module wasn't tested with frozen python script (frozen using py2exe). 
+ 
+- module `warns` is droped
+- module `mains` is rewritten. Function `initConf` is dropped entirely.
+- module `mains` now works with logger and with warnings (it was wrong decision to work with warinings).
+
+
+## [0.3.4] - 2020-04-02
+### Changed
+- CHANGELOG.md fixed
+- `warns` module bug fixed, now warnings.warn() works.
+- FixabscwdWarning is added to simplify warnings disabling.
+- Changing how `mains` module use `warns`.
+
+
 ## [0.3.3] - 2020-04-02
+### Changed
 - CHANGELOG.md fixed
 - Article about `warns` module is published. See https://medium.com/@alex_ber/integrating-pythons-logging-and-warnings-packages-7748a760cde3
 
@@ -18,21 +42,6 @@ All notable changes to this project will be documented in this file.
 Also singature was changed.  
 - `mains` module minor refactored.
 
-Usage example, in `app.py` file
- ```python
-import sys
-import logging
-from alexber.utils.mains import fixabscwd, initConfig as mainInitConfig
-mainInitConfig(warns={'file':sys.stdout, 'log_level':logging.INFO})
-fixabscwd()
-
-from alexber.utils.warns import initConfig as warnsInitConfig
-import warnings
-warnsInitConfig(file=sys.stderr, log_level=logging.WARNING)
-warnings.showwarning(f"This is last warning", filename=__name__)
-
-
-```
  
 ### Added
 - Unit tests are added for `warns` module 
@@ -65,17 +74,6 @@ than warning will be done to `file` (default is `sys.stderr`) with `log_level` (
 `main.fixabscwd()` changes `os.getcwd()` to be the directory of the `__main__` module.
 
 `main.warnsInitConfig()` reexports `warns.initConfig()` for convenience.   
-
-Usage example, in `app.py` file
- ```python
-import sys
-import logging
-from alexber.utils.mains import fixabscwd, warnsInitConfig
-warnsInitConfig(file=sys.stdout, log_level=logging.INFO)
-fixabscwd()
-```
-  
-
 
 
 

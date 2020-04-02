@@ -1,13 +1,11 @@
 import os as _os
 import sys
-from .warns import initConfig as _warnsInitConfig
-import warnings
-
+import logging
+logger = logging.getLogger(__name__)
 
 
 def fixabscwd():
-    warnings.showwarning(f"cwd is {_os.getcwd()}", filename=__name__)
-
+    logger.info(f"cwd is {_os.getcwd()}")
 
     main_module = sys.modules['__main__']
 
@@ -16,18 +14,13 @@ def fixabscwd():
         """ Decide whether this is running in a REPL or IPython notebook """
         return not hasattr(main_module, '__file__')
 
-    if _is_interactive(): #or getattr(sys, 'frozen', False):
+    if _is_interactive() or getattr(sys, 'frozen', False):
         # Should work without __file__, e.g. in REPL or IPython notebook.
         pass
     else:
         main_dir = _os.path.dirname(_os.path.realpath(main_module.__file__))
 
-        warnings.showwarning(f"Going to change os.chdir('{main_dir}')", filename=__name__)
+        logger.info(f"Going to change os.chdir('{main_dir}')")
 
         _os.chdir(main_dir)
 
-def initConfig(**kwargs):
-    warns_d =kwargs.pop('warns', {})
-
-    _warnsInitConfig(**{'log_name':__name__,
-                   **warns_d})
