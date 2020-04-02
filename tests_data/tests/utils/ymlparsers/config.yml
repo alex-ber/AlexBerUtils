@@ -1,0 +1,49 @@
+
+general:
+  profiles:
+    - dev
+    - local
+
+  whiteListSysOverrideKeys:
+    - app
+
+  log:
+    version: 1
+    disable_existing_loggers: False
+    formatters:
+      brief:
+        format: '%(message)s'
+      detail:
+        format: '%(asctime)-15s %(levelname)s [%(name)s.%(funcName)s] %(message)s'
+        datefmt: '%Y-%m-%d %H:%M:%S'
+
+    handlers:
+      console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: detail
+        stream: ext://sys.stdout
+
+      all_file_handler:
+        class: logging.handlers.TimedRotatingFileHandler
+        level: DEBUG
+        formatter: detail
+        filename: logs/app.log
+        when: midnight
+        backupCount: 10
+        delay: True
+
+    #loggers:
+
+    root:
+      level: DEBUG
+      handlers: [all_file_handler]
+app:
+  inner_host_name: google.com
+  cli_template: ping {{app.inner_host_name}}
+  white_list:
+    - one
+    - two
+    - three
+
+

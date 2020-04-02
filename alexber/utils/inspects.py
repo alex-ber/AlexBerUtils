@@ -33,3 +33,22 @@ def ismethod(object):
 
 
     return True
+
+def has_method(cls, methodName):
+    '''
+    Check if class cls has method with name methodName directly,
+    or in one of it's super-classes.
+
+    :param cls:
+    :param methodName:
+    :return:
+    '''
+
+    #see https://mail.python.org/pipermail/python-dev/2010-August/103200.html
+    #see https://docs.python.org/3.7/library/abc.html
+
+    #logger.info(list(methodName in B.__dict__ for B in cls.__mro__))
+
+    if any(methodName in B.__dict__ for B in cls.__mro__):
+        return True
+    return False

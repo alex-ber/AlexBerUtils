@@ -4,18 +4,63 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## [Unrelased]
+## [0.4.2] - TBD
+### Added 
+
+- `mains` module explanation article https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf is published.
+
+- `fabs` module. It adds cp method to fabric.Connection.
+
+This method is Linux-like cp command. It copies single file to remote (Posix) machine. 
+
+- Spited dependency list for setup.py req.txt (inexact versions, direct dependency only) and for 
+reproducible installation requirements.txt (exact versions, all, including transitive dependencies).
+
+- Added req-fabric.txt, requirements-fabric.txt - Fabric, used in `fabs` module.
+
+- Added req-yaml.txt, requirements-fabric.txt - Yaml-realated dependencies: 
+
+Main dependency is HiYaPyCo. I'm using feature that is availlable in the minimal version.
+
+HiYaPyCo depends upon PyYAML and Jinja2. Limitations for Jinja2 is from HiYaPyCo project.
+
+- Added `inspects.has_method`(cls, methodName). Check if class cls has method with name methodName directly, 
+or in one of it's super-classes.
+
+- Added `ymlparsers` module - `load`/`safe_dump` a Hierarchical Yaml files. This is essentially wrapper arround HiYaPyCo project with streamlined 
+and extended API and couple of work-arrounds. 
+
+Note: this module doesn't use any package-level variables in hiYaPyCo module. 
+
+It also has another defaults for `load`/`safe_dump` methods.
+They can be overridden in `initConfig()` function.
+ 
+It is mandatory to call `initConfig()` function before any method in `ymlparsers` module.   
+
+ 
+### Changed
+- Spited dependency list for setup.py req.txt (inexact versions, direct dependency only) and for 
+reproducible installation requirements.txt (exact versions, all, including transitive dependencies).
+ 
+- README.md changed, added section 'Alternatively you install install from requirements file:'. 
+Some other misc changed done.
+
+- CHANGELOG.md version 0.4.1 misc changes.
+
+- Misc improvement in unit tests.  
 
 ## [0.4.1] - 2020-04-02
-### Changed
 **BREAKING CHANGE** I highly recommend not to use 0.3.X versions.
+### Removed 
+- module `warns` is droped
 
+### Changed
 - *Limitation:*:
 
 `mains` module wasn't tested with frozen python script (frozen using py2exe). 
- 
-- module `warns` is droped
+
 - module `mains` is rewritten. Function `initConf` is dropped entirely.
-- module `mains` now works with logger and with warnings (it was wrong decision to work with warinings).
+- module `mains` now works with logger and with warnings (it was wrong decision to work with warnings).
 
 
 ## [0.3.4] - 2020-04-02
@@ -29,7 +74,6 @@ All notable changes to this project will be documented in this file.
 ## [0.3.3] - 2020-04-02
 ### Changed
 - CHANGELOG.md fixed
-- Article about `warns` module is published. See https://medium.com/@alex_ber/integrating-pythons-logging-and-warnings-packages-7748a760cde3
 
 
 ## [0.3.2] - 2020-04-01

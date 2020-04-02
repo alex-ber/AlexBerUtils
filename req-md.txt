@@ -1,0 +1,1 @@
+multidispatch>=0.2

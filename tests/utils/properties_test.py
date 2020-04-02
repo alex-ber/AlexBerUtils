@@ -8,7 +8,7 @@ from importlib.resources import open_text
 
 def test_parse_java_properties_alternative_delim(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
-    mocker.patch.object(Properties, 'PLACEHOLDER_TOKEN', new='@')
+    mocker.patch.object(Properties, 'PLACEHOLDER_TOKEN', new='@', spec_set=True)
     exp_cls_name_a = 'alexber.rpsgame.players.ConstantPlayer'
     exp_cls_name_b = exp_cls_name_a
     expdd = {'playera.cls': 'alexber.rpsgame.players.ConstantPlayer',

@@ -42,19 +42,46 @@ python3 -m pip install .[tests] # installs dependencies for tests
 ```bash
 python3 -m pip install .[md]   # installs multidispatcher (used in method_overloading_test.py)
 ```
+```bash
+python3 -m pip install .[fabric]   # installs fabric (used in fabs.py)
+```
+```bash
+python3 -m pip install .[yaml]   # installs Yml related dependencies (TBD)
+```
+
+#### Alternatively you install install from requirements file:
+```bash
+python3 -m pip install -r requirements.txt # only installs "required"
+```
+```bash
+python3 -m pip install -r requirements-tests.txt # installs dependencies for tests
+```
+```bash
+python3 -m pip install -r requirements-md.txt   # installs multidispatcher (used in method_overloading_test.py)
+```
+```bash
+python3 -m pip install -r requirements-fabric.txt   # installs fabric (used in fabs.py)
+```
+```bash
+python3 -m pip install -r requirements-yaml.txt   # installs Yml related dependencies (TBD)
+```
+
+
 ##
 
 From the directory with setup.py
 ```bash
 python3 setup.py test #run all tests
 ```
+
+or
+
 ```bash
+
 pytest
 ```
 
-##
-
-Installing new version
+## Installing new version
 See https://docs.python.org/3.1/distutils/uploading.html 
 
 ```bash

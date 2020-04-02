@@ -1,7 +1,7 @@
 import logging
 import pytest
 import inspect
-from alexber.utils.inspects import issetdescriptor, ismethod
+from alexber.utils.inspects import issetdescriptor, ismethod, has_method
 from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
@@ -118,6 +118,7 @@ def test_signature(request, f):
 #see https://stackoverflow.com/questions/218616/getting-method-parameter-names-in-python/45781963#45781963
 #see https://stackoverflow.com/questions/218616/getting-method-parameter-names-in-python/44261531#44261531
 def test_binding(request, f):
+    logger.info(f'{request._pyfuncitem.name}()')
     d = OrderedDict()
     d['name'] = 'metoo'
 
@@ -128,7 +129,48 @@ def test_binding(request, f):
     obj = f(**kwargs)
     assert obj is not None
 
+class SubDerived(Derived):
+    def set_x(self, x):
+        pass
 
+class Derivitive(SubDerived, Base):
+    def set_x(self, x):
+        pass
+
+    def cool(self):
+        pass
+
+@pytest.mark.parametrize(
+     'cls, method_name, exp_value',
+
+    [
+        (Example, '__init__', True),
+        (Example, 'foo1', True),
+        (Example, 'method1', True),
+        (Example, 'method2', True),
+        (Example, 'att1', True),
+        (Example, 'att_get_only', True),
+        (Example, '_set_only', True),
+        (Example, 'set_x', True),
+        (Example, 'baz', True),
+        (Example, '__init__', True),
+        (Example, 'seed', True),
+        (Example, 'this_is_method_is_not_here', False),
+        (Derived, '__init__', True),
+        (SubDerived, 'set_x', True),
+        (SubDerived, 'set_non_exists', False),
+        (Derivitive, 'set_x', True),
+        (Derivitive, 'cool', True),
+        (Derivitive, 'set_non_exists', False),
+
+
+    ]
+)
+def test_has_method(request, cls, method_name, exp_value):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    b = has_method(cls, method_name)
+    assert exp_value == b
 
 if __name__ == "__main__":
     pytest.main([__file__])

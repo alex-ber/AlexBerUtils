@@ -1,0 +1,18 @@
+general:
+  log:
+    formatters:
+      detail:
+        format: '%(asctime)-14s %(levelname)s [%(name)s.%(funcName)s] %(message)s'
+
+    root:
+      level: INFO
+
+app:
+  inner_host_name: yahoo.com
+  white_list:
+    - gamma
+    - alpha
+    - betha
+  alt_white_list: [c,b,a]
+
+
