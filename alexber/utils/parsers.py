@@ -84,7 +84,7 @@ def safe_eval(value):
     '''
     try:
         ret = ast.literal_eval(value)
-    except ValueError:
+    except (SyntaxError, ValueError):
         ret = value
     return ret
 

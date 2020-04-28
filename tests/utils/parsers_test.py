@@ -88,6 +88,9 @@ def test_args_parse_explicit_args(request, arg_parse_param):
         ('-5', -5, int),
         ('0.1', None, Decimal),  #Not Supprted
         ('2019-04-01 16:31:51.513383', None, datetime),  #Not Supprted
+        ('%(message)s','%(message)s', str),#https://github.com/alex-ber/AlexBerUtils/issues/2
+        ('(message)s','(message)s', str),
+        ('(message)','(message)', str),
 
     ]
 )
