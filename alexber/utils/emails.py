@@ -1,6 +1,7 @@
 import io as _io
 import logging
 import smtplib
+from contextlib import contextmanager
 from email.message import EmailMessage as _EmailMessage
 from email.policy import SMTPUTF8 as _SMTPUTF8
 
@@ -183,7 +184,17 @@ class OneMemoryHandler(BaseOneMemoryHandler):
                                        'flushOnClose': flushOnClose})
 
 
-
+@contextmanager
+def email_status(emailLogger, faildargs, successargs, logger=None, successkwargs={}, faildkwargs={}):
+    try:
+        yield emailLogger
+    except Exception:
+        if logger is not None:
+            logger.error("", exc_info=True)
+        emailLogger.error("", exc_info=True)
+        emailLogger.log(FINISHED, faildargs, **faildkwargs)
+    else:
+        emailLogger.log(FINISHED, successargs, **successkwargs)
 
 def initConfig(**kwargs):
     default_smpt_cls_name_p = kwargs.get('default_smpt_cls_name', None)
