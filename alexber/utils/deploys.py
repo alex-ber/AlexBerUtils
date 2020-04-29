@@ -62,7 +62,8 @@ def load_config(argumentParser=None, args=None):
     if ymlparsers.HiYaPyCo.jinja2ctx is None:
         raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
 
-    config_file, sys_d  = parse_sys_args(argumentParser, args)
+    params, sys_d = parse_sys_args(argumentParser, args)
+    config_file = params.config_file
     full_path = Path(config_file).resolve()  # relative to cwd
 
     with ymlparsers.DisableVarSubst():

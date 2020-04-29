@@ -17,13 +17,14 @@ class conf(object):
     CONFIG_KEY = 'config'
     FILE_LEY = 'file'
 
+
 def _bool_convert(value):
-    try:
-        ret = parse_boolean(value)
+        try:
+            ret = parse_boolean(value)
+            return ret
+        except ValueError:
+            ret = _convert(value)
         return ret
-    except ValueError:
-        ret = _convert(value)
-    return ret
 
 def _bool_is_empty(value):
     try:
@@ -139,7 +140,7 @@ def parse_sys_args(argumentParser=None, args=None):
     params, unknown_arg = argumentParser.parse_known_args(args=args)
 
     sys_d = argumentParser.as_dict(args=unknown_arg)
-    return params.config_file, sys_d
+    return params, sys_d
 
 def _is_white_listed(white_list_flat_keys, flat_key):
     b = is_empty(white_list_flat_keys)
@@ -237,7 +238,9 @@ def _parse_sys_args(argumentParser=None, args=None):
     if ymlparsers.HiYaPyCo.jinja2ctx is None:
         raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
 
-    config_file, sys_d0  = parse_sys_args(argumentParser, args)
+    params, sys_d0 = parse_sys_args(argumentParser, args)
+    config_file = params.config_file
+
     full_path = Path(config_file).resolve()  # relative to cwd
 
     with ymlparsers.DisableVarSubst():
