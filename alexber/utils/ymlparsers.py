@@ -175,21 +175,28 @@ def _normalize_var_name(text, start_del, end_del):
 
 
 
-def convert_template_to_string_format(template, jinja2ctx=None):
+def convert_template_to_string_format(template, jinja2ctx=None, jinja2Lock=None):
     """
     This is utility method that make template usable with string format
 
     :param template: str, typically with {{my_variable}}
     :param jinja2ctx:  Jinja2 Environment that is consult what is delimter for variable's names.
                        if is not provided, HiYaPyCo.jinja2ctx is used.
+    :param jinja2Lock: Lock to be used to atomically get variable_start_string and variable_end_string from jinja2ctx.
+                       if is not provided, HiYaPyCo.jinja2Lock is used.
     :return: template: str with {my_variable}
     """
     if template is None:
         return None
     if jinja2ctx is None:
-        jinja2ctx = HiYaPyCo.jinja2ctx
-    default_start = jinja2ctx.variable_start_string
-    default_end = jinja2ctx.variable_end_string
+        jinja2ctx  = HiYaPyCo.jinja2ctx
+
+    if jinja2Lock is None:
+        jinja2Lock = HiYaPyCo.jinja2Lock
+
+    with jinja2Lock:
+        default_start = jinja2ctx.variable_start_string
+        default_end = jinja2ctx.variable_end_string
 
     template = _normalize_var_name(template, default_start, default_end)
 

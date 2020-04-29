@@ -426,8 +426,15 @@ class TestDisableVarSubst(object):
 
 def test_convert_template_to_string_format(request, mocker, ymlparsersSetup, ymlparsersCleanup, template, exp_value):
     logger.info(f'{request._pyfuncitem.name}()')
+    mock_lock = create_mock_lock(mocker)
+    mocker.patch.object(HiYaPyCo, 'jinja2Lock', new=mock_lock, spec_set=True)
+
     value = ymlparsers.convert_template_to_string_format(template)
     pytest.assume(exp_value==value)
+
+    if exp_value is not None:
+        pytest.assume(mock_lock.acquire.call_count > 0)
+        pytest.assume(mock_lock.release.call_count == mock_lock.acquire.call_count)
 
 
 
