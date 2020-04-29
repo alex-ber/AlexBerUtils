@@ -290,7 +290,7 @@ def _parse_yml(sys_d, profiles, config_file='config.yml'):
 
 def parse_config(argumentParser=None, args=None):
     """
-    This function can be in external use, but it is not intended for.
+    This function can be in external use.
     This function parses command line arguments.
     Than it parse ini file.
     Command line arguemnts overrides ini file arguments.
