@@ -599,7 +599,10 @@ def test_ymlparsers_load_multiple_no_substition(request, mocker, ymlparsersSetup
     logger.info(f'{request._pyfuncitem.name}()')
 
     exp_d = copy.deepcopy(exp_config_d)
-    exp_d['general']['log']['formatters']['detail']['format'] = '%(asctime)-14s %(levelname)s [%(name)s.%(funcName)s] %(message)s'
+    exp_d['general']['log']['formatters']['detail'] = {'format': \
+                                                '%(asctime)-14s %(levelname)s [%(name)s.%(funcName)s] %(message)s',
+                                                       'datefmt': \
+                                                '%Y-%m-%d %H:%M:%S'}
     exp_d['general']['log']['root']['level'] = 'INFO'
     exp_d['app']['inner_host_name'] = 'yahoo.com'
     exp_d['app']['white_list'] = ['gamma', 'alpha', 'betha']
@@ -634,8 +637,10 @@ def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup
     pck = '.'.join(['tests_data', __package__, 'ymlparsers'])
 
     exp_d = copy.deepcopy(exp_config_d)
-    exp_d['general']['log']['formatters']['detail'][
-        'format'] = '%(asctime)-14s %(levelname)s [%(name)s.%(funcName)s] %(message)s'
+    exp_d['general']['log']['formatters']['detail'] = {'format': \
+                                                           '%(asctime)-14s %(levelname)s [%(name)s.%(funcName)s] %(message)s',
+                                                       'datefmt': \
+                                                           '%Y-%m-%d %H:%M:%S'}
     exp_d['general']['log']['root']['level'] = 'INFO'
     exp_d['app']['inner_host_name'] = 'yahoo.com'
     exp_d['app']['white_list'] = ['gamma', 'alpha', 'betha']
@@ -647,7 +652,7 @@ def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup
 
 
     app_d = default_d['app']
-    exp_app_d = exp_config_d.get('app', None)
+    exp_app_d = exp_d.get('app', None)
 
     inner_host_name = app_d.get('inner_host_name', None)
     exp_host_name = exp_app_d.get('inner_host_name', None)
@@ -666,7 +671,7 @@ def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup
     cli_template = app_d['cli_template']
     pytest.assume('inner_host_name' not in cli_template)
 
-    pytest.assume(exp_config_d==default_d)
+    pytest.assume(exp_d==default_d)
 
 
 def _run_without_substition(content, exp_config_d, stop):
@@ -709,7 +714,7 @@ def _run_with_substition(content, exp_config_d, stop):
         pytest.assume(exp_config_d == default_d)
 
 
-def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
+def test_ymlparsers_load_it(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
     pck = '.'.join(['tests_data', __package__, 'ymlparsers'])
 

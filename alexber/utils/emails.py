@@ -15,8 +15,7 @@ thread_locals = threading.local()
 from ..utils import get_threadlocal_var, threadlocal_var
 
 
-from . ymlparsers import hiyapyco
-_convert_template_to_string_format = hiyapyco.convert_template_to_string_format
+from . ymlparsers import convert_template_to_string_format as _convert_template_to_string_format
 
 class SMTPHandler(logging.handlers.SMTPHandler):
     def __init__(self, *args, **kwargs):
@@ -59,9 +58,14 @@ class BaseOneMemoryHandler(logging.handlers.MemoryHandler):
         subject = kwargs.pop('subject')
         self.subject = subject
 
+        self.createLock()
+        lock = self.lock
+
         self.acquire()
         try:
             super().__init__(*args, **kwargs)
+            #restore lock
+            self.lock=lock
             del self.buffer
             threadlocal_var(thread_locals, 'buffer', lambda: [])
         finally:

@@ -517,10 +517,13 @@ def test_uparse_yml(request, mocker, ymlparsersSetup, ymlparsersCleanup):
     expdd = {
         'general': {'profiles': ['dev'],  # list
                     'log': {
+                        'version': 1,
+                        'disable_existing_loggers': False,
                         'formatters': {
-                            'detail': {
+                            'brief': {
                                 'format': '%(message)s'
-                            }
+                            },
+                            'detail': '%(message)s',
                         },
                         'root': {
                             'level': 'INFO'  # logging.INFO
@@ -551,14 +554,8 @@ def test_uparse_yml(request, mocker, ymlparsersSetup, ymlparsersCleanup):
     pck = '.'.join(['tests_data', __package__, 'initappconf'])
     with path(pck, 'config.yml') as full_path:
         dd = _parse_yml(sys_d, ['dev'], config_file=full_path)
-        format = dd['general']['log']['formatters']['detail']
-        exp_format = expdd['general']['log']['formatters']['detail']['format']
-        pytest.assume(exp_format==format)
-        root_level = dd['general']['log']['root']['level']
-        exp_root_level = expdd['general']['log']['root']['level']
-        pytest.assume(exp_root_level==root_level)
-        del dd['general']['log']
-        del expdd['general']['log']
+        del dd['general']['log']['handlers']
+        del dd['general']['log']['root']['handlers']
         pytest.assume(expdd==dd)
 
 def test_parse_config_implicit(request, mocker, ymlparsersSetup, ymlparsersCleanup):
