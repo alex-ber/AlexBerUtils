@@ -1,9 +1,7 @@
 
 general:
-  profiles:
-    - dev
-    - local
-
+  whiteListSysOverride:
+    - 'app.host_name'
   log:
     version: 1
     disable_existing_loggers: False
@@ -36,11 +34,13 @@ general:
       level: DEBUG
       handlers: [all_file_handler]
 app:
-  inner_host_name: google.com
-  cli_template: ping {{app.inner_host_name}}
+  host_name: google.com
+  news: cnn.com
   white_list:
-    - one
-    - two
-    - three
-
+    - gamma
+    - alpha
+    - betha
+  alt_white_list:
+    - 100
+    - 10.0
 

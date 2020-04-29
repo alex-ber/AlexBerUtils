@@ -1,0 +1,10 @@
+general:
+  log:
+    formatters:
+      detail: '%(message)s'
+    root:
+      level: INFO
+
+app:
+  host_name: yahoo.com
+  news: cnn.com
