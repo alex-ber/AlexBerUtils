@@ -4,11 +4,15 @@ logger = logging.getLogger(__name__)
 from collections import OrderedDict, deque
 from pathlib import Path
 import io as _io
-from alexber.utils.parsers import is_empty, safe_eval as _convert, parse_boolean, ArgumentParser
+from alexber.utils.parsers import is_empty, safe_eval as _convert, parse_boolean, ArgumentParser, \
+    parse_sys_args as uparse_sys_args
 import alexber.utils.ymlparsers as ymlparsers
 
 
 class conf(object):
+    """
+    See parse_config() function for details.
+    """
     GENERAL_KEY = 'general'
     PROFILES_KEY = 'profiles'
     #WHITE_LIST_IMPLICIT_KEY = 'whiteListImplicitely'    #default True
@@ -19,90 +23,13 @@ class conf(object):
     FILE_LEY = 'file'
 
 
-def _bool_convert(value):
-    try:
-        ret = parse_boolean(value)
-        return ret
-    except ValueError:
-        ret = _convert(value)
-    return ret
-
-def _bool_is_empty(value):
-    try:
-        ret = parse_boolean(value)
-        return ret is None
-    except ValueError:
-        ret = is_empty(value)
-    return ret
-
-
-def mask_value(value, implicit_convert=True):
-    """
-    If bool(implicit_convert) is False then, return value as is.
-    Otherwise, we assume Python built-in types, including bool, and we're converting it to appropriate type.
-
-    Bool values are case-insensitive.
-
-    :param value: str to ccnvert
-    :param implicit_convert: detault True. Whether to convert value using alexber.utils.parsers.safe_eval() function.
-    :return:
-    """
-
-
-    ret = _bool_convert(value) \
-        if implicit_convert \
-        else value
-    return ret
-
-def flat_keys(d, white_list_flat_keys=None, implicit_convert=True):
-    parser = default_parser_cls()
-    dd = parser.flat_keys(d, white_list_flat_keys, implicit_convert)
-    return dd
-
-
-
-def merge_list_value_in_dicts(flat_d, d, main_key, sub_key):
-    """
-    This method merge value of 2 dicts. This value represents list of values.
-
-    Value from flat_d is roughly obtained by flat_d[main_key+'.'+sub_key].
-    Value from d is roughly obtained by d[main_key][sub_key].
-
-    If value (or intermediate value) is not found empty dict is used.
-
-    This method assumes that flat_d value contain str that represent list (comma-delimited).
-    This method assumes that d[main_key] contains dict.
-
-    This method implicitly converts every element inside list to Python built-in type.
-
-    :param flat_d: flat dictionoray, usually one that was created from parsing system args.
-    :param d: dictionary of dictionaries,  usually one that was created from parsing YAML file.
-    :param main_key: d[main_key] is absent or dict.
-    :param sub_key: d[main_key][sub_key] is absent or list.
-    :return: merged convreted value, typically one from flat_d, if empty than from d
-    """
-
-    parser = default_parser_cls()
-    merged_value = parser.merge_list_value_in_dicts(flat_d, d, main_key, sub_key)
-    return merged_value
-
-def parse_sys_args(argumentParser=None, args=None):
-    """
-    This function parses command line arguments.
-
-    :param argumentParser:
-    :param args: if not None, suppresses sys.args
-    :return:
-    """
-
-    parser = default_parser_cls()
-    params, sys_d = parser.uparse_sys_args(argumentParser=argumentParser, args=args)
-    return params, sys_d
-
-
-
-
 class AppConfParser(object):
+    def __init__(self, *args, **kwargs):
+        self.implicit_convert = kwargs.pop('implicit_convert')
+        if self.implicit_convert is None:
+            raise ValueError("implicit_convert can't be None")
+
+    basic_parse_sys_args = staticmethod(uparse_sys_args)
 
     def _parse_yml(self, sys_d, profiles, config_file='config.yml'):
         if ymlparsers.HiYaPyCo.jinja2ctx is None:
@@ -130,24 +57,6 @@ class AppConfParser(object):
             dd = ymlparsers.load([*yml_files, sys_buf.getvalue()])
 
         return dd
-
-    def uparse_sys_args(self, argumentParser=None, args=None):
-        """
-        This function parses command line arguments.
-
-        :param argumentParser:
-        :param args: if not None, suppresses sys.args
-        :return:
-        """
-
-        if argumentParser is None:
-            argumentParser = ArgumentParser()
-        argumentParser.add_argument("--general.config.file", nargs='?', dest='config_file', default='config.yml',
-                                    const='config.yml')
-        params, unknown_arg = argumentParser.parse_known_args(args=args)
-
-        sys_d = argumentParser.as_dict(args=unknown_arg)
-        return params, sys_d
 
     def _parse_white_list_implicitely(self, default_d):
         subvalue = default_d.get(conf.GENERAL_KEY, {})
@@ -181,7 +90,7 @@ class AppConfParser(object):
                 return True
         return False
 
-    def flat_keys(self, d, white_list_flat_keys=None, implicit_convert=True):
+    def to_convex_map(self, d, white_list_flat_keys=None):
         dd = OrderedDict()
 
         for flat_key, value in d.items():
@@ -195,32 +104,12 @@ class AppConfParser(object):
             inner_d = dd
             for i, part_key in enumerate(keys):
                 if i + 1 == length:  # last element
-                    inner_d = inner_d.setdefault(part_key, mask_value(value, implicit_convert))
+                    inner_d = inner_d.setdefault(part_key, self.mask_value(value))
                 else:
                     inner_d = inner_d.setdefault(part_key, OrderedDict())
         return dd
 
     def merge_list_value_in_dicts(self, flat_d, d, main_key, sub_key):
-        """
-        This method merge value of 2 dicts. This value represents list of values.
-
-        Value from flat_d is roughly obtained by flat_d[main_key+'.'+sub_key].
-        Value from d is roughly obtained by d[main_key][sub_key].
-
-        If value (or intermediate value) is not found empty dict is used.
-
-        This method assumes that flat_d value contain str that represent list (comma-delimited).
-        This method assumes that d[main_key] contains dict.
-
-        This method implicitly converts every element inside list to Python built-in type.
-
-        :param flat_d: flat dictionoray, usually one that was created from parsing system args.
-        :param d: dictionary of dictionaries,  usually one that was created from parsing YAML file.
-        :param main_key: d[main_key] is absent or dict.
-        :param sub_key: d[main_key][sub_key] is absent or list.
-        :return: merged convreted value, typically one from flat_d, if empty than from d
-        """
-
         if flat_d is None:
             raise TypeError("flat_d can't be None")
 
@@ -246,7 +135,7 @@ class AppConfParser(object):
         return profiles
 
     def _parse_list_ensure(self, sys_d, default_d):
-        list_ensure =self.merge_list_value_in_dicts(sys_d, default_d, conf.GENERAL_KEY, conf.LIST_ENSURE_KEY)
+        list_ensure = self.merge_list_value_in_dicts(sys_d, default_d, conf.GENERAL_KEY, conf.LIST_ENSURE_KEY)
 
         b = is_empty(list_ensure)
         if not b:
@@ -276,30 +165,52 @@ class AppConfParser(object):
             dd[flat_key] = value
         return dd
 
-    def _do_ensure_list(self, flat_d, list_ensure, implicit_convert=True):
+    def _do_ensure_list(self, flat_d, list_ensure):
         b = is_empty(list)
         if b:
             return
 
         for flat_key in list_ensure:
-            flat_value = self._ensure_list(flat_d, flat_key, implicit_convert)
+            flat_value = self._ensure_list(flat_d, flat_key)
             flat_d[flat_key] = flat_value
 
-    def _ensure_list(self, flat_d, key, implicit_convert=True):
+    def _bool_is_empty(self, value):
+        try:
+            ret = parse_boolean(value)
+            return ret is None
+        except ValueError:
+            ret = is_empty(value)
+        return ret
+
+    def _bool_convert(self, value):
+        try:
+            ret = parse_boolean(value)
+            return ret
+        except ValueError:
+            ret = _convert(value)
+        return ret
+
+    def mask_value(self, value):
+        ret = self._bool_convert(value) \
+            if self.implicit_convert \
+            else value
+        return ret
+
+    def _ensure_list(self, flat_d, key):
         def _ensure_list(v):
             value = str(v)
             elements = value.split(",")
 
             # empty string will become null
             elements = [None if is_empty(value) else value for value in elements]
-            ret = [mask_value(value, implicit_convert=implicit_convert) for value in elements]
+            ret = [self.mask_value(value) for value in elements]
 
             return ret
 
         if flat_d is None:
             flat_d = {}
         val = flat_d.get(key, None)
-        b = _bool_is_empty(val)
+        b = self._bool_is_empty(val)
         if b:
             if key in flat_d.keys():
                 # we have key:None?
@@ -307,13 +218,11 @@ class AppConfParser(object):
             return []
         return _ensure_list(val)
 
-    flat_keys = flat_keys
-
     def _parse_sys_args(self, argumentParser=None, args=None):
         if ymlparsers.HiYaPyCo.jinja2ctx is None:
             raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
 
-        params, sys_d0 = self.uparse_sys_args(argumentParser, args)
+        params, sys_d0 = self.basic_parse_sys_args(argumentParser, args)
         config_file = params.config_file
 
         full_path = Path(config_file).resolve()  # relative to cwd
@@ -330,12 +239,13 @@ class AppConfParser(object):
 
         self._do_ensure_list(sys_d, list_ensure)
 
-        dd = self.flat_keys(sys_d)
+        dd = self.to_convex_map(sys_d)
         return dd, profiles, white_list, list_ensure, full_path
 
     def parse_config(self, argumentParser=None, args=None):
+
         sys_d, profiles, white_list, list_ensure, config_file = self._parse_sys_args(argumentParser=argumentParser,
-                                                                                args=args)
+                                                                                     args=args)
         dd = self._parse_yml(sys_d, profiles, config_file)
 
         # merge all to dd
@@ -356,31 +266,221 @@ class AppConfParser(object):
         general_d[conf.LIST_ENSURE_KEY] = list_ensure
         return dd
 
+def _create_default_parser(**kwargs):
+    if default_parser_cls is None:
+        raise ValueError("You should call initConfig() first")
 
-def parse_config(argumentParser=None, args=None):
+    implicit_convert = kwargs['implicit_convert']
+    if implicit_convert is None:
+        implicit_convert=default_parser_kwargs['implicit_convert']
+
+    kwargs = {
+        **default_parser_kwargs,
+        'implicit_convert': implicit_convert,
+
+    }
+    parser = default_parser_cls(**kwargs)
+    return parser
+
+def mask_value(value, implicit_convert=None):
     """
-    This function can be in external use.
-    This function parses command line arguments.
-    Than it parse ini file.
-    Command line arguemnts overrides ini file arguments.
+    If implicit_convert is True,  or it is None, but implicit_convert=True was supplied to initConfig() method,
+    then we assume Python built-in types, including bool, and we're converting it to appropriate type.
+    If implicit_convert is False, or it is None, but False=True was supplied to initConfig() method,
+    then use value as is.
+
+    Bool values are case-insensitive.
+
+    Note: Before calling this method, please ensure that you've called initConfig() method first.
+
+    :param value: str to ccnvert
+    :param implicit_convert: if none, than value that was passed to initConfig() is used (default).
+                             if True value attempt to convert value to appropriate type will be done,
+                             if False value will be used as is. See mask_value() function.
+    :return:
+    """
+    if default_parser_cls is None:
+        raise ValueError("You should call initConfig() first")
+
+    parser = _create_default_parser(**{'implicit_convert': implicit_convert})
+    ret = parser.mask_value(value)
+    return ret
+
+
+def to_convex_map(d, white_list_flat_keys=None, implicit_convert=None):
+    """
+    This method receives dictionary with 'flat keys', it has simple key:value structure
+    where value can't another dictionary.
+    It will return dictionary of dictionaries with natural key mapping (see bellow),
+    optionally entries will be filtered out according to white_list_flat_keys and
+    optionally value will be implicitly converted to appropriate type.
+
+    Note: Before calling this method, please ensure that you've called initConfig() method first.
+
+    In order to simulate dictionary of dictionaries 'flat keys' compose key from outer dict with key from inner dict
+    separated with dot.
+    For example, 'general.profiles' 'flat key' corresponds to convex map with 'general' key with dictionary as value
+    that have one of the keys 'profiles' with corresponding value.
+
+    if white_list_flat_keys is not None, it will be used to filter out entries from d.
+    If implicit_convert is True,  or it is None, but implicit_convert=True was supplied to initConfig() method,
+    it will be used to convert value to appropriate type. See mask_value() function.
+    If implicit_convert is False, or it is None, but False=True was supplied to initConfig() method,
+    the value will be used as is.
+
+    :param d: dict with flat keys
+    :param white_list_flat_keys: Optional. if present, only keys that start with one of the elements listed here
+                                            will be considered.
+    :param implicit_convert: if none, than value that was passed to initConfig() is used (default).
+                             if True value attempt to convert value to appropriate type will be done,
+                             if False value will be used as is. See mask_value() function.
+    :return: convex map with optionally filtered entrys
+    """
+    if default_parser_cls is None:
+        raise ValueError("You should call initConfig() first")
+
+    parser = _create_default_parser(**{'implicit_convert': implicit_convert})
+    dd = parser.to_convex_map(d, white_list_flat_keys)
+    return dd
+
+
+
+def merge_list_value_in_dicts(flat_d, d, main_key, sub_key, implicit_convert=None):
+    """
+    This method merge value of 2 dicts. This value represents list of values.
+
+    Note: Before calling this method, please ensure that you've called initConfig() method first.
+
+    Value from flat_d is roughly obtained by flat_d[main_key+'.'+sub_key].
+    Value from d is roughly obtained by d[main_key][sub_key].
+
+    If value (or intermediate value) is not found empty dict is used.
+
+    This method assumes that flat_d value contain str that represent list (comma-delimited).
+    This method assumes that d[main_key] contains dict.
+    implicit_convert is applied only for flat_d.
+
+
+    If implicit_convert is True,  or it is None, but implicit_convert=True was supplied to initConfig() method,
+    then this method implicitly converts every element inside list to Python built-in type. See mask_value() function.
+    If implicit_convert is False, or it is None, but False=True was supplied to initConfig() method,
+    then use value as is.
+
+
+    :param flat_d: flat dictionoray, usually one that was created from parsing system args.
+    :param d: dictionary of dictionaries,  usually one that was created from parsing YAML file.
+    :param main_key: d[main_key] is absent or dict.
+    :param sub_key: d[main_key][sub_key] is absent or list.
+    :param implicit_convert: if none, than value that was passed to initConfig() is used (default).
+                             if True value attempt to convert value to appropriate type will be done,
+                             if False value will be used as is. See mask_value() function.
+    :return: merged convreted value, typically one from flat_d, if empty than from d
+    """
+    if default_parser_cls is None:
+        raise ValueError("You should call initConfig() first")
+
+    parser = _create_default_parser(**{'implicit_convert': implicit_convert})
+    merged_value = parser.merge_list_value_in_dicts(flat_d, d, main_key, sub_key)
+    return merged_value
+
+def parse_config(argumentParser=None, args=None, implicit_convert=None):
+    """
+    This is the main function of the module.
+
+    Note: Before calling this method, please ensure that you've called initConfig() method first.
+
+    Note: Before calling this method, please ensure that you've called alexber.utils.ymlparsers.initConfig()
+    method first.
+
+    This function parses command line arguments first.
+    Than it parse yml files.
+    Command line arguments overrides yml files arguments.
+
+    Parameters of yml files we always try to convert on best-effort basses.
+    Parameters of system args we try convert according to implicit_convert param (see below).
 
     In more detail, command line arguments of the form --key=value are parsed first.
-    If exists --config_file it's value is used to search for ini file.
-    if --config_file is absent, 'config.yml' is used for ini file.
-    If ini file is not found, only command line arguments are used.
-    If ini file is found, both arguments are used, while
-    command line arguments overrides ini arguments.
+    If exists --config_file it's value is used to search for yml file.
+    if --config_file is absent, 'config.yml' is used for yml file.
+    If yml file is not found, only command line arguments are used.
+    If yml file is found, both arguments are used, while
+    command line arguments overrides yml arguments.
+
+    --general.profiles or appropriate key in default yml file is used to find 'profiles'.
+    Let suppose, that --config_file is resolved to config.yml.
+    If 'profiles' is not empty, than it will be used to calculate filenames
+    that will be used to override default yml file.
+    Let suppose, 'profiles' resolved to ['dev', 'local']. Than first config.yml
+    will be loaded, than it will be overridden with config-dev.yml, than
+    it will be overridden with config-local.yml.
+    At last, it will be overridden with system args.
+    This entry can be always be overridden with system args.
+
+    general.whiteListSysOverride key in yml file is optional.
+    If not provided, than any key that exists in the default yml file can be overridden
+    with system args.
+    If provided, than only key that start with one of the key provided here can be used
+    to override entrys with system args.
+    This entry can't be overridden with system args.
+
+    --general.listEnsure or appropriate key in default yml file is used to instruct that
+    listed key should be interpreted as comma-delimited list when is used to override
+    entrys with system args.
+    This entry can be always be overridden with system args.
+
+    general.config.file is key that is used in returned dict that points to default yml file.
+
+    If implicit_convert is True,  or it is None, but implicit_convert=True was supplied to initConfig() method,
+    then for system args we assume Python built-in types, including bool, and we're converting it to appropriate type.
+    If implicit_convert is False, or it is None, but False=True was supplied to initConfig() method,
+    then system args we use value as is.
+
 
     :param argumentParser:
     :param args: if not None, suppresses sys.args
+    :param implicit_convert: if none, than value that was passed to initConfig() is used (default).
+                             if True value attempt to convert value from system args to appropriate type will be done,
+                             if False value from system args will be used as is. See mask_value() function.
     :return: dict ready to use
     """
+    if default_parser_cls is None:
+        raise ValueError("You should call initConfig() first")
+
     if ymlparsers.HiYaPyCo.jinja2ctx is None:
         raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
 
-    parser = default_parser_cls()
+    parser = _create_default_parser(**{'implicit_convert': implicit_convert})
     dd = parser.parse_config(argumentParser=argumentParser, args=args)
     return dd
 
-#you can modify this class to your custom one
-default_parser_cls = AppConfParser
+
+default_parser_cls = None
+default_parser_kwargs = None
+
+def initConfig(**kwargs):
+    """
+    This method should be called prior any call to another function in this module.
+    It is indented to be called in the MainThread.
+    This method can be call with empty params.
+
+    :param default_parser_cls: Optional.
+                Default values is: AppConfParser
+    :param default_parser_kwargs: this params will be used as default values in default_parser_cls.__init__() function.
+                Default values are
+                      'implicit_convert':True,
+                This means, by default:
+                    We're converting values using mask_value() function.
+    :return:
+    """
+    default_parser_cls_p = kwargs.get('default_parser_cls', None)
+    if default_parser_cls_p is None:
+        default_parser_cls_p = AppConfParser
+    global default_parser_cls
+    default_parser_cls = default_parser_cls_p
+
+    default_parser_kwargs_p = kwargs.get('default_parser_kwargs', {})
+    default_parser_kwargs_p = {
+        'implicit_convert':True,
+        **default_parser_kwargs_p}
+    global default_parser_kwargs
+    default_parser_kwargs = default_parser_kwargs_p

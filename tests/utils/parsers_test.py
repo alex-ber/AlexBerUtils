@@ -4,7 +4,7 @@ import logging
 import pytest
 
 from alexber.utils.enums import Enum
-from alexber.utils.parsers import ConfigParser, ArgumentParser, safe_eval, is_empty, parse_boolean
+from alexber.utils.parsers import ConfigParser, ArgumentParser, safe_eval, is_empty, parse_boolean, parse_sys_args
 
 logger = logging.getLogger(__name__)
 from decimal import Decimal
@@ -201,6 +201,30 @@ def test_parse_boolean_invalid(request, value):
     with pytest.raises(ValueError, match='nknown'):
         parse_boolean(value)
 
+
+
+def test_parse_sys_args(request):
+    logger.info(f'{request._pyfuncitem.name}()')
+    expdd = {
+        'general.profiles': "dev",
+        'general.log.formatters.detail.format': '%(message)s',
+        'general.log.root.level': '20', #logging.INFO
+        'app.inner_host_name': 'yahoo.com',
+        'app.white_list': 'gamma,alpha,betha',
+        'app.alt_white_list': '100,10.0'
+    }
+
+    argsv = '--general.profiles=dev ' \
+            '--general.log.formatters.detail.format=%(message)s ' \
+            '--general.log.root.level=20 ' \
+            '--app.inner_host_name=yahoo.com ' \
+            '--app.white_list=gamma,alpha,betha ' \
+            '--app.alt_white_list=100,10.0 ' \
+        .split()
+
+
+    _, dd = parse_sys_args(args=argsv)
+    assert expdd == dd
 
 
 if __name__ == "__main__":

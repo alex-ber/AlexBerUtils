@@ -29,6 +29,7 @@ extras = {
     'fabric' : get_content('req-fabric.txt'),
     'yaml' : get_content('req-yaml.txt'),
     'yml' : get_content('req-yaml.txt'),
+    'pydotenv' : get_content('req-yaml.txt'),
     'tests': tests_require
 }
 

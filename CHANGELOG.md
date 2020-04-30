@@ -37,6 +37,8 @@ They can be overridden in `initConfig()` function.
  
 It is mandatory to call `initConfig()` function before any method in `ymlparsers` module.   
 
+- Added `pareser.parse_sys_args` function parses command line arguments.
+
  
 ### Changed
 - Spited dependency list for setup.py req.txt (inexact versions, direct dependency only) and for 
@@ -47,7 +49,12 @@ Some other misc changed done.
 
 - CHANGELOG.md version 0.4.1 misc changes.
 
-- Misc improvement in unit tests.  
+- Misc improvement in unit tests.
+
+- Fixed `parser.safe_eval` - safe_eval('%(message)s') was blow up, now it returns value as is. 
+See https://github.com/alex-ber/AlexBerUtils/issues/2  
+
+
 
 ## [0.4.1] - 2020-04-02
 **BREAKING CHANGE** I highly recommend not to use 0.3.X versions.

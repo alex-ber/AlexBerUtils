@@ -109,6 +109,7 @@ def is_empty(value):
         ret = True
     return ret
 
+
 def parse_boolean(value):
     '''
     if value is None returns None.
@@ -131,3 +132,20 @@ def parse_boolean(value):
         return {"true": True, "false": False}[value.casefold()]
     except (AttributeError, KeyError):
         raise ValueError(f"unknown string for bool: {value!r}")
+
+def parse_sys_args(argumentParser=None, args=None):
+    """
+    This function parses command line arguments.
+
+    :param argumentParser:
+    :param args: if not None, suppresses sys.args
+    :return:
+    """
+    if argumentParser is None:
+        argumentParser = ArgumentParser()
+    argumentParser.add_argument("--general.config.file", nargs='?', dest='config_file', default='config.yml',
+                                const='config.yml')
+    params, unknown_arg = argumentParser.parse_known_args(args=args)
+
+    sys_d = argumentParser.as_dict(args=unknown_arg)
+    return params, sys_d

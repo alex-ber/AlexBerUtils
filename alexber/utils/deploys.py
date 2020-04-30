@@ -3,8 +3,8 @@ from pathlib import Path
 from collections import deque
 import alexber.utils.ymlparsers as ymlparsers
 #ymlparsers.initConfig()
-from .init_app_conf import parse_sys_args, merge_list_value_in_dicts, conf
-from .parsers import is_empty
+from .init_app_conf import merge_list_value_in_dicts, conf
+from .parsers import is_empty, parse_sys_args
 
 
 
