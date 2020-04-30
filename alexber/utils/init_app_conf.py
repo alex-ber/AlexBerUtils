@@ -7,6 +7,7 @@ import io as _io
 from alexber.utils.parsers import is_empty, safe_eval as _convert, parse_boolean, ArgumentParser
 import alexber.utils.ymlparsers as ymlparsers
 
+
 class conf(object):
     GENERAL_KEY = 'general'
     PROFILES_KEY = 'profiles'
@@ -19,12 +20,12 @@ class conf(object):
 
 
 def _bool_convert(value):
-        try:
-            ret = parse_boolean(value)
-            return ret
-        except ValueError:
-            ret = _convert(value)
+    try:
+        ret = parse_boolean(value)
         return ret
+    except ValueError:
+        ret = _convert(value)
+    return ret
 
 def _bool_is_empty(value):
     try:
@@ -53,37 +54,11 @@ def mask_value(value, implicit_convert=True):
         else value
     return ret
 
-def _do_ensure_list(flat_d, list_ensure, implicit_convert=True):
-    b = is_empty(list)
-    if b:
-        return
+def flat_keys(d, white_list_flat_keys=None, implicit_convert=True):
+    parser = default_parser_cls()
+    dd = parser.flat_keys(d, white_list_flat_keys, implicit_convert)
+    return dd
 
-    for flat_key in list_ensure:
-        flat_value = _ensure_list(flat_d, flat_key, implicit_convert)
-        flat_d[flat_key] = flat_value
-
-
-def _ensure_list(flat_d, key, implicit_convert=True):
-    def _ensure_list(v):
-        value = str(v)
-        elements = value.split(",")
-
-        # empty string will become null
-        elements = [None if is_empty(value) else value for value in elements]
-        ret = [mask_value(value, implicit_convert=implicit_convert) for value in elements]
-
-        return ret
-
-    if flat_d is None:
-        flat_d = {}
-    val = flat_d.get(key, None)
-    b= _bool_is_empty(val)
-    if b:
-        if key in flat_d.keys():
-            #we have key:None?
-            return [val]
-        return []
-    return _ensure_list(val)
 
 
 def merge_list_value_in_dicts(flat_d, d, main_key, sub_key):
@@ -107,21 +82,8 @@ def merge_list_value_in_dicts(flat_d, d, main_key, sub_key):
     :return: merged convreted value, typically one from flat_d, if empty than from d
     """
 
-    if flat_d is None:
-        raise TypeError("flat_d can't be None")
-
-    if d is None:
-        raise TypeError("d can't be None")
-
-    flat_key = '.'.join([main_key, sub_key])
-    flat_value = _ensure_list(flat_d, flat_key)
-
-    length_flat_value = len(flat_value)
-
-    subvalue = d.get(main_key, {})
-    value = subvalue.get(sub_key, {})
-
-    merged_value = value if length_flat_value == 0 else flat_value
+    parser = default_parser_cls()
+    merged_value = parser.merge_list_value_in_dicts(flat_d, d, main_key, sub_key)
     return merged_value
 
 def parse_sys_args(argumentParser=None, args=None):
@@ -133,162 +95,266 @@ def parse_sys_args(argumentParser=None, args=None):
     :return:
     """
 
-    if argumentParser is None:
-        argumentParser = ArgumentParser()
-    argumentParser.add_argument("--general.config.file", nargs='?', dest='config_file', default='config.yml',
-                                const='config.yml')
-    params, unknown_arg = argumentParser.parse_known_args(args=args)
-
-    sys_d = argumentParser.as_dict(args=unknown_arg)
+    parser = default_parser_cls()
+    params, sys_d = parser.uparse_sys_args(argumentParser=argumentParser, args=args)
     return params, sys_d
 
-def _is_white_listed(white_list_flat_keys, flat_key):
-    b = is_empty(white_list_flat_keys)
-    if b:
-        return True
-
-    for white_list_flat_key in white_list_flat_keys:
-        if flat_key.startswith(white_list_flat_key):
-            return True
-    return False
-
-def flat_keys(d, white_list_flat_keys=None, implicit_convert=True):
-    dd = OrderedDict()
-
-    for flat_key, value in d.items():
-        if not ('.' in flat_key and _is_white_listed(white_list_flat_keys, flat_key)):
-            logger.info(f"Skipping key {flat_key}. It doesn't contain dot.")
-            continue
-
-        keys = flat_key.split(".")
-        length = len(keys)
-
-        inner_d = dd
-        for i, part_key in enumerate(keys):
-            if i + 1 == length:  # last element
-                inner_d = inner_d.setdefault(part_key, mask_value(value, implicit_convert))
-            else:
-                inner_d = inner_d.setdefault(part_key, OrderedDict())
-    return dd
-
-def _parse_profiles(sys_d, default_d):
-    profiles = merge_list_value_in_dicts(sys_d, default_d, conf.GENERAL_KEY, conf.PROFILES_KEY)
-    b = is_empty(profiles)
-    if b:
-        profiles = []
-    return profiles
 
 
-def _parse_white_list_implicitely(default_d):
-    subvalue = default_d.get(conf.GENERAL_KEY, {})
-    value = subvalue.get(conf.WHITE_LIST_KEY, {})
 
-    ret= is_empty(value)
-    if ret is None:
-        ret = True
-    return ret
+class AppConfParser(object):
 
+    def _parse_yml(self, sys_d, profiles, config_file='config.yml'):
+        if ymlparsers.HiYaPyCo.jinja2ctx is None:
+            raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
 
-def _parse_white_list(default_d):
-    calc_implicitely = _parse_white_list_implicitely(default_d)
+        base_full_path = Path(config_file).resolve()  # relative to cwd
 
-    if calc_implicitely:
-        white_list=[key for key in default_d.keys() if key not in conf.WHITE_LIST_KEY]
+        base_suffix = base_full_path.suffix
+        base_name = base_full_path.with_suffix("").name
+
+        with _io.StringIO() as sys_buf:
+            ymlparsers.safe_dump(sys_d, sys_buf)
+
+            buffersize = len(profiles) + 1  # default_profile
+            yml_files = deque(maxlen=buffersize)
+
+            yml_files.append(str(base_full_path))
+            full_path = base_full_path
+
+            for profile in profiles:
+                name = base_name + '-' + profile + base_suffix
+                full_path = full_path.with_name(name)
+                yml_files.append(str(full_path))
+
+            dd = ymlparsers.load([*yml_files, sys_buf.getvalue()])
+
+        return dd
+
+    def uparse_sys_args(self, argumentParser=None, args=None):
+        """
+        This function parses command line arguments.
+
+        :param argumentParser:
+        :param args: if not None, suppresses sys.args
+        :return:
+        """
+
+        if argumentParser is None:
+            argumentParser = ArgumentParser()
+        argumentParser.add_argument("--general.config.file", nargs='?', dest='config_file', default='config.yml',
+                                    const='config.yml')
+        params, unknown_arg = argumentParser.parse_known_args(args=args)
+
+        sys_d = argumentParser.as_dict(args=unknown_arg)
+        return params, sys_d
+
+    def _parse_white_list_implicitely(self, default_d):
+        subvalue = default_d.get(conf.GENERAL_KEY, {})
+        value = subvalue.get(conf.WHITE_LIST_KEY, {})
+
+        ret = is_empty(value)
+        if ret is None:
+            ret = True
+        return ret
+
+    def _parse_white_list(self, default_d):
+        calc_implicitely = self._parse_white_list_implicitely(default_d)
+
+        if calc_implicitely:
+            white_list = [key for key in default_d.keys() if key not in conf.WHITE_LIST_KEY]
+            return white_list
+
+        # default_d[conf.GENERAL_KEY][conf.WHITE_LIST_KEY] is not empty
+        subvalue = default_d.get(conf.GENERAL_KEY, {})
+        white_list = subvalue.get(conf.WHITE_LIST_KEY, {})
+
         return white_list
 
-    #default_d[conf.GENERAL_KEY][conf.WHITE_LIST_KEY] is not empty
-    subvalue = default_d.get(conf.GENERAL_KEY, {})
-    white_list = subvalue.get(conf.WHITE_LIST_KEY, {})
+    def _is_white_listed(self, white_list_flat_keys, flat_key):
+        b = is_empty(white_list_flat_keys)
+        if b:
+            return True
 
-    return white_list
+        for white_list_flat_key in white_list_flat_keys:
+            if flat_key.startswith(white_list_flat_key):
+                return True
+        return False
 
-def _parse_list_ensure(sys_d, default_d):
-    list_ensure = merge_list_value_in_dicts(sys_d, default_d, conf.GENERAL_KEY, conf.LIST_ENSURE_KEY)
+    def flat_keys(self, d, white_list_flat_keys=None, implicit_convert=True):
+        dd = OrderedDict()
 
-    b = is_empty(list_ensure)
-    if not b:
-        # we already proceesed profiles, white_list
-        #we should process list_ensure
-        profiles_flat_key = '.'.join([conf.GENERAL_KEY, conf.PROFILES_KEY])
-        list_ensure_flat_key = '.'.join([conf.GENERAL_KEY, conf.LIST_ENSURE_KEY])
-        white_list_flat_key = '.'.join([conf.GENERAL_KEY, conf.WHITE_LIST_KEY])
+        for flat_key, value in d.items():
+            if not ('.' in flat_key and self._is_white_listed(white_list_flat_keys, flat_key)):
+                logger.info(f"Skipping key {flat_key}. It doesn't contain dot.")
+                continue
 
-        list_ensure = [flat_key for flat_key in list_ensure \
-                       if flat_key not in {profiles_flat_key, list_ensure_flat_key, white_list_flat_key}]
-    else:
-        list_ensure = []
-    return list_ensure
+            keys = flat_key.split(".")
+            length = len(keys)
 
-def _get_white_listed(d, white_list_flat_keys):
-    b = is_empty(d)
-    if b:
-        return d
-    dd = OrderedDict()
+            inner_d = dd
+            for i, part_key in enumerate(keys):
+                if i + 1 == length:  # last element
+                    inner_d = inner_d.setdefault(part_key, mask_value(value, implicit_convert))
+                else:
+                    inner_d = inner_d.setdefault(part_key, OrderedDict())
+        return dd
 
-    for flat_key, value in d.items():
-        if not ('.' in flat_key and _is_white_listed(white_list_flat_keys, flat_key)):
-            logger.info(f"Skipping key {flat_key}. It doesn't white listed.")
-            continue
+    def merge_list_value_in_dicts(self, flat_d, d, main_key, sub_key):
+        """
+        This method merge value of 2 dicts. This value represents list of values.
 
-        dd[flat_key] = value
-    return dd
+        Value from flat_d is roughly obtained by flat_d[main_key+'.'+sub_key].
+        Value from d is roughly obtained by d[main_key][sub_key].
 
+        If value (or intermediate value) is not found empty dict is used.
 
-def _parse_sys_args(argumentParser=None, args=None):
-    if ymlparsers.HiYaPyCo.jinja2ctx is None:
-        raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
+        This method assumes that flat_d value contain str that represent list (comma-delimited).
+        This method assumes that d[main_key] contains dict.
 
-    params, sys_d0 = parse_sys_args(argumentParser, args)
-    config_file = params.config_file
+        This method implicitly converts every element inside list to Python built-in type.
 
-    full_path = Path(config_file).resolve()  # relative to cwd
+        :param flat_d: flat dictionoray, usually one that was created from parsing system args.
+        :param d: dictionary of dictionaries,  usually one that was created from parsing YAML file.
+        :param main_key: d[main_key] is absent or dict.
+        :param sub_key: d[main_key][sub_key] is absent or list.
+        :return: merged convreted value, typically one from flat_d, if empty than from d
+        """
 
-    with ymlparsers.DisableVarSubst():
-        default_d = ymlparsers.load([str(full_path)])
+        if flat_d is None:
+            raise TypeError("flat_d can't be None")
 
-    white_list = _parse_white_list(default_d)
-    sys_d = _get_white_listed(sys_d0, white_list)
+        if d is None:
+            raise TypeError("d can't be None")
 
-    profiles = _parse_profiles(sys_d, default_d)
+        flat_key = '.'.join([main_key, sub_key])
+        flat_value = self._ensure_list(flat_d, flat_key)
 
-    list_ensure = _parse_list_ensure(sys_d, default_d)
+        length_flat_value = len(flat_value)
 
-    _do_ensure_list(sys_d, list_ensure)
+        subvalue = d.get(main_key, {})
+        value = subvalue.get(sub_key, {})
 
-    dd = flat_keys(sys_d)
-    return dd, profiles, white_list, list_ensure, full_path
+        merged_value = value if length_flat_value == 0 else flat_value
+        return merged_value
 
+    def _parse_profiles(self, sys_d, default_d):
+        profiles = self.merge_list_value_in_dicts(sys_d, default_d, conf.GENERAL_KEY, conf.PROFILES_KEY)
+        b = is_empty(profiles)
+        if b:
+            profiles = []
+        return profiles
 
+    def _parse_list_ensure(self, sys_d, default_d):
+        list_ensure =self.merge_list_value_in_dicts(sys_d, default_d, conf.GENERAL_KEY, conf.LIST_ENSURE_KEY)
 
+        b = is_empty(list_ensure)
+        if not b:
+            # we already proceesed profiles, white_list
+            # we should process list_ensure
+            profiles_flat_key = '.'.join([conf.GENERAL_KEY, conf.PROFILES_KEY])
+            list_ensure_flat_key = '.'.join([conf.GENERAL_KEY, conf.LIST_ENSURE_KEY])
+            white_list_flat_key = '.'.join([conf.GENERAL_KEY, conf.WHITE_LIST_KEY])
 
-def _parse_yml(sys_d, profiles, config_file='config.yml'):
-    if ymlparsers.HiYaPyCo.jinja2ctx is None:
-        raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
+            list_ensure = [flat_key for flat_key in list_ensure \
+                           if flat_key not in {profiles_flat_key, list_ensure_flat_key, white_list_flat_key}]
+        else:
+            list_ensure = []
+        return list_ensure
 
-    base_full_path = Path(config_file).resolve() #relative to cwd
+    def _get_white_listed(self, d, white_list_flat_keys):
+        b = is_empty(d)
+        if b:
+            return d
+        dd = OrderedDict()
 
-    base_suffix = base_full_path.suffix
-    base_name = base_full_path.with_suffix("").name
+        for flat_key, value in d.items():
+            if not ('.' in flat_key and self._is_white_listed(white_list_flat_keys, flat_key)):
+                logger.info(f"Skipping key {flat_key}. It doesn't white listed.")
+                continue
 
-    with _io.StringIO() as sys_buf:
-        ymlparsers.safe_dump(sys_d, sys_buf)
+            dd[flat_key] = value
+        return dd
 
-        buffersize = len(profiles) + 1  #default_profile
-        yml_files = deque(maxlen=buffersize)
+    def _do_ensure_list(self, flat_d, list_ensure, implicit_convert=True):
+        b = is_empty(list)
+        if b:
+            return
 
-        yml_files.append(str(base_full_path))
-        full_path = base_full_path
+        for flat_key in list_ensure:
+            flat_value = self._ensure_list(flat_d, flat_key, implicit_convert)
+            flat_d[flat_key] = flat_value
 
-        for profile in profiles:
-            name =  base_name+'-'+profile+base_suffix
-            full_path = full_path.with_name(name)
-            yml_files.append(str(full_path))
+    def _ensure_list(self, flat_d, key, implicit_convert=True):
+        def _ensure_list(v):
+            value = str(v)
+            elements = value.split(",")
 
+            # empty string will become null
+            elements = [None if is_empty(value) else value for value in elements]
+            ret = [mask_value(value, implicit_convert=implicit_convert) for value in elements]
 
-        dd = ymlparsers.load([*yml_files, sys_buf.getvalue()])
+            return ret
 
+        if flat_d is None:
+            flat_d = {}
+        val = flat_d.get(key, None)
+        b = _bool_is_empty(val)
+        if b:
+            if key in flat_d.keys():
+                # we have key:None?
+                return [val]
+            return []
+        return _ensure_list(val)
 
-    return dd
+    flat_keys = flat_keys
+
+    def _parse_sys_args(self, argumentParser=None, args=None):
+        if ymlparsers.HiYaPyCo.jinja2ctx is None:
+            raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
+
+        params, sys_d0 = self.uparse_sys_args(argumentParser, args)
+        config_file = params.config_file
+
+        full_path = Path(config_file).resolve()  # relative to cwd
+
+        with ymlparsers.DisableVarSubst():
+            default_d = ymlparsers.load([str(full_path)])
+
+        white_list = self._parse_white_list(default_d)
+        sys_d = self._get_white_listed(sys_d0, white_list)
+
+        profiles = self._parse_profiles(sys_d, default_d)
+
+        list_ensure = self._parse_list_ensure(sys_d, default_d)
+
+        self._do_ensure_list(sys_d, list_ensure)
+
+        dd = self.flat_keys(sys_d)
+        return dd, profiles, white_list, list_ensure, full_path
+
+    def parse_config(self, argumentParser=None, args=None):
+        sys_d, profiles, white_list, list_ensure, config_file = self._parse_sys_args(argumentParser=argumentParser,
+                                                                                args=args)
+        dd = self._parse_yml(sys_d, profiles, config_file)
+
+        # merge all to dd
+        general_d = dd.setdefault(conf.GENERAL_KEY, OrderedDict())
+        config_d = general_d.setdefault(conf.CONFIG_KEY, OrderedDict())
+        config_d[conf.FILE_LEY] = str(config_file)
+
+        general_d[conf.PROFILES_KEY] = profiles
+        general_d[conf.WHITE_LIST_KEY] = white_list
+        general_d[conf.LIST_ENSURE_KEY] = list_ensure
+
+        general_d = dd.setdefault(conf.GENERAL_KEY, OrderedDict())
+        config_d = general_d.setdefault(conf.CONFIG_KEY, OrderedDict())
+        config_d[conf.FILE_LEY] = str(config_file)
+
+        general_d[conf.PROFILES_KEY] = profiles
+        general_d[conf.WHITE_LIST_KEY] = white_list
+        general_d[conf.LIST_ENSURE_KEY] = list_ensure
+        return dd
 
 
 def parse_config(argumentParser=None, args=None):
@@ -311,17 +377,10 @@ def parse_config(argumentParser=None, args=None):
     """
     if ymlparsers.HiYaPyCo.jinja2ctx is None:
         raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
-    sys_d, profiles, white_list, list_ensure, config_file = _parse_sys_args(argumentParser=argumentParser, args=args)
-    dd = _parse_yml(sys_d, profiles, config_file)
 
-    #merge all to dd
-    general_d = dd.setdefault(conf.GENERAL_KEY, OrderedDict())
-    config_d = general_d.setdefault(conf.CONFIG_KEY, OrderedDict())
-    config_d[conf.FILE_LEY] = str(config_file)
-
-    general_d[conf.PROFILES_KEY] = profiles
-    general_d[conf.WHITE_LIST_KEY] = white_list
-    general_d[conf.LIST_ENSURE_KEY] = list_ensure
-
-
+    parser = default_parser_cls()
+    dd = parser.parse_config(argumentParser=argumentParser, args=args)
     return dd
+
+#you can modify this class to your custom one
+default_parser_cls = AppConfParser

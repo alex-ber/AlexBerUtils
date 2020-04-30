@@ -6,9 +6,9 @@ import copy
 
 logger = logging.getLogger(__name__)
 from alexber.utils.init_app_conf import mask_value, merge_list_value_in_dicts, flat_keys, \
-    _do_ensure_list, _parse_white_list_implicitely, _parse_profiles, _parse_white_list, _parse_list_ensure, \
-    _get_white_listed, _parse_sys_args, _parse_yml, parse_config
+    parse_config
 import alexber.utils.init_app_conf as app_conf
+from alexber.utils.init_app_conf import default_parser_cls as pcls
 from alexber.utils.parsers import is_empty
 from tests.utils.ymlparsers_test import ymlparsersSetup, ymlparsersCleanup, exp_config_d
 from importlib.resources import path
@@ -247,7 +247,7 @@ def test_flat_keys_intented(request, mocker):
              'app.as_str.list_empty_str': '',
              }
     list_ensure = [key for key in sys_d.keys() if 'scalar' not in key]
-    _do_ensure_list(sys_d, list_ensure)
+    pcls()._do_ensure_list(sys_d, list_ensure)
     default_d = flat_keys(sys_d)
 
     check_exp_sys(exp_d, default_d)
@@ -268,7 +268,7 @@ def test_flat_keys_whitelist(request, mocker):
              'db.unused': 'localhost',
              }
     list_ensure = [key for key in sys_d.keys() if 'scalar' not in key]
-    _do_ensure_list(sys_d, list_ensure)
+    pcls()._do_ensure_list(sys_d, list_ensure)
     default_d = flat_keys(sys_d, white_list_flat_keys=['general', 'app.as_str'])
 
     check_exp_sys(exp_d, default_d)
@@ -287,7 +287,7 @@ def test_flat_keys_whitelist_implicit_convert(request, mocker):
              'db.unused': 'localhost',
              }
     list_ensure = [key for key in sys_d.keys() if 'scalar' not in key]
-    _do_ensure_list(sys_d, list_ensure, implicit_convert=False)
+    pcls()._do_ensure_list(sys_d, list_ensure, implicit_convert=False)
     default_d = flat_keys(sys_d, white_list_flat_keys=['general', 'app.as_str'], implicit_convert=False)
 
     check_exp_sys(exp_d, default_d)
@@ -309,7 +309,7 @@ def test_flat_keys_whitelist_implicit_convert(request, mocker):
 def test_parse_profiles(request, mocker, exp_profiles, sys_d, default_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
-    profiles = _parse_profiles(sys_d, default_d)
+    profiles = pcls()._parse_profiles(sys_d, default_d)
     pytest.assume(exp_profiles == profiles)
 
 
@@ -329,7 +329,7 @@ def test_parse_profiles(request, mocker, exp_profiles, sys_d, default_d):
 
 def test_parse_white_list_implicitely(request, mocker, exp_value, default_d):
     logger.info(f'{request._pyfuncitem.name}()')
-    result = _parse_white_list_implicitely(default_d)
+    result = pcls()._parse_white_list_implicitely(default_d)
     pytest.assume(exp_value==result)
 
 
@@ -348,7 +348,7 @@ def test_parse_white_list_implicit(request, mocker, default_d):
     logger.info(f'{request._pyfuncitem.name}()')
     #whiteListSysOverride
 
-    white_list = _parse_white_list(default_d)
+    white_list = pcls()._parse_white_list(default_d)
     length = 0 if white_list is None else len(white_list)
     pytest.assume(length==2)
     pytest.assume('general' in white_list)
@@ -362,7 +362,7 @@ def test_parse_white_list_explicit(request, mocker):
                    'ignoredKey': 1,
                }}
 
-    white_list = _parse_white_list(default_d)
+    white_list = pcls()._parse_white_list(default_d)
     length = 0 if white_list is None else len(white_list)
     pytest.assume(length==1)
     pytest.assume('general' in white_list)
@@ -380,7 +380,7 @@ def test_parse_white_list_explicit2(request, mocker):
                 }
     }
 
-    white_list = _parse_white_list(default_d)
+    white_list = pcls()._parse_white_list(default_d)
     length = 0 if white_list is None else len(white_list)
     pytest.assume(length==2)
     pytest.assume('general' in white_list)
@@ -394,7 +394,7 @@ def test_parse_list_ensure(request, mocker):
                                           'general.listEnsure', 'general.whiteListSysOverride',
                                           'app.check_list']}}
 
-    list_ensure = _parse_list_ensure(sys_d, default_d)
+    list_ensure = pcls()._parse_list_ensure(sys_d, default_d)
     length = 0 if list_ensure is None else len(list_ensure)
     pytest.assume(length==1)
     pytest.assume('app.check_list' in list_ensure)
@@ -405,7 +405,7 @@ def test_parse_list_ensure_empty(request, mocker):
     sys_d = {}
     default_d={'general': {'listEnsure': []}}
 
-    list_ensure = _parse_list_ensure(sys_d, default_d)
+    list_ensure = pcls()._parse_list_ensure(sys_d, default_d)
     length = 0 if list_ensure is None else len(list_ensure)
     pytest.assume(length==0)
 
@@ -417,7 +417,7 @@ def test_parse_list_ensure2(request, mocker):
                                           'general.listEnsure', 'general.whiteListSysOverride',
                                           'app.check_list']}}
 
-    list_ensure = _parse_list_ensure(sys_d, default_d)
+    list_ensure = pcls()._parse_list_ensure(sys_d, default_d)
     length = 0 if list_ensure is None else len(list_ensure)
     pytest.assume(length==1)
     pytest.assume('app.white_list' in list_ensure)
@@ -425,7 +425,7 @@ def test_parse_list_ensure2(request, mocker):
 def test_get_white_listed_empty_src_d(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     exp_d = {}
-    d = _get_white_listed({}, {'a':'b'})
+    d = pcls()._get_white_listed({}, {'a':'b'})
     pytest.assume(exp_d==d)
 
 def test_get_white_listed_empty_white_list_flat_keys(request, mocker):
@@ -444,7 +444,7 @@ def test_get_white_listed_empty_white_list_flat_keys(request, mocker):
              'db.unused': 'localhost',
              }
 
-    d = _get_white_listed(sys_d, None)
+    d = pcls()._get_white_listed(sys_d, None)
     pytest.assume(exp_d==d)
 
 def test_get_white_listed(request, mocker):
@@ -464,7 +464,7 @@ def test_get_white_listed(request, mocker):
 
     white_list_flat_keys = ['app', 'general']
 
-    d = _get_white_listed(sys_d, white_list_flat_keys)
+    d = pcls()._get_white_listed(sys_d, white_list_flat_keys)
     pytest.assume(exp_d==d)
 
 
@@ -505,7 +505,7 @@ def test_uparse_sys_args(request, mocker, ymlparsersSetup, ymlparsersCleanup):
             .split()
 
 
-        dd, profiles, _, list_ensure, _ = _parse_sys_args(None, argsv)
+        dd, profiles, _, list_ensure, _ = pcls()._parse_sys_args(None, argsv)
         dd['general']['profiles'] = profiles
         dd['general']['listEnsure'] = list_ensure
 
@@ -553,7 +553,7 @@ def test_uparse_yml(request, mocker, ymlparsersSetup, ymlparsersCleanup):
 
     pck = '.'.join(['tests_data', __package__, 'initappconf'])
     with path(pck, 'config.yml') as full_path:
-        dd = _parse_yml(sys_d, ['dev'], config_file=full_path)
+        dd = pcls()._parse_yml(sys_d, ['dev'], config_file=full_path)
         del dd['general']['log']['handlers']
         del dd['general']['log']['root']['handlers']
         pytest.assume(expdd==dd)
