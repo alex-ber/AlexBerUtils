@@ -5,6 +5,7 @@ from pathlib import Path
 
 from alexber.utils.deploys import split_path, load_config, add_to_zip_copy_function
 from tests.utils.ymlparsers_test import ymlparsersSetup, ymlparsersCleanup, exp_config_d
+from tests.utils.init_app_conf_test import initappconfFixture
 import copy
 import tempfile
 import zipfile
@@ -103,7 +104,7 @@ def check_config_yml(default_d, exp_d):
     pytest.assume('inner_host_name' in cli_template)
     pytest.assume(exp_d == default_d)
 
-def test_load_config(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
+def test_load_config(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFixture, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
     pck = '.'.join(['tests_data', __package__, 'ymlparsers'])

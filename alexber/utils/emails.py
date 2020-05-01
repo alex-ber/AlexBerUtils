@@ -1,5 +1,7 @@
 import io as _io
 import logging
+from logging.handlers import SMTPHandler as _logging_SMTPHandler
+from logging.handlers import MemoryHandler as _logging_MemoryHandler
 import smtplib
 from contextlib import contextmanager
 from email.message import EmailMessage as _EmailMessage
@@ -18,7 +20,7 @@ from ..utils import get_threadlocal_var, threadlocal_var
 
 from . ymlparsers import convert_template_to_string_format as _convert_template_to_string_format
 
-class SMTPHandler(logging.handlers.SMTPHandler):
+class SMTPHandler(_logging_SMTPHandler):
     def __init__(self, *args, **kwargs):
         smpt_cls_name = kwargs.pop('smptclsname', default_smpt_cls_name)
         self.smpt_cls = getattr(smtplib, smpt_cls_name)
@@ -53,7 +55,7 @@ class SMTPHandler(logging.handlers.SMTPHandler):
         except Exception:
             self.handleError(record)
 
-class BaseOneMemoryHandler(logging.handlers.MemoryHandler):
+class BaseOneMemoryHandler(_logging_MemoryHandler):
 
     def __init__(self, *args, **kwargs):
         subject = kwargs.pop('subject')
@@ -119,7 +121,8 @@ class BaseOneMemoryHandler(logging.handlers.MemoryHandler):
         Append the record. If shouldFlush() tells us to, call flush() to process
         the buffer.
         """
-        buffer = get_threadlocal_var(thread_locals, 'buffer')
+        buffer = threadlocal_var(thread_locals, 'buffer', lambda: [])
+
 
         buffer.append(record)
         if self.shouldFlush(record):
@@ -136,7 +139,7 @@ class BaseOneMemoryHandler(logging.handlers.MemoryHandler):
         """
         self.acquire()
 
-        buffer = get_threadlocal_var(thread_locals, 'buffer')
+        buffer = threadlocal_var(thread_locals, 'buffer', lambda: [])
 
         try:
             if self.target and buffer:
