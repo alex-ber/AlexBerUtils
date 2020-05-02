@@ -6,7 +6,11 @@ from pathlib import Path
 import io as _io
 from alexber.utils.parsers import is_empty, safe_eval as _convert, parse_boolean, ArgumentParser, \
     parse_sys_args as uparse_sys_args
-import alexber.utils.ymlparsers as ymlparsers
+try:
+    import alexber.utils.ymlparsers as ymlparsers
+except ImportError:
+    pass
+
 
 
 class conf(object):

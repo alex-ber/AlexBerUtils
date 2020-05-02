@@ -46,11 +46,11 @@ python3 -m pip install .[md]   # installs multidispatcher (used in method_overlo
 python3 -m pip install .[fabric]   # installs fabric (used in fabs.py)
 ```
 ```bash
-python3 -m pip install .[yaml]   # installs Yml related dependencies (used in ymlparsers.py, 
+python3 -m pip install .[yml]   # installs Yml related dependencies (used in ymlparsers.py, 
                                  # init_app_conf.py, emails.py)
 ```
 ```bash
-python3 -m pip install .[pydotenv]   # installs pydotenv (optionally used in deploys.py)
+python3 -m pip install .[env]   # installs pydotenv (optionally used in deploys.py)
 ```
 
 #### Alternatively you install install from requirements file:
@@ -67,11 +67,11 @@ python3 -m pip install -r requirements-md.txt   # installs multidispatcher (used
 python3 -m pip install -r requirements-fabric.txt   # installs fabric (used in fabs.py)
 ```
 ```bash
-python3 -m pip install -r requirements-yaml.txt   # installs Yml related dependencies (used in ymlparsers.py 
+python3 -m pip install -r requirements-yml.txt   # installs Yml related dependencies (used in ymlparsers.py 
                                                   # init_app_conf.py, emails.py)
 ```
 ```bash
-python3 -m pip install -r requirements-pydotenv.txt   # installs pydotenv (optionally used in deploys.py)
+python3 -m pip install -r requirements-env.txt   # installs pydotenv (optionally used in deploys.py)
 ```
 
 

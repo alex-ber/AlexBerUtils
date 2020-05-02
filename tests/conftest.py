@@ -9,11 +9,20 @@ import pytest
 ismultidispatchfound = False
 try:
     # pip install multidispatch==0.2
+    #python3 -m pip install .[md]
     from multidispatch import multimethod
     ismultidispatchfound = True
 except ImportError:
     pass
 
+isyamlrelatedfound = False
+try:
+    #python3 -m pip install .[yaml]
+    import alexber.utils.ymlparsers_extra as ymlparsers_extra
+    if ymlparsers_extra._isHiYaPyCoAvailable and ymlparsers_extra._isJinja2DefaultAvailable:
+        isyamlrelatedfound = True
+except ImportError:
+    pass
 
 
 #see https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
@@ -38,4 +47,7 @@ def skip_tests(config=None, items=None, keyword=None, reason=None):
 def pytest_collection_modifyitems(config, items):
     if not ismultidispatchfound:
         skip_tests(items=items, keyword="md", reason="multidispatch is not installed..")
+
+    if not isyamlrelatedfound:
+        skip_tests(items=items, keyword="yaml", reason="yaml is not installed..")
 

@@ -1,7 +1,11 @@
 from collections import OrderedDict
 from pathlib import Path
 from collections import deque
-import alexber.utils.ymlparsers as ymlparsers
+try:
+    import alexber.utils.ymlparsers as ymlparsers
+except ImportError:
+    pass
+
 #ymlparsers.initConfig()
 from .init_app_conf import merge_list_value_in_dicts, conf
 from .parsers import is_empty, parse_sys_args

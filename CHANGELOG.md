@@ -20,7 +20,7 @@ reproducible installation requirements.txt (exact versions, all, including trans
 
 - Added req-fabric.txt, requirements-fabric.txt - Fabric, used in `fabs` module.
 
-- Added req-yaml.txt, requirements-fabric.txt - Yaml-relaated dependencies, used in ymlparsers.py 
+- Added req-yml.txt, requirements-fabric.txt - Yml-relaated dependencies, used in ymlparsers.py 
 and in init_app_conf.py.
 
 Main dependency is HiYaPyCo. I'm using feature that is availlable in the minimal version.
@@ -32,7 +32,7 @@ HiYaPyCo depends upon PyYAML and Jinja2. Limitations for Jinja2 is from HiYaPyCo
 - Added `inspects.has_method`(cls, methodName). Check if class cls has method with name methodName directly, 
 or in one of it's super-classes.
 
-- Added `ymlparsers` module - `load`/`safe_dump` a Hierarchical Yaml files. This is essentially wrapper arround HiYaPyCo project with streamlined 
+- Added `ymlparsers` module - `load`/`safe_dump` a Hierarchical Yml files. This is essentially wrapper arround HiYaPyCo project with streamlined 
 and extended API and couple of work-arrounds. 
 
 Note: this module doesn't use any package-level variables in hiYaPyCo module. 

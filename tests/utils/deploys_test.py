@@ -10,7 +10,10 @@ import copy
 import tempfile
 import zipfile
 import shutil
-import alexber.utils.ymlparsers as ymlparsers
+try:
+    import alexber.utils.ymlparsers as ymlparsers
+except ImportError:
+    pass
 logger = logging.getLogger(__name__)
 
 class TestSplitPath(object):
@@ -85,7 +88,7 @@ class TestSplitPath(object):
             pytest.assume(duplicate_dir_base==first_part)
             pytest.assume('config.yml'==str(second_part))
 
-
+@pytest.mark.yaml
 def test_load_config_not_init(request):
     logger.info(f'{request._pyfuncitem.name}()')
     with pytest.raises(ValueError, match="initConfig"):
@@ -104,6 +107,7 @@ def check_config_yml(default_d, exp_d):
     pytest.assume('inner_host_name' in cli_template)
     pytest.assume(exp_d == default_d)
 
+@pytest.mark.yaml
 def test_load_config(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFixture, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -123,7 +127,7 @@ def test_load_config(request, mocker, ymlparsersSetup, ymlparsersCleanup, initap
 
     check_config_yml(default_d, exp_d)
 
-
+@pytest.mark.yaml
 def test_add_to_zip_copy_function(request, mocker,  ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
     split_dirname = 'ymlparsers'

@@ -9,7 +9,7 @@ except ImportError:
 
     warning = (
         "You appear to be missing some optional dependencies (jinja2);"
-        "please 'pip3 install alex-ber-utils[yaml]'."
+        "please 'pip3 install alex-ber-utils[yml]'."
     )
     warnings.warn(warning, ImportWarning)
     raise
@@ -21,7 +21,7 @@ except ImportError:
 
     warning = (
         "You appear to be missing some optional dependencies (hiyapyco);"
-        "please 'pip3 install alex-ber-utils[yaml]'."
+        "please 'pip3 install alex-ber-utils[yml]'."
     )
     warnings.warn(warning, ImportWarning)
     raise
@@ -32,8 +32,8 @@ except AttributeError as e:
     import warnings
 
     warning = (
-        "You appear to be missing some optional yaml parsing dependencies (hiyapyco should be at least 0.4.16);"
-        "please 'pip3 install alex-ber-utils[yaml]'."
+        "You appear to be missing some optional yml parsing dependencies (hiyapyco should be at least 0.4.16);"
+        "please 'pip3 install alex-ber-utils[yml]'."
     )
     warnings.warn(warning, ImportWarning)
     raise ImportError(str(e)) from e
@@ -111,7 +111,7 @@ def safe_dump(data, stream=None, **kwds):
 
 def load(*args, **kwds):
     """
-    Load a Hierarchical Yaml files
+    Load a Hierarchical yml files
     --------------------------------------
 
     Note: Before calling this method, please ensure that you've called initConfig() method first.
@@ -122,13 +122,13 @@ def load(*args, **kwds):
     with ymlparsers.DisableVarSubst():
         d = ymlparsers.load([str(full_path)])
 
-    :param args: YAMLfile(s)
+    :param args: YMLfile(s)
     :param kwargs:
       * method: one of hiyapyco.METHOD_SIMPLE | hiyapyco.METHOD_MERGE | hiyapyco.METHOD_SUBSTITUTE
       * mergelists: boolean (default: True) try to merge lists (only makes sense if hiyapyco.METHOD_MERGE or hiyapyco.METHOD_SUBSTITUTE)
       * interpolate: boolean (default: False)
       * castinterpolated: boolean (default: False) try to cast values after interpolating
-      * encoding: (default: 'utf-8') encoding used to read yaml files
+      * encoding: (default: 'utf-8') encoding used to read yml files
       * loglevel: one of  the valid levels from the logging module
       * failonmissingfiles: boolean (default: True)
       * loglevelmissingfiles

@@ -27,9 +27,9 @@ tests_require = get_content('requirements-tests.txt')
 extras = {
     'md': get_content('req-md.txt'),
     'fabric' : get_content('req-fabric.txt'),
-    'yaml' : get_content('req-yaml.txt'),
-    'yml' : get_content('req-yaml.txt'),
-    'pydotenv' : get_content('req-pydotenv.txt'),
+    'yaml' : get_content('req-yml.txt'),
+    'yml' : get_content('req-yml.txt'),
+    'env' : get_content('req-env.txt'),
     'tests': tests_require
 }
 
