@@ -17,6 +17,7 @@ from alexber.utils.inspects import has_method
 import alexber.utils.ymlparsers as ymlparsers
 from alexber.utils.ymlparsers import HiYaPyCo
 from alexber.utils.parsers import is_empty
+from alexber.utils.ymlparsers_extra import convert_template_to_string_format
 
 from jinja2 import DebugUndefined, StrictUndefined, Environment
 from hiyapyco import METHOD_SUBSTITUTE, METHOD_SIMPLE
@@ -405,37 +406,6 @@ class TestDisableVarSubst(object):
         pytest.assume(jinja2ctx_mock.block_start_string == orig_jinja2ctx.block_start_string)
         pytest.assume(jinja2ctx_mock.block_end_string == orig_jinja2ctx.block_end_string)
 
-@pytest.mark.parametrize(
-     'template, exp_value',
-
-    [
-        ('ping {{app.inner_host_name}}', 'ping {app_inner_host_name}'),
-        ('Hi, {{user}}. My name is {{app.first.name}}. Good Luck!', 'Hi, {user}. My name is {app_first_name}. Good Luck!'),
-        ('plain text', 'plain text'),
-        ('First. Second.', 'First. Second.'),
-        ('{{name}}', '{name}'),
-        ('{{app,name}}', '{app,name}'),
-        ('{{name}}.', '{name}.'),
-        ('{{app,name}}.', '{app,name}.'),
-        ('', ''),
-        (None, None),
-
-
-    ]
-)
-
-def test_convert_template_to_string_format(request, mocker, ymlparsersSetup, ymlparsersCleanup, template, exp_value):
-    logger.info(f'{request._pyfuncitem.name}()')
-    mock_lock = create_mock_lock(mocker)
-    mocker.patch.object(HiYaPyCo, 'jinja2Lock', new=mock_lock, spec_set=True)
-
-    value = ymlparsers.convert_template_to_string_format(template)
-    pytest.assume(exp_value==value)
-
-    if exp_value is not None:
-        pytest.assume(mock_lock.acquire.call_count > 0)
-        pytest.assume(mock_lock.release.call_count == mock_lock.acquire.call_count)
-
 
 
 def test_ymlparsers_load_single_no_substition(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
@@ -491,7 +461,7 @@ def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup
     pytest.assume(exp_host_name==inner_host_name)
 
     exp_cli_template = exp_app_d.get('cli_template', None)
-    exp_cli_template = ymlparsers.convert_template_to_string_format(exp_cli_template)
+    exp_cli_template = convert_template_to_string_format(exp_cli_template)
 
     exp_cli_template = exp_cli_template.format(app_inner_host_name=exp_host_name)
     exp_app_d['cli_template']=exp_cli_template
@@ -659,7 +629,7 @@ def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup
     pytest.assume(exp_host_name==inner_host_name)
 
     exp_cli_template = exp_app_d.get('cli_template', None)
-    exp_cli_template = ymlparsers.convert_template_to_string_format(exp_cli_template)
+    exp_cli_template = convert_template_to_string_format(exp_cli_template)
 
     exp_cli_template = exp_cli_template.format(app_inner_host_name=exp_host_name)
     exp_app_d['cli_template']=exp_cli_template
@@ -701,7 +671,7 @@ def _run_with_substition(content, exp_config_d, stop):
         pytest.assume(exp_host_name==inner_host_name)
 
         exp_cli_template = exp_app_d.get('cli_template', None)
-        exp_cli_template = ymlparsers.convert_template_to_string_format(exp_cli_template)
+        exp_cli_template = convert_template_to_string_format(exp_cli_template)
 
         exp_cli_template = exp_cli_template.format(app_inner_host_name=exp_host_name)
         exp_app_d['cli_template'] = exp_cli_template
@@ -731,7 +701,7 @@ def test_ymlparsers_load_it(request, mocker, ymlparsersSetup, ymlparsersCleanup,
 
     exp_host_name = exp_app_d.get('inner_host_name', None)
     exp_cli_template = exp_app_d.get('cli_template', None)
-    exp_cli_template = ymlparsers.convert_template_to_string_format(exp_cli_template)
+    exp_cli_template = convert_template_to_string_format(exp_cli_template)
 
     exp_cli_template = exp_cli_template.format(app_inner_host_name=exp_host_name)
     exp_app_d['cli_template'] = exp_cli_template

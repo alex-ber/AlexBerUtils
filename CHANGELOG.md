@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## [Unrelased]
-## [0.4.2] - TBD
+
+
+## [0.5.1-alpha] - 02.05.2020
 ### Added 
 
 - `mains` module explanation article https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf is published.
@@ -18,11 +20,14 @@ reproducible installation requirements.txt (exact versions, all, including trans
 
 - Added req-fabric.txt, requirements-fabric.txt - Fabric, used in `fabs` module.
 
-- Added req-yaml.txt, requirements-fabric.txt - Yaml-realated dependencies: 
+- Added req-yaml.txt, requirements-fabric.txt - Yaml-relaated dependencies, used in ymlparsers.py 
+and in init_app_conf.py.
 
 Main dependency is HiYaPyCo. I'm using feature that is availlable in the minimal version.
 
 HiYaPyCo depends upon PyYAML and Jinja2. Limitations for Jinja2 is from HiYaPyCo project.
+
+- Added req-pydotenv.txt, requirements-pydotenv.txt - pydotenv, optionally used in deploys.py.
 
 - Added `inspects.has_method`(cls, methodName). Check if class cls has method with name methodName directly, 
 or in one of it's super-classes.
@@ -38,6 +43,8 @@ They can be overridden in `initConfig()` function.
 It is mandatory to call `initConfig()` function before any method in `ymlparsers` module.   
 
 - Added `pareser.parse_sys_args` function parses command line arguments.
+
+- Added `deploys`
 
  
 ### Changed

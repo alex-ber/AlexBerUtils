@@ -4,8 +4,6 @@ try:
         warnings.filterwarnings("ignore", message=r'.*?collections\.abc.*?', module=r'.*?jinja2.*?')
         from jinja2 import Environment as _Environment, \
                         DebugUndefined as _DebugUndefined
-        from jinja2.defaults import VARIABLE_START_STRING, VARIABLE_END_STRING
-
 except ImportError:
     import warnings
 
@@ -30,7 +28,7 @@ except ImportError:
 
 try:
     _hiyapyco.METHOD_SUBSTITUTE
-except AttributeError:
+except AttributeError as e:
     import warnings
 
     warning = (
@@ -38,8 +36,7 @@ except AttributeError:
         "please 'pip3 install alex-ber-utils[yaml]'."
     )
     warnings.warn(warning, ImportWarning)
-    raise
-
+    raise ImportError(str(e)) from e
 
 import io as _io
 import os as _os
@@ -167,79 +164,51 @@ def as_str(data, **kwds):
 
 
 
-def _normalize_var_name(text, start_del, end_del):
-    """
-    Search&replace all pairs of (start_del, end_del) with pairs of ({, }).
-
-    :param text: str to normalize
-    :param start_del: delimiter that indicates start of variable name, typically {{
-    :param end_del: delimiter that indicates end of variable name, typically }}
-    :return:
-    """
-
-    if start_del is None or start_del not in text or end_del not in text:
-        return text
-
-    first_ind = 0
-    len_end_del = len(end_del)
-
-    while True:
-        first_ind = text.find(start_del, first_ind)
-        if first_ind < 0:
-            break
-        last_ind =  text.find(end_del, first_ind)
-        var = text[first_ind:last_ind+len_end_del]
-        var = var.replace('.', '_')
-        #text[first_ind:last_ind] = var
-        text = text[:first_ind]+var+text[last_ind+len_end_del:]
-        first_ind = last_ind+len_end_del
-    return text
-
-
-def convert_template_to_string_format(template, jinja2ctx=None, jinja2Lock=None):
-    """
-    This is utility method that make template usable with string format
-
-
-    Note: Before calling this method, it is better to call initConfig() method first.
-    But this is not stickily required.
-
-    :param template: str, typically with {{my_variable}}
-    :param jinja2ctx:  Jinja2 Environment that is consult what is delimter for variable's names.
-                       if is not provided, HiYaPyCo.jinja2ctx is used. See initConfig().
-                       if is not provided, than defaults are used (see jinja2.defaults).
-    :param jinja2Lock: Lock to be used to atomically get variable_start_string and variable_end_string from jinja2ctx.
-                       if is not provided, HiYaPyCo.jinja2Lock is used.. See initConfig().
-                       if is not provided, than defaults are used (see jinja2.defaults).
-    :return: template: str with {my_variable}
-    """
-    if template is None:
-        return None
-
-    if jinja2ctx is None:
-        jinja2ctx  = HiYaPyCo.jinja2ctx
-
-    if jinja2ctx is None:
-        default_start = VARIABLE_START_STRING
-        default_end = VARIABLE_END_STRING
-    else:
-        if jinja2Lock is None:
-            jinja2Lock = HiYaPyCo.jinja2Lock
-        if jinja2Lock is None:
-            raise ValueError("Unexpectedly jinja2Lock is None")
-        with jinja2Lock:
-            default_start = jinja2ctx.variable_start_string
-            default_end = jinja2ctx.variable_end_string
-
-
-    template = _normalize_var_name(template, default_start, default_end)
-
-    ret = template.replace(f'{default_start} ', f'{default_start}') \
-        .replace(f'{default_start}', '{') \
-        .replace(f' {default_end}', f'{default_end}') \
-        .replace(f'{default_end}', '}')
-    return ret
-
+#
+# def convert_template_to_string_format(template, jinja2ctx=None, jinja2Lock=None):
+#     """
+#     This is utility method that make template usable with string format
+#
+#
+#     Note: Before calling this method, it is better to call initConfig() method first.
+#     But this is not stickily required.
+#
+#     :param template: str, typically with {{my_variable}}
+#     :param jinja2ctx:  Jinja2 Environment that is consult what is delimter for variable's names.
+#                        if is not provided, HiYaPyCo.jinja2ctx is used. See initConfig().
+#                        if is not provided, than defaults are used (see jinja2.defaults).
+#     :param jinja2Lock: Lock to be used to atomically get variable_start_string and variable_end_string from jinja2ctx.
+#                        if is not provided, HiYaPyCo.jinja2Lock is used.. See initConfig().
+#                        if is not provided, than defaults are used (see jinja2.defaults).
+#     :return: template: str with {my_variable}
+#     """
+#     if template is None:
+#         return None
+#
+#     if jinja2ctx is None:
+#         jinja2ctx  = HiYaPyCo.jinja2ctx
+#
+#     if jinja2ctx is None:
+#         default_start = VARIABLE_START_STRING
+#         default_end = VARIABLE_END_STRING
+#     else:
+#         if jinja2Lock is None:
+#             jinja2Lock = HiYaPyCo.jinja2Lock
+#         if jinja2Lock is None:
+#             raise ValueError("Unexpectedly jinja2Lock is None")
+#         with jinja2Lock:
+#             default_start = jinja2ctx.variable_start_string
+#             default_end = jinja2ctx.variable_end_string
+#
+#
+#     template = _normalize_var_name(template, default_start, default_end)
+#
+#     ret = template.replace(f'{default_start} ', f'{default_start}') \
+#         .replace(f'{default_start}', '{') \
+#         .replace(f' {default_end}', f'{default_end}') \
+#         .replace(f'{default_end}', '}')
+#     return ret
+#
 
 class DisableVarSubst(object):
     """

@@ -3,7 +3,7 @@ import logging
 from logging.handlers import SMTPHandler as _logging_SMTPHandler
 from logging.handlers import MemoryHandler as _logging_MemoryHandler
 import smtplib
-from contextlib import contextmanager
+import contextlib
 from email.message import EmailMessage as _EmailMessage
 from email.policy import SMTPUTF8 as _SMTPUTF8
 
@@ -15,10 +15,10 @@ default_smpt_port = None
 
 import threading
 thread_locals = threading.local()
-from ..utils import get_threadlocal_var, threadlocal_var
+from ..utils import threadlocal_var
 
 
-from . ymlparsers import convert_template_to_string_format as _convert_template_to_string_format
+from . ymlparsers_extra import convert_template_to_string_format as _convert_template_to_string_format
 
 class SMTPHandler(_logging_SMTPHandler):
     def __init__(self, *args, **kwargs):
@@ -187,7 +187,7 @@ class OneMemoryHandler(BaseOneMemoryHandler):
                                        'flushOnClose': flushOnClose})
 
 
-@contextmanager
+@contextlib.contextmanager
 def email_status(emailLogger, faildargs, successargs, logger=None, successkwargs={}, faildkwargs={}):
     try:
         yield emailLogger

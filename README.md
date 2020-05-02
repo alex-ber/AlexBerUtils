@@ -46,8 +46,8 @@ python3 -m pip install .[md]   # installs multidispatcher (used in method_overlo
 python3 -m pip install .[fabric]   # installs fabric (used in fabs.py)
 ```
 ```bash
-python3 -m pip install .[yaml]   # installs Yml related dependencies (used in ymlparsers.py 
-                                 # and in init_app_conf.py)
+python3 -m pip install .[yaml]   # installs Yml related dependencies (used in ymlparsers.py, 
+                                 # init_app_conf.py, emails.py)
 ```
 ```bash
 python3 -m pip install .[pydotenv]   # installs pydotenv (optionally used in deploys.py)
@@ -68,7 +68,7 @@ python3 -m pip install -r requirements-fabric.txt   # installs fabric (used in f
 ```
 ```bash
 python3 -m pip install -r requirements-yaml.txt   # installs Yml related dependencies (used in ymlparsers.py 
-                                                  # and in init_app_conf.py)
+                                                  # init_app_conf.py, emails.py)
 ```
 ```bash
 python3 -m pip install -r requirements-pydotenv.txt   # installs pydotenv (optionally used in deploys.py)
