@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 ## [Unrelased]
 
 
-## [0.5.1-alpha] - 02.05.2020
+## [0.5.1-alpha] - 03.05.2020
 ### Added 
 
 - `mains` module explanation article https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf is published.
@@ -42,9 +42,13 @@ They can be overridden in `initConfig()` function.
  
 It is mandatory to call `initConfig()` function before any method in `ymlparsers` module.   
 
+- Added `ymlparsers_extra` module. This module adopts its behavior dependent on availability of Python packages. 
+Contains `convert_template_to_string_format` method.
+This module will work if you have only standard Python package. You just can't change delimiters values.
+ 
 - Added `pareser.parse_sys_args` function parses command line arguments.
 
-- Added `deploys`
+
 
  
 ### Changed

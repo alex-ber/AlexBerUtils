@@ -162,54 +162,6 @@ def as_str(data, **kwds):
         safe_dump(data, stream=buf, **kwds)
         return buf.getvalue()
 
-
-
-#
-# def convert_template_to_string_format(template, jinja2ctx=None, jinja2Lock=None):
-#     """
-#     This is utility method that make template usable with string format
-#
-#
-#     Note: Before calling this method, it is better to call initConfig() method first.
-#     But this is not stickily required.
-#
-#     :param template: str, typically with {{my_variable}}
-#     :param jinja2ctx:  Jinja2 Environment that is consult what is delimter for variable's names.
-#                        if is not provided, HiYaPyCo.jinja2ctx is used. See initConfig().
-#                        if is not provided, than defaults are used (see jinja2.defaults).
-#     :param jinja2Lock: Lock to be used to atomically get variable_start_string and variable_end_string from jinja2ctx.
-#                        if is not provided, HiYaPyCo.jinja2Lock is used.. See initConfig().
-#                        if is not provided, than defaults are used (see jinja2.defaults).
-#     :return: template: str with {my_variable}
-#     """
-#     if template is None:
-#         return None
-#
-#     if jinja2ctx is None:
-#         jinja2ctx  = HiYaPyCo.jinja2ctx
-#
-#     if jinja2ctx is None:
-#         default_start = VARIABLE_START_STRING
-#         default_end = VARIABLE_END_STRING
-#     else:
-#         if jinja2Lock is None:
-#             jinja2Lock = HiYaPyCo.jinja2Lock
-#         if jinja2Lock is None:
-#             raise ValueError("Unexpectedly jinja2Lock is None")
-#         with jinja2Lock:
-#             default_start = jinja2ctx.variable_start_string
-#             default_end = jinja2ctx.variable_end_string
-#
-#
-#     template = _normalize_var_name(template, default_start, default_end)
-#
-#     ret = template.replace(f'{default_start} ', f'{default_start}') \
-#         .replace(f'{default_start}', '{') \
-#         .replace(f' {default_end}', f'{default_end}') \
-#         .replace(f'{default_end}', '}')
-#     return ret
-#
-
 class DisableVarSubst(object):
     """
     Use of this context manager disables variable substation in the load() function.

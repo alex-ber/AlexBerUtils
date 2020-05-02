@@ -1,3 +1,9 @@
+"""
+This module adopts its behavior dependent on availability of Python packages.
+
+Note: This module will work if you have only standard Python package. You just can't change delimiters values.
+"""
+
 import warnings
 
 try:
@@ -29,6 +35,7 @@ _VARIABLE_END_STRING = None
 
 
 def _init_globals():
+    #for unit-tests
     global _VARIABLE_START_STRING, _VARIABLE_END_STRING
 
     if _isJinja2DefaultAvailable:
@@ -82,7 +89,7 @@ def _normalize_var_name(text, start_del, end_del):
 
 def _convert_template_to_string_format(template, **kwargs):
     """
-    This is utility method that make template usable with string format
+    This is utility method that make template usable with string format.
 
 
     :param template: str, typically with {{my_variable}}
@@ -105,25 +112,63 @@ def _convert_template_to_string_format(template, **kwargs):
     return ret
 
 def convert_template_to_string_format(template, **kwargs):
+    """
+    This is utility method that make template usable with string format.
+
+    if both jinja2ctx and jinja2Lock are provided, than they are used to determine various delimiters
+    (jinja2Lock is used to read the values from jinja2ctx atomically).
+
+    if both jinja2ctx and jinja2Lock are not provided, than
+        If ymlparsers is usable (it's 3rd party dependencies are available, one if each is jinja2)
+        than it's jinja2ctx (Jinja2's Environment) will be consulted for the various delimiters.
+        If it is usable, but ymlparsers.initConfig() method wasn't called see next.
+        Otherwise, if jinja2 is available than we will use it's defaults for constricting Jinja2's Environment
+        for the various delimiters.
+        Otherwise, some sensible defaults (default values from some version of Jinja2) will be used.
+
+    You can't provide jinja2Lock without providing jinja2ctx (you can't provide your jinja2Lock for HiYaPyCo.jinja2ctx).
+
+    You can provide jinja2ctx without jinja2Lock. Than you will give up atomicity for determining various delimiters.
+
+    :param template: str, typically with {{my_variable}}
+    :param jinja2ctx:  Jinja2 Environment that is consulted what is delimiter for variable's names.
+                       if is not provided, HiYaPyCo.jinja2ctx is used. See ymlparsers.initConfig().
+                       if is not provided, than defaults are used (see jinja2.defaults).
+    :param jinja2Lock: Lock to be used to atomically get variable_start_string and variable_end_string from jinja2ctx.
+                       if is not provided, HiYaPyCo.jinja2Lock is used.. See ymlparsers.initConfig().
+    :return: template: str with {my_variable}
+    """
+
     if template is None:
         return None
 
     jinja2ctx = kwargs.pop('jinja2ctx', None)
     jinja2Lock = kwargs.pop('jinja2Lock', None)
-    is_not_passed_jinja2Lock = 'jinja2Lock' in kwargs
 
+    if _isHiYaPyCoAvailable and jinja2ctx is None and jinja2Lock is not None:
+        raise ValueError("You can't provide your jinja2Lock for HiYaPyCo.jinja2ctx")
 
     if _isHiYaPyCoAvailable and jinja2ctx is None:
         jinja2ctx  = HiYaPyCo.jinja2ctx
+        jinja2Lock = HiYaPyCo.jinja2Lock    #we should use HiYaPyCo.jinja2Lock for HiYaPyCo.jinja2ctx
 
+    #default_start, default_end
     if jinja2ctx is None:
-        default_start = _VARIABLE_START_STRING
-        default_end = _VARIABLE_END_STRING
+        if jinja2Lock is None:
+            default_start = _VARIABLE_START_STRING
+            default_end = _VARIABLE_END_STRING
+        else:
+            with jinja2Lock:
+                default_start = _VARIABLE_START_STRING
+                default_end = _VARIABLE_END_STRING
+
     else:
-        if _isHiYaPyCoAvailable and is_not_passed_jinja2Lock:
-            jinja2Lock = HiYaPyCo.jinja2Lock
+        if _isHiYaPyCoAvailable and HiYaPyCo.jinja2ctx is not None and HiYaPyCo.jinja2Lock is None:
+            raise ValueError('HiYaPyCo.jinja2ctx is not None, but HiYaPyCo.jinja2Lock is None')
 
         if jinja2Lock is None:
+            # jinja2ctx was provided, but jinja2Lock wasn't, it is ok
+            # (maybe jinja2ctx is local variable?)
             default_start = jinja2ctx.variable_start_string
             default_end = jinja2ctx.variable_end_string
         else:
