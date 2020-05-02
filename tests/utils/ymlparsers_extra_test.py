@@ -1,14 +1,15 @@
 import logging
 import pytest
-import alexber.utils.ymlparsers_extra as ymlparsers_extra
-from alexber.utils.ymlparsers_extra import convert_template_to_string_format, \
-    _convert_template_to_string_format as uconvert_template_to_string_format
+import alexber.utils._ymlparsers_extra as ymlparsers_extra
+from alexber.utils._ymlparsers_extra import _convert_template_to_string_format, \
+    __convert_template_to_string_format as uuconvert_template_to_string_format, \
+    format_template
 
 
 
 try:
     from .ymlparsers_test import ymlparsersSetup, ymlparsersCleanup, ymlparsers, create_mock_lock
-    from alexber.utils.ymlparsers_extra import HiYaPyCo
+    from alexber.utils._ymlparsers_extra import HiYaPyCo
 
     from jinja2 import Environment as _Environment, \
                  DebugUndefined as _DebugUndefined
@@ -59,35 +60,40 @@ def ymlparsersExtraFixture(request, mocker, ymlparsersSetup, ymlparsersCleanup):
     ]
 )
 
-def test_uconvert_template_to_string_format(request, mocker, template, exp_value):
+def test_uuconvert_template_to_string_format(request, mocker, template, exp_value):
     logger.info(f'{request._pyfuncitem.name}()')
 
-    value = uconvert_template_to_string_format(template,
-                                              default_start='{{',
-                                              default_end='}}'
-                                              )
+    value = uuconvert_template_to_string_format(template,
+                                                default_start='{{',
+                                                default_end='}}'
+                                                )
     pytest.assume(exp_value==value)
 
 
 
-def test_uconvert_template_to_string_format_undocumented1(request, mocker):
+def test_uuconvert_template_to_string_format_undocumented1(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     exp_value = 'ping {{app.inner_host_name}}'
-    value = uconvert_template_to_string_format(exp_value, default_start=None, default_end=None)
+    value = uuconvert_template_to_string_format(exp_value, default_start=None, default_end=None)
     pytest.assume(exp_value == value)
 
-def test_uconvert_template_to_string_format_undocumented2(request, mocker):
+def test_uuconvert_template_to_string_format_undocumented2(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     exp_value = 'ping {{app.inner_host_name}}'
-    value = uconvert_template_to_string_format(exp_value)
+    value = uuconvert_template_to_string_format(exp_value)
     pytest.assume(exp_value == value)
 
 
-def test_uconvert_is_used_in_convert_template_to_string_format(request, mocker):
+def test_uuconvert_is_used_in_uconvert_template_to_string_format(request, mocker, ymlparsersExtraFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
-    uconvert_mock=mocker.patch('alexber.utils.ymlparsers_extra._convert_template_to_string_format', autospec=True, spec_set=True)
-    convert_template_to_string_format('{{name}}')
+    uconvert_mock=mocker.patch('alexber.utils._ymlparsers_extra.__convert_template_to_string_format',
+                               side_effect=uuconvert_template_to_string_format, autospec=True, spec_set=True)
+
+    exp_value = '{name}'
+    template = '{{name}}'
+    value = _convert_template_to_string_format(template)
+    pytest.assume(exp_value == value)
     pytest.assume(uconvert_mock.call_count > 0)
 
 
@@ -98,12 +104,12 @@ def test_uconvert_is_used_in_convert_template_to_string_format(request, mocker):
                                                     (False, True),  #only Jinja2 avaialble
                                                     (True, False),  #can't really happen
                                                     ], indirect=True)
-def test_convert_template_to_string_format_minimal(request, mocker, ymlparsersExtraFixture):
+def test_uconvert_template_to_string_format_minimal(request, mocker, ymlparsersExtraFixture):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
     exp_value = '{name}'
     template = '{{name}}'
-    value = convert_template_to_string_format(template)
+    value = _convert_template_to_string_format(template)
     pytest.assume(exp_value == value)
 
 
@@ -111,7 +117,7 @@ def test_convert_template_to_string_format_minimal(request, mocker, ymlparsersEx
 @pytest.mark.parametrize('ymlparsersExtraFixture', [(False, True)  #only Jinja2 avaialble \
                                                     ], indirect = True)
 @pytest.mark.yml
-def test_convert_template_to_string_jinja2DefaultChanged(request, mocker, ymlparsersExtraFixture):
+def test_uconvert_template_to_string_jinja2DefaultChanged(request, mocker, ymlparsersExtraFixture):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
 
@@ -121,14 +127,14 @@ def test_convert_template_to_string_jinja2DefaultChanged(request, mocker, ymlpar
     ymlparsers_extra._init_globals()
     exp_value = '{name}'
     template = '1_name_1'
-    value = convert_template_to_string_format(template)
+    value = _convert_template_to_string_format(template)
     pytest.assume(exp_value == value)
 
 #isHiYaPyCoAvailable,isJinja2DefaultAvailable
 @pytest.mark.parametrize('ymlparsersExtraFixture', [(True, False)
                                                     ], indirect = True)
 @pytest.mark.yml
-def test_convert_template_to_string_HiYaPyCoDefault(request, mocker, ymlparsersExtraFixture):
+def test_uconvert_template_to_string_HiYaPyCoDefault(request, mocker, ymlparsersExtraFixture):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
     ymlparsers.initConfig()
@@ -144,7 +150,7 @@ def test_convert_template_to_string_HiYaPyCoDefault(request, mocker, ymlparsersE
 
     exp_value = '{name}'
     template = '{{name}}'
-    value = convert_template_to_string_format(template)
+    value = _convert_template_to_string_format(template)
     pytest.assume(exp_value == value)
 
     pytest.assume(mock_lock.acquire.call_count > 0)
@@ -158,7 +164,7 @@ def test_convert_template_to_string_HiYaPyCoDefault(request, mocker, ymlparsersE
 @pytest.mark.parametrize('ymlparsersExtraFixture', [(True, False)
                                                     ], indirect = True)
 @pytest.mark.yml
-def test_convert_template_to_string_HiYaPyCoDefaultChanged(request, mocker, ymlparsersExtraFixture):
+def test_uconvert_template_to_string_HiYaPyCoDefaultChanged(request, mocker, ymlparsersExtraFixture):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
 
@@ -175,7 +181,7 @@ def test_convert_template_to_string_HiYaPyCoDefaultChanged(request, mocker, ymlp
 
     exp_value = '{name}'
     template = '2_name_2'
-    value = convert_template_to_string_format(template)
+    value = _convert_template_to_string_format(template)
     pytest.assume(exp_value == value)
 
     pytest.assume(mock_lock.acquire.call_count > 0)
@@ -185,7 +191,7 @@ def test_convert_template_to_string_HiYaPyCoDefaultChanged(request, mocker, ymlp
     pytest.assume(mock_variable_end_string.call_count > 0)
 
 @pytest.mark.yml
-def test_convert_template_to_string_explicit_param1_jinja2ctx(request, mocker, ymlparsersExtraFixture):
+def test_uconvert_template_to_string_explicit_param1_jinja2ctx(request, mocker, ymlparsersExtraFixture):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
     mock_lock = create_mock_lock(mocker)
@@ -194,11 +200,11 @@ def test_convert_template_to_string_explicit_param1_jinja2ctx(request, mocker, y
     template = '3_name_3'
 
     jinja2ctx = _Environment(undefined=_DebugUndefined, variable_start_string='3_', variable_end_string='_3')
-    value = convert_template_to_string_format(template, jinja2ctx=jinja2ctx)
+    value = _convert_template_to_string_format(template, jinja2ctx=jinja2ctx)
     pytest.assume(exp_value == value)
 
 @pytest.mark.yml
-def test_convert_template_to_string_explicit_param1_jinja2Lock(request, mocker, ymlparsersExtraFixture):
+def test_uconvert_template_to_string_explicit_param1_jinja2Lock(request, mocker, ymlparsersExtraFixture):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
     mock_lock = create_mock_lock(mocker)
@@ -209,7 +215,7 @@ def test_convert_template_to_string_explicit_param1_jinja2Lock(request, mocker, 
 
     jinja2Lock_param_lock = create_mock_lock(mocker)
     with pytest.raises(ValueError):
-        convert_template_to_string_format(template, jinja2Lock=jinja2Lock_param_lock)
+        _convert_template_to_string_format(template, jinja2Lock=jinja2Lock_param_lock)
     #pytest.assume(exp_value == value)
     pytest.assume(mock_lock.acquire.call_count == 0)
     #pytest.assume(jinja2Lock_param_lock.acquire.call_count ==0)
@@ -220,7 +226,7 @@ def test_convert_template_to_string_explicit_param1_jinja2Lock(request, mocker, 
 @pytest.mark.parametrize('ymlparsersExtraFixture', [(False, True)   #only Jinja2 avaialble \
                                                     ], indirect = True)
 @pytest.mark.yml
-def test_convert_template_to_string_explicit_param1a_jinja2Lock(request, mocker, ymlparsersExtraFixture,
+def test_uconvert_template_to_string_explicit_param1a_jinja2Lock(request, mocker, ymlparsersExtraFixture,
                                                                 ):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
@@ -233,13 +239,13 @@ def test_convert_template_to_string_explicit_param1a_jinja2Lock(request, mocker,
                             # (will be ignored)
 
     jinja2Lock_param_lock = create_mock_lock(mocker)
-    value = convert_template_to_string_format(template, jinja2Lock=jinja2Lock_param_lock)
+    value = _convert_template_to_string_format(template, jinja2Lock=jinja2Lock_param_lock)
     pytest.assume(exp_value == value)
     pytest.assume(mock_lock.acquire.call_count == 0)
     pytest.assume(jinja2ctx_mock.call_count == 0)
 
 @pytest.mark.yml
-def test_convert_template_to_string_explicit_param1b_jinja2Lock(request, mocker, ymlparsersExtraFixture,
+def test_uconvert_template_to_string_explicit_param1b_jinja2Lock(request, mocker, ymlparsersExtraFixture,
                                                                ):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
@@ -259,7 +265,7 @@ def test_convert_template_to_string_explicit_param1b_jinja2Lock(request, mocker,
 
     jinja2Lock_param_lock = create_mock_lock(mocker)
     with pytest.raises(ValueError):
-        convert_template_to_string_format(template, jinja2Lock=jinja2Lock_param_lock)
+        _convert_template_to_string_format(template, jinja2Lock=jinja2Lock_param_lock)
     #pytest.assume(exp_value == value)
     pytest.assume(mock_lock.acquire.call_count == 0)
     #pytest.assume(jinja2Lock_param_lock.acquire.call_count ==0)
@@ -269,7 +275,7 @@ def test_convert_template_to_string_explicit_param1b_jinja2Lock(request, mocker,
 @pytest.mark.parametrize('ymlparsersExtraFixture', [(False, True)
                                                     ], indirect = True)
 @pytest.mark.yml
-def test_convert_template_to_string_explicit_param1a_jinja2ctx(request, mocker, ymlparsersExtraFixture,
+def test_uconvert_template_to_string_explicit_param1a_jinja2ctx(request, mocker, ymlparsersExtraFixture,
                                                                ):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
@@ -280,14 +286,14 @@ def test_convert_template_to_string_explicit_param1a_jinja2ctx(request, mocker, 
     template = '33_name_33'
 
     jinja2ctx = _Environment(undefined=_DebugUndefined, variable_start_string='33_', variable_end_string='_33')
-    value = convert_template_to_string_format(template, jinja2ctx=jinja2ctx)
+    value = _convert_template_to_string_format(template, jinja2ctx=jinja2ctx)
 
     pytest.assume(exp_value == value)
     pytest.assume(mock_lock.acquire.call_count == 0)
 
 
 @pytest.mark.yml
-def test_convert_template_to_string_explicit_param2(request, mocker, ymlparsersExtraFixture):
+def test_uconvert_template_to_string_explicit_param2(request, mocker, ymlparsersExtraFixture):
     logger.info(f'{request._pyfuncitem.name}{ymlparsersExtraFixture}')
 
     mock_lock = create_mock_lock(mocker)
@@ -298,12 +304,37 @@ def test_convert_template_to_string_explicit_param2(request, mocker, ymlparsersE
     template = '4_name_4'
 
     jinja2ctx = _Environment(undefined=_DebugUndefined, variable_start_string='4_', variable_end_string='_4')
-    value = convert_template_to_string_format(template, jinja2ctx=jinja2ctx, jinja2Lock=mock_lock_inuse)
+    value = _convert_template_to_string_format(template, jinja2ctx=jinja2ctx, jinja2Lock=mock_lock_inuse)
     pytest.assume(exp_value == value)
 
     pytest.assume(mock_lock.acquire.call_count == 0)
     pytest.assume(mock_lock_inuse.acquire.call_count >0)
     pytest.assume(mock_lock_inuse.release.call_count == mock_lock_inuse.acquire.call_count)
+
+
+def test_format_template(request, mocker, ymlparsersExtraFixture):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    uconvert_mock=mocker.patch('alexber.utils._ymlparsers_extra._convert_template_to_string_format',
+                               side_effect=_convert_template_to_string_format, autospec=True, spec_set=True)
+
+    exp_value = 'Hello, John!'
+    template = 'Hello, {{name}}!'
+    value = format_template(template, name='John')
+    pytest.assume(exp_value == value)
+    pytest.assume(uconvert_mock.call_count > 0)
+
+def test_format_template_without_variables(request, mocker, ymlparsersExtraFixture):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    uconvert_mock=mocker.patch('alexber.utils._ymlparsers_extra._convert_template_to_string_format',
+                               side_effect=_convert_template_to_string_format, autospec=True, spec_set=True)
+
+    exp_value = 'Hello, World!'
+    template = 'Hello, World!'
+    value = format_template(template)
+    pytest.assume(exp_value == value)
+    pytest.assume(uconvert_mock.call_count > 0)
 
 
 if __name__ == "__main__":

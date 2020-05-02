@@ -1,7 +1,11 @@
 """
 This module adopts its behavior dependent on availability of Python packages.
 
+This module optionally depends on ymlparseser module.
+Method format_template() is used in emails module.
+
 Note: This module will work if you have only standard Python package. You just can't change delimiters values.
+Note: API and implementation of this module is unstable and can change without prior notice.
 """
 
 import warnings
@@ -35,7 +39,10 @@ _VARIABLE_END_STRING = None
 
 
 def _init_globals():
-    #for unit-tests
+    """
+    This method is called during module import.
+    This method was designed also for unit-test.
+    """
     global _VARIABLE_START_STRING, _VARIABLE_END_STRING
 
     if _isJinja2DefaultAvailable:
@@ -87,7 +94,7 @@ def _normalize_var_name(text, start_del, end_del):
     return text
 
 
-def _convert_template_to_string_format(template, **kwargs):
+def __convert_template_to_string_format(template, **kwargs):
     """
     This is utility method that make template usable with string format.
 
@@ -111,7 +118,7 @@ def _convert_template_to_string_format(template, **kwargs):
         .replace(f'{default_end}', '}')
     return ret
 
-def convert_template_to_string_format(template, **kwargs):
+def _convert_template_to_string_format(template, **kwargs):
     """
     This is utility method that make template usable with string format.
 
@@ -176,5 +183,31 @@ def convert_template_to_string_format(template, **kwargs):
                 default_start = jinja2ctx.variable_start_string
                 default_end = jinja2ctx.variable_end_string
 
-    ret = _convert_template_to_string_format(template, default_start=default_start, default_end=default_end)
+    ret = __convert_template_to_string_format(template, default_start=default_start, default_end=default_end)
     return ret
+
+def format_template(template, **kwargs):
+    """
+    This is main method of this module.
+    Note: API of this method is unstable and can change without prior notice.
+
+    Template is expected to be compatible with Jinja2 one.
+
+    Current implementation make delimiters compatible with str.format() and use it.
+
+
+    :param template: str, typically with {{my_variable}}
+    :param jinja2ctx:  Jinja2 Environment that is consulted what is delimiter for variable's names.
+                       if is not provided, HiYaPyCo.jinja2ctx is used. See ymlparsers.initConfig().
+                       if is not provided, than defaults are used (see jinja2.defaults).
+    :param jinja2Lock: Lock to be used to atomically get variable_start_string and variable_end_string from jinja2ctx.
+                       if is not provided, HiYaPyCo.jinja2Lock is used.. See ymlparsers.initConfig().
+    :return: fromated str
+    """
+    if template is None:
+        return None
+    s = _convert_template_to_string_format(template, **kwargs)
+    ret = s.format(template, **kwargs)
+    return ret
+
+

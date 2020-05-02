@@ -5,7 +5,7 @@ import pytest
 from alexber.utils.emails import SMTPHandler, OneMemoryHandler
 #don't remove this
 from platform import uname
-from alexber.utils.emails import email_status
+from alexber.utils.emails import email_status, FINISHED
 logger = logging.getLogger(__name__)
 emailLogger = None
 
@@ -28,13 +28,19 @@ def errorMailHandler(mocker):
     return error_email_handler
 
 
+@pytest.fixture
+def emailsSubject(request, mocker):
+    request_param = 'Process Status : {{status}}' if (
+        not hasattr(request, 'param')) else request.param
+    yield request_param
 
 @pytest.fixture
-def errorMailMemoryHandler(mocker, errorMailHandler):
+def errorMailMemoryHandler(request, mocker, errorMailHandler, emailsSubject):
 
     d2 = {
         #'formatter': detailFormatter,
-        'subject': 'Process Status : {{status}}',
+        #'subject': 'Process Status : {{status}}',
+        'subject': emailsSubject,
         #'target': error_email_handler
     }
 
@@ -59,18 +65,18 @@ def emailsFixture(request, mocker, errorMailMemoryHandler):
 
 def run_successfuly():
     logger.debug("run_successfuly()")
-    emailLogger.info("Start - Automatic Process")
+    emailLogger.info("Start - Process")
     emailLogger.info("Step 1")
     emailLogger.info("Step 2")
-    emailLogger.info("Done Successfully - Automatic Process")
+    emailLogger.info("Done Successfully - Process")
 
 def run_with_failure():
     logger.debug("run_with_failure()")
-    emailLogger.info("Start - Automatic Process")
+    emailLogger.info("Start - Process")
     emailLogger.info("Step 1")
     1/0
     emailLogger.info("Step 2")
-    emailLogger.info("Done Successfully - Automatic Process")
+    emailLogger.info("Done Successfully - Process")
 
 def is_failed(logrecord):
     subject = str(logrecord.msg['subject'])
@@ -102,7 +108,7 @@ def check_sucess(logrecord):
 def test_emails_intented_success(request, mocker, emailsFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
-    with email_status(logger=None, emailLogger=emailLogger, faildargs={'status': 'Failed'},
+    with email_status(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
                       successargs={'status': 'Done'}):
         run_successfuly()
     mock_log = emailsFixture.emit
@@ -111,17 +117,58 @@ def test_emails_intented_success(request, mocker, emailsFixture):
 
     check_sucess(logrecord)
 
+#emailsSubject
+@pytest.mark.parametrize('emailsSubject', ['Aggregates log from the Demo application',
+                                                    ], indirect=True)
+def test_emails_intented_simple_success(request, mocker, emailsFixture, emailsSubject):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    emailLogger.log(FINISHED, None)
+    mock_log = emailsFixture.emit
+    pytest.assume(mock_log.call_count == 1)
+    (logrecord,), _ = mock_log.call_args
+    subject = str(logrecord.msg['subject'])
+    pytest.assume(emailsSubject in subject)
+
+#emailsSubject
+@pytest.mark.parametrize('emailsSubject', ['Aggregates log from the Demo application',
+                                                    ], indirect=True)
+def test_emails_intented_simple_success2(request, mocker, emailsFixture, emailsSubject):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    emailLogger.log(FINISHED, '')
+    mock_log = emailsFixture.emit
+    pytest.assume(mock_log.call_count == 1)
+    (logrecord,), _ = mock_log.call_args
+    subject = str(logrecord.msg['subject'])
+    pytest.assume(emailsSubject in subject)
+
+#emailsSubject
+@pytest.mark.parametrize('emailsSubject', ['Aggregates log from the Demo application',
+                                                    ], indirect=True)
+def test_emails_intented_simple_success_wrong(request, mocker, emailsFixture, emailsSubject):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    with pytest.raises(ValueError):
+        emailLogger.log(FINISHED, ['some non-dict value'])
+
+def test_emails_intented_abropt_execution(request, mocker, emailsFixture, emailsSubject):
+    logger.info(f'{request._pyfuncitem.name}()')
+    emailLogger.info("Started")
+
+
 @pytest.mark.parametrize('emailsFixture', [False], indirect=True)
 def test_emails_intented_failure(request, mocker, emailsFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
 
-    with email_status(logger=None, emailLogger=emailLogger, faildargs={'status': 'Failed'},
+    with email_status(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
                       successargs={'status': 'Done'}):
         run_with_failure()
     mock_log = emailsFixture.emit
     pytest.assume(mock_log.call_count == 1)
     (logrecord,), _ = mock_log.call_args
+
 
     check_failed(logrecord)
 
@@ -133,14 +180,14 @@ def test_emails_multithreaded(request, mocker, emailsFixture):
 
     def _run_successfuly(stop):
         for i in range(stop):
-            with email_status(logger=None, emailLogger=emailLogger, faildargs={'status': 'Failed'},
+            with email_status(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
                               successargs={'status': 'Done'}):
                 run_successfuly()
         time.sleep(1)
 
     def _run_with_failure(stop):
         for i in range(stop):
-            with email_status(logger=None, emailLogger=emailLogger, faildargs={'status': 'Failed'},
+            with email_status(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
                               successargs={'status': 'Done'}):
                 run_with_failure()
 

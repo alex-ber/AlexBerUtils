@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 ## [Unrelased]
 
 
-## [0.5.1-alpha] - 03.05.2020
+## [0.5.1a] - TBD
 ### Added 
 
 - `mains` module explanation article https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf is published.
@@ -20,33 +20,107 @@ reproducible installation requirements.txt (exact versions, all, including trans
 
 - Added req-fabric.txt, requirements-fabric.txt - Fabric, used in `fabs` module.
 
-- Added req-yml.txt, requirements-fabric.txt - Yml-relaated dependencies, used in ymlparsers.py 
-and in init_app_conf.py.
+- Added req-yml.txt, requirements-yml.txt - Yml-related dependencies, used in ymlparsers.py 
+and in init_app_conf.py, deploys.py; optionally used in ymlparsers_extra.py, emails.py.
 
 Main dependency is HiYaPyCo. I'm using feature that is availlable in the minimal version.
 
 HiYaPyCo depends upon PyYAML and Jinja2. Limitations for Jinja2 is from HiYaPyCo project.
 
-- Added req-pydotenv.txt, requirements-pydotenv.txt - pydotenv, optionally used in deploys.py.
+- Added req-env.txt, requirements-env.txt - pydotenv, optionally used in deploys.py.
 
 - Added `inspects.has_method`(cls, methodName). Check if class cls has method with name methodName directly, 
 or in one of it's super-classes.
 
+- Added `pareser.parse_sys_args` function parses command line arguments.
+
 - Added `ymlparsers` module - `load`/`safe_dump` a Hierarchical Yml files. This is essentially wrapper arround HiYaPyCo project with streamlined 
 and extended API and couple of work-arrounds. 
 
-Note: this module doesn't use any package-level variables in hiYaPyCo module. 
+Note: **It is mandatory to call `initConfig()` function before any method in `ymlparsers` module**.
+
+Note: this module doesn't use any package-level variables in hiYaPyCo module, including hiYaPyCo.jinja2env.
+This module do use Jinja2's `Environment`.  
 
 It also has another defaults for `load`/`safe_dump` methods.
 They can be overridden in `initConfig()` function.
- 
-It is mandatory to call `initConfig()` function before any method in `ymlparsers` module.   
 
-- Added `ymlparsers_extra` module. This module adopts its behavior dependent on availability of Python packages. 
-Contains `convert_template_to_string_format` method.
-This module will work if you have only standard Python package. You just can't change delimiters values.
+`safe_dump()` method supports simple Python objects like primitive types (str, integer, etc), list, dict, **OrderedDict**.
+
+`as_str()`- convenient method for getting str representation of the data,
+for example of dict.
+
+`DisableVarSubst` - use of this context manager disables variable substation in the `load()` function.
  
-- Added `pareser.parse_sys_args` function parses command line arguments.
+- Added `init_app_conf` **major** module. 
+
+Note: **It is mandatory to call `initConfig()` function before any method in `init_app_conf` module**.
+Note: **It is mandatory to call `alexber.utils.ymlparsers.initConfig()` function before any method in `init_app_conf` 
+module**.
+
+The main function is `parse_config`.  This function parses command line arguments first.
+Than it parse yml files. Command line arguments overrides yml files arguments. 
+Parameters of yml files we always try to convert on best-effort basses.
+Parameters of system args we try convert according to implicit_convert param (see below).
+
+Command line key --general.profiles or appropriate key default yml file is used to find 'profiles'.
+Let suppose, that --config_file is resolved to config.yml.
+If 'profiles' is not empty, than it will be used to calculate filenames
+that will be used to override default yml file.
+Let suppose, 'profiles' resolved to ['dev', 'local']. Than first config.yml
+will be loaded, than it will be overridden with config-dev.yml, than
+it will be overridden with config-local.yml.
+At last, it will be overridden with system args.
+This entry can be always be overridden with system args.
+
+`ymlparsers` and `parser` modules serves as Low-Level API for this module.
+
+`mask_value()` implemented as a wrapper to `parsers.safe_eval()` method with support for boolean
+variables. This implementation is used to get type for arguments that we get from system args.
+This mechanism can be easily replaced with your own one.
+
+`to_convex_map()` This method receives dictionary with 'flat keys', it has simple key:value structure
+where value can't another dictionary.
+It will return dictionary of dictionaries with natural key mapping,
+optionally entries will be filtered out according to white_list_flat_keys and
+optionally value will be implicitly converted to appropriate type.
+
+In order to simulate dictionary of dictionaries 'flat keys' compose key from outer dict with key from inner dict
+separated with dot.
+For example, 'general.profiles' 'flat key' corresponds to convex map with 'general' key with dictionary as value
+that have one of the keys 'profiles' with corresponding value.
+
+If you supply `implicit_convert=True`, than `mask_value()` will be applied to the values of the received flat dictionary.
+
+`merge_list_value_in_dicts` - merges value of 2 dicts. This value represents list of values.
+Value from flat_d is roughly obtained by flat_d[main_key+'.'+sub_key].
+Value from d is roughly obtained by d[main_key][sub_key].
+
+If you supply `implicit_convert=True`, than `mask_value()` will be applied to the flat map (first parameter).
+
+- Added `deploys` module.
+This module is usable in your deployment script. See also `fabs` module. 
+
+Note: **It is mandatory to call `alexber.utils.ymlparsers.initConfig()` function before any method in `deploys` 
+module**.
+
+This method use `parsers`, ymlparsers`, `init_app_conf` as it's low-level API. `init_app_conf` usage is limited.
+
+The main function is `load_config()`. It is simplified method for parsing yml configuration file with optionally 
+overrided profiles only. See `init_app_conf.parse_config()` for another variant.
+
+`split_path` - Split filename in 2 part parts by split_dirname. first_part will ends with split_dirname.
+second_part will start immediately after split_dirname.
+
+`add_to_zip_copy_function` - Factory method that returns closure that can be used as copy_function param in 
+`shutil.copytree()`.
+
+- Added `emails` module.
+
+
+
+ 
+ 
 
 
 

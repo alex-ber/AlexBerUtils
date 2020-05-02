@@ -18,7 +18,7 @@ except ImportError:
 isyamlrelatedfound = False
 try:
     #python3 -m pip install .[yaml]
-    import alexber.utils.ymlparsers_extra as ymlparsers_extra
+    import alexber.utils._ymlparsers_extra as ymlparsers_extra
     if ymlparsers_extra._isHiYaPyCoAvailable and ymlparsers_extra._isJinja2DefaultAvailable:
         isyamlrelatedfound = True
 except ImportError:

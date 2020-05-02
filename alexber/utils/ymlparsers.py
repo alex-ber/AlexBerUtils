@@ -1,3 +1,17 @@
+"""
+This is essentially wrapper arround HiYaPyCo project with streamlined and extended API and couple of work-arrounds.
+
+This module depends on some 3-rd party dependencies, in order to use it, you should have installed first. To do it
+run `pip3 install alex-ber-utils[yml]`.
+
+This module doesn't use any package-level variables in hiYaPyCo module, including hiYaPyCo.jinja2env.
+This module do use Jinja2's `Environment`.
+
+This module is low level API for init_app_conf.py, deploys.py. It is also optionally used in emails.py.
+
+Note: **It is mandatory to call `initConfig()` function before any method in `ymlparsers` module**.
+"""
+
 import warnings
 try:
     with warnings.catch_warnings():

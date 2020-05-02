@@ -14,7 +14,7 @@ import io
 import yaml
 from yaml import FullLoader
 from alexber.utils.inspects import has_method
-from alexber.utils.ymlparsers_extra import convert_template_to_string_format
+from alexber.utils._ymlparsers_extra import format_template
 
 
 try:
@@ -107,7 +107,7 @@ class TestYmlparsersInit(object):
 
         _load_d = ymlparsers._load_d
         assert _load_d is not None
-        b = isinstance(_load_d, collections.Mapping)
+        b = isinstance(_load_d, collections.abc.Mapping)
         pytest.assume(b)
 
         for k, exp_v in {'method':METHOD_SUBSTITUTE,
@@ -433,7 +433,8 @@ def test_ymlparsers_load_single_no_substition(request, mocker, ymlparsersSetup, 
 
 
     app_d = default_d.get('app', None)
-    exp_app_d = exp_config_d.get('app', None)
+    exp_d = copy.deepcopy(exp_config_d)
+    exp_app_d = exp_d.get('app', None)
 
     inner_host_name = app_d.get('inner_host_name', None)
     exp_host_name = exp_app_d.get('inner_host_name', None)
@@ -460,16 +461,15 @@ def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup
     pytest.assume(mock_lock.release.call_count == mock_lock.acquire.call_count)
 
     app_d = default_d['app']
-    exp_app_d = exp_config_d.get('app', None)
+    exp_d = copy.deepcopy(exp_config_d)
+    exp_app_d = exp_d.get('app', None)
 
     inner_host_name = app_d.get('inner_host_name', None)
     exp_host_name = exp_app_d.get('inner_host_name', None)
     pytest.assume(exp_host_name==inner_host_name)
 
     exp_cli_template = exp_app_d.get('cli_template', None)
-    exp_cli_template = convert_template_to_string_format(exp_cli_template)
-
-    exp_cli_template = exp_cli_template.format(app_inner_host_name=exp_host_name)
+    exp_cli_template = format_template(exp_cli_template, app_inner_host_name=exp_host_name)
     exp_app_d['cli_template']=exp_cli_template
 
 
@@ -478,7 +478,7 @@ def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup
 
     cli_template = app_d['cli_template']
     pytest.assume('inner_host_name' not in cli_template)
-    pytest.assume(exp_config_d==default_d)
+    pytest.assume(exp_d==default_d)
 
     white_list = app_d.get('white_list', None)
     exp_white_list = exp_app_d.get('white_list', None)
@@ -608,7 +608,7 @@ def test_ymlparsers_load_multiple_no_substition(request, mocker, ymlparsersSetup
     pytest.assume(exp_d==default_d)
 
 @pytest.mark.yml
-def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
+def test_ymlparsers_load_multiple_with_substition(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
     pck = '.'.join(['tests_data', __package__, 'ymlparsers'])
@@ -636,9 +636,7 @@ def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup
     pytest.assume(exp_host_name==inner_host_name)
 
     exp_cli_template = exp_app_d.get('cli_template', None)
-    exp_cli_template = convert_template_to_string_format(exp_cli_template)
-
-    exp_cli_template = exp_cli_template.format(app_inner_host_name=exp_host_name)
+    exp_cli_template = format_template(exp_cli_template, app_inner_host_name=exp_host_name)
     exp_app_d['cli_template']=exp_cli_template
 
 
@@ -678,9 +676,8 @@ def _run_with_substition(content, exp_config_d, stop):
         pytest.assume(exp_host_name==inner_host_name)
 
         exp_cli_template = exp_app_d.get('cli_template', None)
-        exp_cli_template = convert_template_to_string_format(exp_cli_template)
+        exp_cli_template = format_template(exp_cli_template, app_inner_host_name=exp_host_name)
 
-        exp_cli_template = exp_cli_template.format(app_inner_host_name=exp_host_name)
         exp_app_d['cli_template'] = exp_cli_template
 
         cli_template = app_d.get('cli_template')
@@ -708,9 +705,7 @@ def test_ymlparsers_load_it(request, mocker, ymlparsersSetup, ymlparsersCleanup,
 
     exp_host_name = exp_app_d.get('inner_host_name', None)
     exp_cli_template = exp_app_d.get('cli_template', None)
-    exp_cli_template = convert_template_to_string_format(exp_cli_template)
-
-    exp_cli_template = exp_cli_template.format(app_inner_host_name=exp_host_name)
+    exp_cli_template = format_template(exp_cli_template, app_inner_host_name=exp_host_name)
     exp_app_d['cli_template'] = exp_cli_template
 
 
@@ -718,7 +713,7 @@ def test_ymlparsers_load_it(request, mocker, ymlparsersSetup, ymlparsersCleanup,
         target=_run_with_substition, args=(content, exp_d, stop))
 
     th2 = threading.Thread(name="run_without_substition",
-                           target=_run_without_substition, args=(str(content), dict(exp_config_d), stop))
+                           target=_run_without_substition, args=(str(content), copy.deepcopy(exp_config_d), stop))
 
     th1.start()
     time.sleep(2)

@@ -1,3 +1,14 @@
+"""
+`ymlparsers` and `parser` modules serves as Low-Level API for this module.
+
+You may need to install some 3-rd party dependencies, in order to use it, you should have installed first. To do it
+run `pip3 install alex-ber-utils[yml]` in order to use it.
+
+Note: **It is mandatory to call `alexber.utils.ymlparsers.initConfig()` function before any method in `init_app_conf`
+module**.
+
+Note: **It is mandatory to call `initConfig()` function before any method in `ymlparsers` module**.
+"""
 import logging
 logger = logging.getLogger(__name__)
 

@@ -1,3 +1,12 @@
+"""
+This module is usable in your deployment script. See also `deploys` module.
+
+This module depends on some 3-rd party dependencies, in order to use it, you should have installed first. To do it
+run `pip3 install alex-ber-utils[fabric]`.
+
+"""
+
+
 import logging
 logger = logging.getLogger(__name__)
 from pathlib import PurePath

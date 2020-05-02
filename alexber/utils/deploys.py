@@ -1,3 +1,12 @@
+"""
+This module is usable in your deployment script. See also `fabs` module.
+
+This module depends on some 3-rd party dependencies, in order to use it, you should have installed first. To do it
+run `pip3 install alex-ber-utils[yml]`.
+
+Note: **It is mandatory to call `initConfig()` function before any method in `ymlparsers` module**.
+"""
+
 from collections import OrderedDict
 from pathlib import Path
 from collections import deque
@@ -51,6 +60,27 @@ def split_path(filename, split_dirname):
 
     return Path(*first_parts), Path(*second_parts)
 
+def add_to_zip_copy_function(split_dirname=None, zf=None):
+    """
+    Factory method that returns closure that can be used as copy_function param in shutil.copytree()
+
+    :param split_dirname: path from this directory and below will be used in archive.
+    :param zf: zipfile.ZipFile
+    :return:
+    """
+    def add_to_zip_file(src,dst):
+        """
+        Closure that can be used as copy_function param in shutil.copytree()
+        shutil.copytree() is used to add from src to archive with entries evaluted according to split_dirname.
+
+        :param src: soource file to use in entry in archive
+        :param dst: ignored, see split_dirname in enclused function
+        :return:
+        """
+        _, last_parts = split_path(src, split_dirname)
+        dest_path = Path(split_dirname) / last_parts
+        zf.write(str(src), str(dest_path))
+    return add_to_zip_file
 
 def load_config(argumentParser=None, args=None):
     """
@@ -81,24 +111,3 @@ def load_config(argumentParser=None, args=None):
         general_d[conf.PROFILES_KEY] = profiles
         return full_path, default_d
 
-def add_to_zip_copy_function(split_dirname=None, zf=None):
-    """
-    Factory method that returns closure that can be used as copy_function param in shutil.copytree()
-
-    :param split_dirname: path from this directory and below will be used in archive.
-    :param zf: zipfile.ZipFile
-    :return:
-    """
-    def add_to_zip_file(src,dst):
-        """
-        Closure that can be used as copy_function param in shutil.copytree()
-        shutil.copytree() is used to add from src to archive with entries evaluted according to split_dirname.
-
-        :param src: soource file to use in entry in archive
-        :param dst: ignored, see split_dirname in enclused function
-        :return:
-        """
-        _, last_parts = split_path(src, split_dirname)
-        dest_path = Path(split_dirname) / last_parts
-        zf.write(str(src), str(dest_path))
-    return add_to_zip_file
