@@ -556,7 +556,7 @@ def test_get_white_listed(request, mocker, initappconfFixture):
     d = create_default_parser()._get_white_listed(sys_d, white_list_flat_keys)
     pytest.assume(exp_d==d)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_parse_sys_args(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -600,7 +600,7 @@ def test_parse_sys_args(request, mocker, ymlparsersSetup, ymlparsersCleanup, ini
 
         pytest.assume(expdd==dd)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_parse_yml(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -648,7 +648,7 @@ def test_parse_yml(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappc
         del dd['general']['log']['root']['handlers']
         pytest.assume(expdd==dd)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_parse_config_true(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -699,7 +699,7 @@ def test_parse_config_true(request, mocker, ymlparsersSetup, ymlparsersCleanup, 
 
         pytest.assume(expdd==dd)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_parse_config_explicit_white_list(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -756,7 +756,7 @@ def test_parse_config_explicit_white_list(request, mocker, ymlparsersSetup, ymlp
 
         pytest.assume(expdd==dd)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_parse_config_false(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFixture):
     logger.info(f'{request._pyfuncitem.name}()')
     pck = '.'.join(['tests_data', __package__, 'initappconf'])
@@ -772,7 +772,7 @@ def test_parse_config_false(request, mocker, ymlparsersSetup, ymlparsersCleanup,
         disable_existing_loggers = dd['general']['log']['disable_existing_loggers']
         pytest.assume(exp_disable_existing_loggers==disable_existing_loggers)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_parse_config_default_as_false(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFalseFixture):
     logger.info(f'{request._pyfuncitem.name}()')
     pck = '.'.join(['tests_data', __package__, 'initappconf'])
@@ -788,7 +788,7 @@ def test_parse_config_default_as_false(request, mocker, ymlparsersSetup, ymlpars
         disable_existing_loggers = dd['general']['log']['disable_existing_loggers']
         pytest.assume(exp_disable_existing_loggers==disable_existing_loggers)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_parse_config_default_as_true(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappconfFixture):
     logger.info(f'{request._pyfuncitem.name}()')
     pck = '.'.join(['tests_data', __package__, 'initappconf'])

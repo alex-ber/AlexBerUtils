@@ -49,5 +49,5 @@ def pytest_collection_modifyitems(config, items):
         skip_tests(items=items, keyword="md", reason="multidispatch is not installed..")
 
     if not isyamlrelatedfound:
-        skip_tests(items=items, keyword="yaml", reason="yaml is not installed..")
+        skip_tests(items=items, keyword="yml", reason="yml is not installed..")
 

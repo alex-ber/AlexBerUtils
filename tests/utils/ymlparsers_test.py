@@ -33,14 +33,14 @@ def _reset_ymlparsers():
     ymlparsers._safe_dump_d = None
 
 @pytest.fixture
-@pytest.mark.yaml
+@pytest.mark.yml
 def ymlparsersSetup(mocker):
     _reset_ymlparsers()
 
     ymlparsers.initConfig()
 
 @pytest.fixture(scope='session')
-@pytest.mark.yaml
+@pytest.mark.yml
 def exp_config_d():
     pck = '.'.join(['tests_data', __package__, 'ymlparsers'])
 
@@ -52,7 +52,7 @@ def exp_config_d():
 
 
 @pytest.fixture
-@pytest.mark.yaml
+@pytest.mark.yml
 def ymlparsersCleanup(mocker):
     yield None
     _reset_ymlparsers()
@@ -82,7 +82,7 @@ def create_mock_lock(mocker):
 
 
 class TestYmlparsersInit(object):
-    @pytest.mark.yaml
+    @pytest.mark.yml
     def test_initConfig_default_params(self, request, mocker, ymlparsersCleanup):
         logger.info(f'{request._pyfuncitem.name}()')
         ymlparsers.initConfig()
@@ -131,7 +131,7 @@ class TestYmlparsersInit(object):
         pytest.assume("TODO: HiYaPyCo._substmerge() bug workarround, see https://github.com/zerwes/hiyapyco/pull/38",
                       HiYaPyCo._deepmerge==HiYaPyCo._substmerge)
 
-    @pytest.mark.yaml
+    @pytest.mark.yml
     def test_initConfig_other_params(self, request, mocker, ymlparsersCleanup):
         logger.info(f'{request._pyfuncitem.name}()')
 
@@ -199,7 +199,7 @@ class TestYmlparsersInit(object):
 
 class TestDisableVarSubst(object):
 
-    @pytest.mark.yaml
+    @pytest.mark.yml
     def test_intented_usage(self, request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
         logger.info(f'{request._pyfuncitem.name}()')
 
@@ -294,7 +294,7 @@ class TestDisableVarSubst(object):
                 raise ValueError
             self._block_end_string = new_name
 
-    @pytest.mark.yaml
+    @pytest.mark.yml
     def test_exception_in_exit(self, request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
         logger.info(f'{request._pyfuncitem.name}()')
         #I check 2 things
@@ -326,7 +326,7 @@ class TestDisableVarSubst(object):
         pytest.assume(duumy_jinja2ctx.block_start_string == orig_jinja2ctx.block_start_string)
         pytest.assume(duumy_jinja2ctx.block_end_string !=  orig_jinja2ctx.block_end_string )
 
-    @pytest.mark.yaml
+    @pytest.mark.yml
     def test_exception_in_enter(self, request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
         logger.info(f'{request._pyfuncitem.name}()')
         #I check 2 things
@@ -359,7 +359,7 @@ class TestDisableVarSubst(object):
         pytest.assume(duumy_jinja2ctx.block_start_string != orig_jinja2ctx.block_start_string)
         pytest.assume(duumy_jinja2ctx.block_end_string == orig_jinja2ctx.block_end_string)
 
-    @pytest.mark.yaml
+    @pytest.mark.yml
     def test_exception_in_code(self, request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
         logger.info(f'{request._pyfuncitem.name}()')
         #I check 2 things
@@ -413,7 +413,7 @@ class TestDisableVarSubst(object):
         pytest.assume(jinja2ctx_mock.block_end_string == orig_jinja2ctx.block_end_string)
 
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_ymlparsers_load_single_no_substition(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -443,7 +443,7 @@ def test_ymlparsers_load_single_no_substition(request, mocker, ymlparsersSetup, 
     pytest.assume(exp_config_d==default_d)
 
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -511,7 +511,7 @@ _data_dict = {'general':
 
     ]
 )
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_safe_dump_composite(request, mocker, ymlparsersSetup, ymlparsersCleanup, data, kwds):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -532,7 +532,7 @@ def test_safe_dump_composite(request, mocker, ymlparsersSetup, ymlparsersCleanup
 
     pytest.assume(data == restored_d)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_safe_dump(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -550,7 +550,7 @@ def test_safe_dump(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_conf
 
     pytest.assume(orig_d==restored_d)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_as_str(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -571,7 +571,7 @@ def test_as_str(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_
 
     pytest.assume(orig_d==restored_d)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_ymlparsers_load_multiple_no_substition(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -607,7 +607,7 @@ def test_ymlparsers_load_multiple_no_substition(request, mocker, ymlparsersSetup
 
     pytest.assume(exp_d==default_d)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_ymlparsers_load_single_with_substition(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -690,7 +690,7 @@ def _run_with_substition(content, exp_config_d, stop):
         pytest.assume('inner_host_name' not in cli_template)
         pytest.assume(exp_config_d == default_d)
 
-@pytest.mark.yaml
+@pytest.mark.yml
 def test_ymlparsers_load_it(request, mocker, ymlparsersSetup, ymlparsersCleanup, exp_config_d):
     logger.info(f'{request._pyfuncitem.name}()')
     pck = '.'.join(['tests_data', __package__, 'ymlparsers'])
