@@ -4,10 +4,6 @@
 You may need to install some 3-rd party dependencies, in order to use it, you should have installed first. To do it
 run `pip3 install alex-ber-utils[yml]` in order to use it.
 
-Note: **It is mandatory to call `alexber.utils.ymlparsers.initConfig()` function before any method in `init_app_conf`
-module**.
-
-Note: **It is mandatory to call `initConfig()` function before any method in `ymlparsers` module**.
 """
 import logging
 logger = logging.getLogger(__name__)
@@ -48,7 +44,7 @@ class AppConfParser(object):
 
     def _parse_yml(self, sys_d, profiles, config_file='config.yml'):
         if ymlparsers.HiYaPyCo.jinja2ctx is None:
-            raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
+            raise ValueError("ymlparsers.HiYaPyCo.jinja2ctx can't be None")
 
         base_full_path = Path(config_file).resolve()  # relative to cwd
 
@@ -235,7 +231,7 @@ class AppConfParser(object):
 
     def _parse_sys_args(self, argumentParser=None, args=None):
         if ymlparsers.HiYaPyCo.jinja2ctx is None:
-            raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
+            raise ValueError("ymlparsers.HiYaPyCo.jinja2ctx can't be None")
 
         params, sys_d0 = self.basic_parse_sys_args(argumentParser, args)
         config_file = params.config_file
@@ -283,7 +279,7 @@ class AppConfParser(object):
 
 def _create_default_parser(**kwargs):
     if default_parser_cls is None:
-        raise ValueError("You should call initConfig() first")
+        raise ValueError("default_parser_cls can't be None")
 
     implicit_convert = kwargs['implicit_convert']
     if implicit_convert is None:
@@ -306,8 +302,6 @@ def mask_value(value, implicit_convert=None):
 
     Bool values are case-insensitive.
 
-    Note: Before calling this method, please ensure that you've called initConfig() method first.
-
     :param value: str to ccnvert
     :param implicit_convert: if none, than value that was passed to initConfig() is used (default).
                              if True value attempt to convert value to appropriate type will be done,
@@ -315,7 +309,7 @@ def mask_value(value, implicit_convert=None):
     :return:
     """
     if default_parser_cls is None:
-        raise ValueError("You should call initConfig() first")
+        raise ValueError("default_parser_cls can't be None")
 
     parser = _create_default_parser(**{'implicit_convert': implicit_convert})
     ret = parser.mask_value(value)
@@ -329,8 +323,6 @@ def to_convex_map(d, white_list_flat_keys=None, implicit_convert=None):
     It will return dictionary of dictionaries with natural key mapping (see bellow),
     optionally entries will be filtered out according to white_list_flat_keys and
     optionally value will be implicitly converted to appropriate type.
-
-    Note: Before calling this method, please ensure that you've called initConfig() method first.
 
     In order to simulate dictionary of dictionaries 'flat keys' compose key from outer dict with key from inner dict
     separated with dot.
@@ -352,7 +344,7 @@ def to_convex_map(d, white_list_flat_keys=None, implicit_convert=None):
     :return: convex map with optionally filtered entrys
     """
     if default_parser_cls is None:
-        raise ValueError("You should call initConfig() first")
+        raise ValueError("default_parser_cls can't be None")
 
     parser = _create_default_parser(**{'implicit_convert': implicit_convert})
     dd = parser.to_convex_map(d, white_list_flat_keys)
@@ -363,8 +355,6 @@ def to_convex_map(d, white_list_flat_keys=None, implicit_convert=None):
 def merge_list_value_in_dicts(flat_d, d, main_key, sub_key, implicit_convert=None):
     """
     This method merge value of 2 dicts. This value represents list of values.
-
-    Note: Before calling this method, please ensure that you've called initConfig() method first.
 
     Value from flat_d is roughly obtained by flat_d[main_key+'.'+sub_key].
     Value from d is roughly obtained by d[main_key][sub_key].
@@ -392,7 +382,7 @@ def merge_list_value_in_dicts(flat_d, d, main_key, sub_key, implicit_convert=Non
     :return: merged convreted value, typically one from flat_d, if empty than from d
     """
     if default_parser_cls is None:
-        raise ValueError("You should call initConfig() first")
+        raise ValueError("default_parser_cls can't be None")
 
     parser = _create_default_parser(**{'implicit_convert': implicit_convert})
     merged_value = parser.merge_list_value_in_dicts(flat_d, d, main_key, sub_key)
@@ -401,11 +391,6 @@ def merge_list_value_in_dicts(flat_d, d, main_key, sub_key, implicit_convert=Non
 def parse_config(argumentParser=None, args=None, implicit_convert=None):
     """
     This is the main function of the module.
-
-    Note: Before calling this method, please ensure that you've called initConfig() method first.
-
-    Note: Before calling this method, please ensure that you've called alexber.utils.ymlparsers.initConfig()
-    method first.
 
     This function parses command line arguments first.
     Than it parse yml files.
@@ -459,10 +444,10 @@ def parse_config(argumentParser=None, args=None, implicit_convert=None):
     :return: dict ready to use
     """
     if default_parser_cls is None:
-        raise ValueError("You should call initConfig() first")
+        raise ValueError("default_parser_cls can't be None")
 
     if ymlparsers.HiYaPyCo.jinja2ctx is None:
-        raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
+        raise ValueError("ymlparsers.HiYaPyCo.jinja2ctx can't be None")
 
     parser = _create_default_parser(**{'implicit_convert': implicit_convert})
     dd = parser.parse_config(argumentParser=argumentParser, args=args)
@@ -485,6 +470,8 @@ def initConfig(**kwargs):
                       'implicit_convert':True,
                 This means, by default:
                     We're converting values using mask_value() function.
+
+    This method is idempotent.
     :return:
     """
     default_parser_cls_p = kwargs.get('default_parser_cls', None)
@@ -499,3 +486,5 @@ def initConfig(**kwargs):
         **default_parser_kwargs_p}
     global default_parser_kwargs
     default_parser_kwargs = default_parser_kwargs_p
+
+initConfig()

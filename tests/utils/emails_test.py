@@ -5,7 +5,7 @@ import pytest
 from alexber.utils.emails import SMTPHandler, OneMemoryHandler
 #don't remove this
 from platform import uname
-from alexber.utils.emails import email_status, FINISHED
+from alexber.utils.emails import EmailStatus, FINISHED
 logger = logging.getLogger(__name__)
 emailLogger = None
 
@@ -108,8 +108,8 @@ def check_sucess(logrecord):
 def test_emails_intented_success(request, mocker, emailsFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
-    with email_status(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
-                      successargs={'status': 'Done'}):
+    with EmailStatus(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
+                     successargs={'status': 'Done'}):
         run_successfuly()
     mock_log = emailsFixture.emit
     pytest.assume(mock_log.call_count == 1)
@@ -162,8 +162,8 @@ def test_emails_intented_failure(request, mocker, emailsFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
 
-    with email_status(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
-                      successargs={'status': 'Done'}):
+    with EmailStatus(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
+                     successargs={'status': 'Done'}):
         run_with_failure()
     mock_log = emailsFixture.emit
     pytest.assume(mock_log.call_count == 1)
@@ -180,15 +180,15 @@ def test_emails_multithreaded(request, mocker, emailsFixture):
 
     def _run_successfuly(stop):
         for i in range(stop):
-            with email_status(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
-                              successargs={'status': 'Done'}):
+            with EmailStatus(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
+                             successargs={'status': 'Done'}):
                 run_successfuly()
         time.sleep(1)
 
     def _run_with_failure(stop):
         for i in range(stop):
-            with email_status(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
-                              successargs={'status': 'Done'}):
+            with EmailStatus(emailLogger=emailLogger, logger=None, faildargs={'status': 'Failed'},
+                             successargs={'status': 'Done'}):
                 run_with_failure()
 
 

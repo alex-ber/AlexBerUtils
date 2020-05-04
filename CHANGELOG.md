@@ -37,8 +37,6 @@ or in one of it's super-classes.
 - Added `ymlparsers` module - `load`/`safe_dump` a Hierarchical Yml files. This is essentially wrapper arround HiYaPyCo project with streamlined 
 and extended API and couple of work-arrounds. 
 
-Note: **It is mandatory to call `initConfig()` function before any method in `ymlparsers` module**.
-
 Note: this module doesn't use any package-level variables in hiYaPyCo module, including hiYaPyCo.jinja2env.
 This module do use Jinja2's `Environment`.  
 
@@ -54,14 +52,13 @@ for example of dict.
  
 - Added `init_app_conf` **major** module. 
 
-Note: **It is mandatory to call `initConfig()` function before any method in `init_app_conf` module**.
-Note: **It is mandatory to call `alexber.utils.ymlparsers.initConfig()` function before any method in `init_app_conf` 
-module**.
-
 The main function is `parse_config`.  This function parses command line arguments first.
 Than it parse yml files. Command line arguments overrides yml files arguments. 
 Parameters of yml files we always try to convert on best-effort basses.
-Parameters of system args we try convert according to implicit_convert param (see below).
+Parameters of system args we try convert according to `implicit_convert` param.
+
+If you supply `implicit_convert=True`, than `mask_value()` will be applied to the flat map (first parameter).
+Otherwise, `implicit_convert` wiil have the value that was set in `intiConfig()`. By default it is `True`.
 
 Command line key --general.profiles or appropriate key default yml file is used to find 'profiles'.
 Let suppose, that --config_file is resolved to config.yml.
@@ -91,18 +88,20 @@ For example, 'general.profiles' 'flat key' corresponds to convex map with 'gener
 that have one of the keys 'profiles' with corresponding value.
 
 If you supply `implicit_convert=True`, than `mask_value()` will be applied to the values of the received flat dictionary.
+Otherwise, `implicit_convert` wiil have the value that was set in `intiConfig()`. By default it is True.
 
 `merge_list_value_in_dicts` - merges value of 2 dicts. This value represents list of values.
 Value from flat_d is roughly obtained by flat_d[main_key+'.'+sub_key].
 Value from d is roughly obtained by d[main_key][sub_key].
 
 If you supply `implicit_convert=True`, than `mask_value()` will be applied to the flat map (first parameter).
+Otherwise, `implicit_convert` wiil have the value that was set in `intiConfig()`. By default it is `True`.
+
+`intiConfig` - you can set default value of `implicit_convert`. By default it is `True`.
+This parameters is used if `implicit_convert` wasn't explicitly supplied.
 
 - Added `deploys` module.
 This module is usable in your deployment script. See also `fabs` module. 
-
-Note: **It is mandatory to call `alexber.utils.ymlparsers.initConfig()` function before any method in `deploys` 
-module**.
 
 This method use `parsers`, ymlparsers`, `init_app_conf` as it's low-level API. `init_app_conf` usage is limited.
 
@@ -116,6 +115,21 @@ second_part will start immediately after split_dirname.
 `shutil.copytree()`.
 
 - Added `emails` module.
+This module contains extensions of the logging handlers.
+This module optionally depends on `ymlparseser` module.
+It is better to use `EmailStatus` context manager with configured `emailLogger`.
+It is intended to configure first your `emailLogger` with `OneMemoryHandler` (together with `SMTPHandler`).
+Than the code block that you want to aggregate messages from is better to be enclosed with `EmailStatus`
+context manager.
+
+`alexber.utils.SMTPHandler` is customization of `logging.handlers.SMTPHandler`. It's purpose is to connect to
+SMTP server and actually send the e-mail. Unlike `logging.handlers.SMTPHandler` this class expects for record.msg to be built EmailMessage.
+You can also change use of underline SMTP class to SMTP_SSL, LMTP, etc. 
+This implementation is *thread-safe*.
+
+ 
+
+`alexber.utils.
 
 
 

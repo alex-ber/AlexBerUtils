@@ -41,7 +41,7 @@ _VARIABLE_END_STRING = None
 def _init_globals():
     """
     This method is called during module import.
-    This method was designed also for unit-test.
+    This method is idempotent.
     """
     global _VARIABLE_START_STRING, _VARIABLE_END_STRING
 
@@ -128,7 +128,6 @@ def _convert_template_to_string_format(template, **kwargs):
     if both jinja2ctx and jinja2Lock are not provided, than
         If ymlparsers is usable (it's 3rd party dependencies are available, one if each is jinja2)
         than it's jinja2ctx (Jinja2's Environment) will be consulted for the various delimiters.
-        If it is usable, but ymlparsers.initConfig() method wasn't called see next.
         Otherwise, if jinja2 is available than we will use it's defaults for constricting Jinja2's Environment
         for the various delimiters.
         Otherwise, some sensible defaults (default values from some version of Jinja2) will be used.

@@ -9,7 +9,6 @@ This module do use Jinja2's `Environment`.
 
 This module is low level API for init_app_conf.py, deploys.py. It is also optionally used in emails.py.
 
-Note: **It is mandatory to call `initConfig()` function before any method in `ymlparsers` module**.
 """
 
 import warnings
@@ -54,6 +53,7 @@ except AttributeError as e:
 
 import io as _io
 import os as _os
+import contextlib
 from threading import RLock as _Lock
 
 
@@ -108,7 +108,6 @@ def safe_dump(data, stream=None, **kwds):
 
     Simple Python objects like primitive types (str, integer, etc), list, dict, OrderedDict are supported.
 
-    Note: Before calling this method, please ensure that you've called initConfig() method first.
     Note: that collections.OrderedDict is also supported.
 
     :param data: data-structure to dump.
@@ -117,7 +116,7 @@ def safe_dump(data, stream=None, **kwds):
     :return: str representation of data
     """
     if _safe_dump_d is None:
-        raise ValueError("You should call initConfig() first")
+        raise ValueError("_safe_dump_d can't be None")
 
     kwargs = {**_safe_dump_d, **kwds}
     _safe_dump(data, stream, **kwargs)
@@ -127,8 +126,6 @@ def load(*args, **kwds):
     """
     Load a Hierarchical yml files
     --------------------------------------
-
-    Note: Before calling this method, please ensure that you've called initConfig() method first.
 
     See initConfig() for default values.
     If you want to disable variable substitution, use DisableVarSubst context manager like this:
@@ -150,7 +147,7 @@ def load(*args, **kwds):
     :returns a representation of the merged and (if requested) interpolated config using OrderedDict.
     """
     if _load_d is None:
-        raise ValueError("You should call initConfig() first")
+        raise ValueError("_load_d can't be None")
 
     kwargs = {**_load_d, **kwds}
     #return _hiyapyco.load(*args, **kwargs)
@@ -164,7 +161,6 @@ def as_str(data, **kwds):
 
     Simple Python objects like primitive types (str, integer, etc), list, dict, OrderedDict are supported.
 
-    Note: Before calling this method, please ensure that you've called initConfig() method first.
     Note: that collections.OrderedDict is also supported.
 
     :param data: data-structure to dump.
@@ -176,53 +172,53 @@ def as_str(data, **kwds):
         safe_dump(data, stream=buf, **kwds)
         return buf.getvalue()
 
-class DisableVarSubst(object):
+@contextlib.contextmanager
+def DisableVarSubst(*args, **kwargs):
     """
     Use of this context manager disables variable substation in the load() function.
-
-    Note: Before calling this method, please ensure that you're explicitly passing jinja2ctx and jinja2Lock
-    or you've called initConfig() method first.
 
 
     :param jinja2ctx - Jinja2 Environment. If not provided HiYaPyCo.jinja2ctx is used.
     :param jinja2Lock - lock to use for synchronization. Should be the same here and in load() function.
                         If not provided HiYaPyCo.jinja2ctx is used.
     """
-    def __init__(self, *args, **kwargs):
-        jinja2ctx = kwargs.pop('jinja2ctx', HiYaPyCo.jinja2ctx)
-        jinja2Lock = kwargs.pop('jinja2Lock', HiYaPyCo.jinja2Lock)
+    jinja2ctx = kwargs.pop('jinja2ctx', None)
+    jinja2Lock = kwargs.pop('jinja2Lock', None)
 
-        if jinja2ctx is None or jinja2Lock is None:
-            raise ValueError("You should pass jinja2ctx and jinja2Lock or call initConfig() first")
+    if jinja2ctx is None and jinja2Lock is not None:
+        raise ValueError("You can't provide your jinja2Lock for HiYaPyCo.jinja2ctx")
 
-        self.variable_start_string = jinja2ctx.variable_start_string
-        self.variable_end_string = jinja2ctx.variable_end_string
-        self.block_start_string = jinja2ctx.block_start_string
-        self.block_end_string = jinja2ctx.block_end_string
-        self.jinja2ctx = jinja2ctx
-        self.jinja2Lock = jinja2Lock
+    if HiYaPyCo.jinja2ctx is not None and HiYaPyCo.jinja2Lock is None:
+        raise ValueError('HiYaPyCo.jinja2ctx is not None, but HiYaPyCo.jinja2Lock is None')
 
-    def __enter__(self):
-        self.jinja2Lock.acquire()
+    if jinja2ctx is None:
+        jinja2ctx = HiYaPyCo.jinja2ctx
+        jinja2Lock = HiYaPyCo.jinja2Lock
+
+    if jinja2ctx is None or jinja2Lock is None:
+        raise ValueError("You should pass both jinja2ctx and jinja2Lock or "
+                         "You should have HiYaPyCo.jinja2ctx and HiYaPyCo.jinja2Lock not None"
+                         )
+
+    with jinja2Lock:
+        variable_start_string = jinja2ctx.variable_start_string
+        variable_end_string = jinja2ctx.variable_end_string
+        block_start_string = jinja2ctx.block_start_string
+        block_end_string = jinja2ctx.block_end_string
+
+        jinja2ctx.variable_start_string = '@@{@|'
+        jinja2ctx.variable_end_string = '|@}@@'
+        jinja2ctx.block_start_string = '%%{%|'
+        jinja2ctx.block_end_string = '|%}%%'
+
         try:
-            self.jinja2ctx.variable_start_string = '@@{@|'
-            self.jinja2ctx.variable_end_string = '|@}@@'
-            self.jinja2ctx.block_start_string = '%%{%|'
-            self.jinja2ctx.block_end_string = '|%}%%'
-        except:
-            self.jinja2Lock.release()
-            raise
-
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            self.jinja2ctx.variable_start_string = self.variable_start_string
-            self.jinja2ctx.variable_end_string = self.variable_end_string
-            self.jinja2ctx.block_start_string = self.block_start_string
-            self.jinja2ctx.block_end_string = self.block_end_string
+            yield jinja2ctx
         finally:
-            self.jinja2Lock.release()
+            jinja2ctx.variable_start_string = variable_start_string
+            jinja2ctx.variable_end_string = variable_end_string
+            jinja2ctx.block_start_string = block_start_string
+            jinja2ctx.block_end_string = block_end_string
+
 
 # # support for tag 'tag:yaml.org,2002:python/object/apply:collections.OrderedDict'
 # _represent_dict_order = lambda self, data:  self.represent_mapping('tag:yaml.org,2002:map', data.items())
@@ -265,6 +261,8 @@ def initConfig(**kwargs):
                 This means, by default:
                        we prefer block style always.
                        we preserve the key order (no sorting for key in the dictionary).
+
+    If running from the MainThread, this method is idempotent.
 
     :return:
     """
@@ -310,3 +308,4 @@ def initConfig(**kwargs):
 
 
 
+initConfig()

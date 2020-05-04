@@ -8,6 +8,7 @@ executor = None
 default_log_name  = None
 default_log_level = None
 default_logpipe_cls = None
+default_log_subprocess_cls = None
 
 #inspired by https://codereview.stackexchange.com/questions/6567/redirecting-subprocesses-output-stdout-and-stderr-to-the-logging-module/175382
 #for alternatives see https://gist.github.com/jaketame/3ed43d1c52e9abccd742b1792c449079
@@ -79,12 +80,17 @@ class LoggigSubProcessCall(object):
         self.popenkwargs = d.pop('kwargs', {})
         super().__init__(**kwargs)
 
+    def calc_subprocess_run_kwargs(self):
+        kwargs= {'stdout':self.logpipe, 'stderr':subprocess.STDOUT,
+            'text':True, 'bufsize':1, 'check':True,
+            **self.popenkwargs}
+        return kwargs
+
     def run_sub_process(self):
         f = executor.submit(self.logpipe.run)
         try:
-            process = subprocess.run(self.popenargs, **{'stdout':self.logpipe, 'stderr':subprocess.STDOUT,
-                                                        'text':True, 'bufsize':1, 'check':True,
-                                                        **self.popenkwargs})
+            kwargs = self.calc_subprocess_run_kwargs()
+            process = subprocess.run(self.popenargs, **kwargs)
         finally:
             self.logpipe.breakPipe()
             f.result()
@@ -95,8 +101,6 @@ class LoggigSubProcessCall(object):
 def run_sub_process(*args, **kwargs):
     """
     This method run subprocess and logs it's out to the logger.
-
-    Note: Before calling this method, please ensure that you've called initConfig() method first.
 
     This method is sophisticated decorator to subprocess.run(). See it's docstring for more information. Note, that
     some parameters (cwd, for example) that can be used in popenkwargs are listed in Popen constructor.
@@ -138,20 +142,23 @@ def run_sub_process(*args, **kwargs):
     :param roughly kwargs['logPipe']['cls'] or default_logpipe_cls (if first one is empty)
                                              will be passed as logPipeCls to create logPipe.
     :param roughly kwargs['logPipe']['kwargs'] will be passed as kwargs to logPipeCls to create logPipe.
-
+    :param roughly kwargs['logSubprocess']['cls'] or default_log_subprocess_cls (if first one is empty)
+                                             will be passed as logSubProcessCls to create LoggigSubProcessCall.
 
     :return:
     """
     if default_logpipe_cls is None:
-        raise ValueError("You should call initConfig() first")
+        raise ValueError("default_logpipe_cls can't be None")
 
     logPipe_p = kwargs.pop('logPipe', {})
     logPipeCls = logPipe_p.pop('cls', default_logpipe_cls)
     logPipeKwargs = logPipe_p.pop('kwargs', {})
     callKwargs = kwargs.pop('kwargs', {})
+    logSubprocess_p = kwargs.pop('logSubprocess', {})
+    logSubProcessCls = logSubprocess_p.pop('logSubprocess', default_log_subprocess_cls)
 
     with logPipeCls(**logPipeKwargs) as logPipe:
-        call = LoggigSubProcessCall(pipe=logPipe,
+        call = logSubProcessCls(pipe=logPipe,
                                     **{'popen':
                                            {'args':args,
                                            'kwargs':callKwargs}}
@@ -172,6 +179,8 @@ def initConfig(**kwargs):
                 Default values is: logging.INFO
     :param default_logpipe_cls: Optional.
                 Default values is: LogPipe
+    :param default_log_subprocess_cls: Optional.
+                Default values is: LoggigSubProcessCall
     :param executor: internally used to run sub-process
                 Default values are
                       'max_workers':1,
@@ -179,6 +188,8 @@ def initConfig(**kwargs):
                 This means, by default:
                     We're using up to 1 worker.
                     In log message generated from the worker processinvokes-xxx will be used as thread_name.
+
+    If running from the MainThread, this method is idempotent.
     :return:
     """
     default_log_name_p = kwargs.get('default_log_name', None)
@@ -199,6 +210,12 @@ def initConfig(**kwargs):
     global default_logpipe_cls
     default_logpipe_cls = default_logpipe_cls_p
 
+    default_log_subprocess_cls_p = kwargs.get('default_log_subprocess_cls', None)
+    if default_log_subprocess_cls_p is None:
+        default_log_subprocess_cls_p = LoggigSubProcessCall
+    global default_log_subprocess_cls
+    default_log_subprocess_cls = default_log_subprocess_cls_p
+
     executor_d = kwargs.get('executor', {})
     executor_d = {'max_workers': 1,
                   'thread_name_prefix': __name__,
@@ -208,3 +225,4 @@ def initConfig(**kwargs):
         executor.shutdown(wait=False)
     executor = ThreadPoolExecutor(**executor_d)
 
+initConfig()

@@ -4,7 +4,6 @@ This module is usable in your deployment script. See also `fabs` module.
 This module depends on some 3-rd party dependencies, in order to use it, you should have installed first. To do it
 run `pip3 install alex-ber-utils[yml]`.
 
-Note: **It is mandatory to call `initConfig()` function before any method in `ymlparsers` module**.
 """
 
 from collections import OrderedDict
@@ -15,7 +14,6 @@ try:
 except ImportError:
     pass
 
-#ymlparsers.initConfig()
 from .init_app_conf import merge_list_value_in_dicts, conf
 from .parsers import is_empty, parse_sys_args
 
@@ -87,14 +85,12 @@ def load_config(argumentParser=None, args=None):
     Simplified method for parsing yml configuration file with optionally overrided profiles only.
     See alexber.utils.init_app_conf.parse_config() for another variant.
 
-    Note: You should call alexber.utils.ymlparsers.initConfig() first.
-
     :param argumentParser with instruction how to interpret args. If None, the default one will be instantiated.
     :param args: if not None will be used instead of sys.argv
     :return:
     """
     if ymlparsers.HiYaPyCo.jinja2ctx is None:
-        raise ValueError("You should call alexber.utils.ymlparsers.initConfig() first")
+        raise ValueError("ymlparsers.HiYaPyCo.jinja2ctx can't be None")
 
     params, sys_d = parse_sys_args(argumentParser, args)
     config_file = params.config_file

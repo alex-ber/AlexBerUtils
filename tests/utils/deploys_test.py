@@ -88,12 +88,6 @@ class TestSplitPath(object):
             pytest.assume(duplicate_dir_base==first_part)
             pytest.assume('config.yml'==str(second_part))
 
-@pytest.mark.yml
-def test_load_config_not_init(request):
-    logger.info(f'{request._pyfuncitem.name}()')
-    with pytest.raises(ValueError, match="initConfig"):
-        load_config(None, None)
-
 def check_config_yml(default_d, exp_d):
 
 
