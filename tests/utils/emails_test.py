@@ -2,7 +2,7 @@ import logging
 import threading
 import time
 import pytest
-from alexber.utils.emails import SMTPHandler, OneMemoryHandler
+from alexber.utils.emails import SMTPHandler, OneMemoryHandler, _thread_locals
 #don't remove this
 from platform import uname
 from alexber.utils.emails import EmailStatus, FINISHED
@@ -152,9 +152,30 @@ def test_emails_intented_simple_success_wrong(request, mocker, emailsFixture, em
     with pytest.raises(ValueError):
         emailLogger.log(FINISHED, ['some non-dict value'])
 
-def test_emails_intented_abropt_execution(request, mocker, emailsFixture, emailsSubject):
+@pytest.fixture
+def specialAbruptCleanup(request, mocker):
+    yield None
+    setattr(_thread_locals, 'buffer', [])
+
+
+def test_emails_intented_abrupt_execution(request, mocker, emailsFixture, errorMailMemoryHandler, specialAbruptCleanup):
     logger.info(f'{request._pyfuncitem.name}()')
     emailLogger.info("Started")
+    emailLogger.info('Step 1')
+    logging.shutdown([lambda: errorMailMemoryHandler])
+    emailLogger.info('Step 2')
+
+    mock_log = emailsFixture.emit
+    pytest.assume(mock_log.call_count == 1)
+    (logrecord,), _ = mock_log.call_args
+
+    subject = str(logrecord.msg['subject'])
+    pytest.assume('Abrupt' in subject)
+    pytest.assume('{status}' not in subject)
+    message = str(logrecord.msg)
+    pytest.assume('Start' in message)
+    pytest.assume('Step 1' in message)
+    pytest.assume('Step 2' not in message)
 
 
 @pytest.mark.parametrize('emailsFixture', [False], indirect=True)

@@ -119,13 +119,25 @@ This module contains extensions of the logging handlers.
 This module optionally depends on `ymlparseser` module.
 It is better to use `EmailStatus` context manager with configured `emailLogger`.
 It is intended to configure first your `emailLogger` with `OneMemoryHandler` (together with `SMTPHandler`).
-Than the code block that you want to aggregate messages from is better to be enclosed with `EmailStatus`
+Than the code block that you want to aggregate log messages from is better to be enclosed with `EmailStatus`
 context manager.
 
-`alexber.utils.SMTPHandler` is customization of `logging.handlers.SMTPHandler`. It's purpose is to connect to
+`alexber.utils.emails.SMTPHandler` is customization of `logging.handlers.SMTPHandler`. It's purpose is to connect to
 SMTP server and actually send the e-mail. Unlike `logging.handlers.SMTPHandler` this class expects for record.msg to be built EmailMessage.
 You can also change use of underline SMTP class to SMTP_SSL, LMTP, etc. 
 This implementation is *thread-safe*.
+
+`alexber.utils.emails.OneMemoryHandler` is variant of `logging.handlers.MemoryHandler`. This handler aggregates 
+log messages until `FINISHED` log-level is received or application is going to terminate abruptly (see docstring
+of `calc_abrupt_vars()` method for the details) and we have some log messages in the buffer. On such event 
+all messages (in the current Thread) are aggregated to the single `EmailMessage`. The subject of the `EmailMessage` 
+is determined by `get_subject()` method. 
+If you want to change delimeters used to indicate variable declaration inside template, see docstring of the 
+`get_subject()` method.
+It is better to use `EmailStatus` context manager with configured emailLogger. See docstring of `EmailStatus`.  
+This implementation is *thread-safe*.
+
+
 
  
 

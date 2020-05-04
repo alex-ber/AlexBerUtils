@@ -3,24 +3,31 @@ This module contains extensions of the logging handlers.
 See https://docs.python.org/3/library/logging.handlers.html#module-logging.handlers for more details.
 
 All handlers are thread safe.
+
+It is better to use EmailStatus context manager with configured emailLogger.
+See docstring of EmailStatus.
+
 This module optionally depends on ymlparseser module.
 
-it is better to use email_status context manager with configured emailLogger.
-See docstring of email_status.
+If you want to change delimeters used to indicate variable declaration inside template, see docstring of the
+OneMemoryHandler.get_subject() method.
+
 """
 
 import io as _io
+import warnings
 import logging
 from logging.handlers import SMTPHandler as _logging_SMTPHandler
 from logging.handlers import MemoryHandler as _logging_MemoryHandler
 import smtplib
 import contextlib
+import atexit
 from collections.abc import Mapping
 from email.message import EmailMessage as _EmailMessage
 from email.policy import SMTPUTF8 as _SMTPUTF8
 from ..utils import threadlocal_var
 from .parsers import is_empty
-from . _ymlparsers_extra import format_template
+from . _ymlparsers_extra import format_template as _format_template
 
 FINISHED = logging.FATAL+10
 logging.addLevelName(FINISHED, 'FINISHED')
@@ -31,9 +38,15 @@ default_smpt_port = None
 import threading
 _thread_locals = threading.local()
 
+
+
 class SMTPHandler(_logging_SMTPHandler):
     """
-    This implementation is Thread safe. Each Thread aggregates it's own buffer of the log messages.
+    It's purpose is to connect to SMTP server and actually send the e-mail.
+    This class expects for record.msg to be built EmailMessage.
+    You can also change use of underline SMTP class to SMTP_SSL, LMTP, or another class from smtplib.
+
+    This implementation is Thread safe.
     """
     def __init__(self, *args, **kwargs):
         smpt_cls_name = kwargs.pop('smptclsname', default_smpt_cls_name)
@@ -55,6 +68,11 @@ class SMTPHandler(_logging_SMTPHandler):
                 port = self.mailport
                 if not port:
                     port = self.smpt_cls.default_port if hasattr(self.smpt_cls, 'default_port') else default_smpt_port
+
+                if port is None:
+                    raise ValueError("{self.smpt_cls} class that will be used doesn't contain default_port field."
+                                     "You should explicitly specify default_smpt_port.")
+
 
                 smtp = self.smpt_cls(self.mailhost, port, timeout=self.timeout)
 
@@ -162,9 +180,10 @@ class BaseOneMemoryHandler(_logging_MemoryHandler):
         """
         self.acquire()
 
-        buffer = threadlocal_var(_thread_locals, 'buffer', lambda: [])
 
         try:
+            buffer = threadlocal_var(_thread_locals, 'buffer', lambda: [])
+
             if self.target and buffer:
                 # for record in self.buffer:
                 #     self.target.handle(record)
@@ -173,6 +192,7 @@ class BaseOneMemoryHandler(_logging_MemoryHandler):
                 self.target.handle(record)
 
                 #self.buffer = []
+
                 setattr(_thread_locals, 'buffer', [])
         finally:
             self.release()
@@ -181,7 +201,26 @@ class BaseOneMemoryHandler(_logging_MemoryHandler):
 
 class OneMemoryHandler(BaseOneMemoryHandler):
     """
+    This is variant of logging.handlers.MemoryHandler.
+
     This implementation is Thread safe.
+
+    This handler aggregates log messages until FINISHED log-level is received or we've figure out that application is
+    going to terminate abruptly and we have some log messages in the buffer (see below).
+
+    On such event all messages (in the current Thread) are aggregated to the single EmailMessage.
+    The subject of the EmailMessage is determined by get_subject() method (see it's docstring for the details).
+
+    There are cases on which FINISHED log-level is not received, but we know that application is going to terminate
+    abruptly and we did aggregated some messages. See docstring of the calc_abrupt_vars() method for the details.
+    On such a cases we will send EmailMessage as if FINISHED log-level was recieved, but using abruptvars field
+    that was set in the constructor in calc_abrupt_vars() method.
+
+    If you want to change delimeters used to indicate variable declaration inside template, see docstring of the
+    get_subject() method.
+
+    Note: It is better to use EmailStatus context manager with configured emailLogger. See docstring of EmailStatus.
+
     """
     DEFAULT_ABRUPT_VARS =  {'status': 'Finished Abruptly'}
 
@@ -207,18 +246,57 @@ class OneMemoryHandler(BaseOneMemoryHandler):
         if is_finished:
             records.pop()
 
+    format_template = staticmethod(_format_template)
+
     def get_subject(self, *args, **kwargs):
         """
-        You can override this method.
+        If you want to change delimeters used to indicate variable declaration inside template, you have following
+        options:
+
+        1. You can override this method and pass Jinja2 Environment object to format_template() method.
+            If your application is mutli-threaded, this object should be non-shareble (maybe locally defined).
+            If this object is shared, see another options below.
+        2. You can override this method and pass Jinja2 Environment object with threading.RLock (or any other lock)
+        object in order to ensure atomic read of all decimetres.
+        3. Call alexber.utils.ymplparser.initConfig() method to initialize HiYaPyCo.jinja2ctx (together will
+        HiYaPyCo.jinja2Lock). It will be consulted for delimeters in format_template() method. Please, note:
+            This object will be used by also by another modules (init_app_conf.py for example), so this change
+            may effect also another parts of your applications if you use when.
+            You're changing global variable, please make sure, you own code is aware of this change.
+            You should ensure that dependencies that are required by ymplparser module are installed.
+            See docstring of ymplparser module for mode details.
+
         """
         subject = self.subject
-        ret = format_template(subject, **self.variables)
+        ret = self.format_template(subject, **self.variables)
         return ret
 
     def calc_abrupt_vars(self, *args, **kwargs):
         """
-        You can override this method.
-        However, it is better to use email_status context manager and don't rely on this mechanism.
+        You can override this method. There are alternatives though to change default behaviour of this method
+        (see below).
+
+        This method need to define self.abruptvars field.
+
+        If your application is stopped abruptly (for example, by SIGINT) and your buffer (in the current Thread)
+        has some messages,
+        logging system at shutdown will flush and close all handlers, so the buffer without message
+        with log-level FINISHED (and hence without variable substitution kwargs) will be flushed.
+        self.abruptvars will be used instead.
+
+        If you application has execution path that doesn't ends by sending log messages with log-level FINISHED
+        (for example, you have uncaught exception that cause your application to terminate abruptly)
+        and your buffer (in the current Thread) has some messages,
+        logging system at shutdown will flush and close all handlers, so the buffer without without message
+        with log-level FINISHED (and hence without variable substitution kwargs) will be flushed.
+        self.abruptvars will be used instead.
+        It is recommended to use EmailStatus context manager in order to avoid this.
+
+        The default implementation checks if abruptvars kwargs was supplied in constructor. If it did, it will be used
+        put as self.abruptvars. If it doesn't OneMemoryHandler.DEFAULT_ABRUPT_VARS is used as self.abruptvars.
+
+        :param abruptvars: kwargs to be put as self.abruptvars. Optional.
+
         """
         abruptvars = kwargs.pop('abruptvars', None)
         if abruptvars is None:
@@ -246,7 +324,7 @@ class OneMemoryHandler(BaseOneMemoryHandler):
 
 
 @contextlib.contextmanager
-def email_status(emailLogger, logger=None, faildargs={}, successargs={}, successkwargs={}, faildkwargs={}):
+def EmailStatus(emailLogger, logger=None, faildargs={}, successargs={}, successkwargs={}, faildkwargs={}):
     """
     if contextmanager exits with exception (it fails), than e-mail with subject formatted with faildargs and faildkwargs
     will be send.
@@ -260,7 +338,7 @@ def email_status(emailLogger, logger=None, faildargs={}, successargs={}, success
 
     Indented usage example:
 
-    with email_status(emailLogger=emailLogger, logger=logger, faildargs={'status': 'Failed'},
+    with EmailStatus(emailLogger=emailLogger, logger=logger, faildargs={'status': 'Failed'},
                               successargs={'status': 'Done'}):
         emailLogger.info("Start - Process")
         ...
@@ -273,6 +351,9 @@ def email_status(emailLogger, logger=None, faildargs={}, successargs={}, success
     'status' is place holder in the subject of the e-mail. For example, 'My Process Status : {{status}}'.
     In this case the same subject of the e-mail will be used whether the code-block finish successfully or with failure.
 
+    If you want to change delimeters used to indicate variable declaration inside template, see docstring of the
+    OneMemoryHandler.get_subject() method.
+
     :param emailLogger: configured emailLogger. See https://docs.python.org/3/howto/logging-cookbook.html#logging-cookbook
     :param faildargs:   variable resolution for e-mail's subject on failure. Optional.
                             Expected to be dict with variable substitution.
@@ -284,6 +365,7 @@ def email_status(emailLogger, logger=None, faildargs={}, successargs={}, success
     :param faildkwargs:   to be send to the emailLogger's kwargs param on failure. Optional.
     :return:
     """
+
     try:
         yield emailLogger
     except Exception:
@@ -294,3 +376,35 @@ def email_status(emailLogger, logger=None, faildargs={}, successargs={}, success
     else:
         emailLogger.log(FINISHED, successargs, **successkwargs)
 
+
+def initConfig(**kwargs):
+    """
+    This method is idempotent.
+
+    :param kwargs:
+    :return:
+    """
+
+    default_smpt_cls_name_p = kwargs.get('default_smpt_cls_name', None)
+    if default_smpt_cls_name_p is None:
+        default_smpt_cls_name_p = 'SMTP'
+    global default_smpt_cls_name
+    default_smpt_cls_name = default_smpt_cls_name_p
+
+    default_smpt_port_p = kwargs.get('default_smpt_port', None)
+    if default_smpt_port_p is None:
+        smpt_cls = getattr(smtplib, default_smpt_cls_name)
+        if not hasattr(smpt_cls, 'default_port'):
+            warning = (
+                f"You didn't explicetly specify default_smpt_port."
+                "{default_smpt_cls_name} class that will be used doesn't contain default_port field."
+                "You should explicitly specify port in your later use."
+            )
+            warnings.warn(warning, RuntimeWarning)
+    global default_smpt_port
+    default_smpt_port = default_smpt_cls_name_p
+
+
+
+
+initConfig()
