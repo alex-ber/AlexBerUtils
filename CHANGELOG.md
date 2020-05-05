@@ -49,6 +49,8 @@ They can be overridden in `initConfig()` function.
 for example of dict.
 
 `DisableVarSubst` - use of this context manager disables variable substation in the `load()` function.
+
+`initConfig` - this method reset some defaults. If running from the MainThread, this method is idempotent.
  
 - Added `init_app_conf` **major** module. 
 
@@ -97,8 +99,8 @@ Value from d is roughly obtained by d[main_key][sub_key].
 If you supply `implicit_convert=True`, than `mask_value()` will be applied to the flat map (first parameter).
 Otherwise, `implicit_convert` wiil have the value that was set in `intiConfig()`. By default it is `True`.
 
-`intiConfig` - you can set default value of `implicit_convert`. By default it is `True`.
-This parameters is used if `implicit_convert` wasn't explicitly supplied.
+`initConfig` - you can set default value of `implicit_convert`. By default it is `True`.
+This parameters is used if `implicit_convert` wasn't explicitly supplied. This method is idempotent.
 
 - Added `deploys` module.
 This module is usable in your deployment script. See also `fabs` module. 
@@ -137,11 +139,18 @@ If you want to change delimeters used to indicate variable declaration inside te
 It is better to use `EmailStatus` context manager with configured emailLogger. See docstring of `EmailStatus`.  
 This implementation is *thread-safe*.
 
+`alexber.utils.emails.EmailStatus` -  if contextmanager exits with exception (it fails), than e-mail with 
+subject formatted with faildargs and faildkwargs will be send.
+Otherwise, e-mail with subject formatted with successargs and successkwargs will be send.
+All messages (in the current Thread) will be aggregated to one long e-mail with the subject described in 
+`OneMemoryHandler.get_subject()` method. 
+	
+`alexber.utils.emails.initConfig` - this method reset some defaults. This method is idempotent.
+By default, smtplib.SMTP class is used to send actual e-mail. You can change it to SMTP_SSL, LMTP,
+or another class from smtplib by specifying default_smpt_cls_name.
+You can also specified default port for sending e-mails.
 
 
- 
-
-`alexber.utils.
 
 
 

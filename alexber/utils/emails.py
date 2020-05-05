@@ -250,6 +250,11 @@ class OneMemoryHandler(BaseOneMemoryHandler):
 
     def get_subject(self, *args, **kwargs):
         """
+        You may override this method.
+
+        If your subject doesn't contains place holders, for example, 'Aggregates log from the Demo application',
+        there is no need to override this method. See also docstring of EmailStatus context manager.
+
         If you want to change delimeters used to indicate variable declaration inside template, you have following
         options:
 
@@ -265,6 +270,7 @@ class OneMemoryHandler(BaseOneMemoryHandler):
             You're changing global variable, please make sure, you own code is aware of this change.
             You should ensure that dependencies that are required by ymplparser module are installed.
             See docstring of ymplparser module for mode details.
+        4. You can override this method with your custom logic.
 
         """
         subject = self.subject
@@ -273,7 +279,12 @@ class OneMemoryHandler(BaseOneMemoryHandler):
 
     def calc_abrupt_vars(self, *args, **kwargs):
         """
-        You can override this method. There are alternatives though to change default behaviour of this method
+        You can override this method. place holders, for example,
+
+        If your subject doesn't contains place holders, for example, 'Aggregates log from the Demo application',
+        there is no need to override this method.
+
+        There are alternatives though to change default behaviour of this method
         (see below).
 
         This method need to define self.abruptvars field.
@@ -330,7 +341,8 @@ def EmailStatus(emailLogger, logger=None, faildargs={}, successargs={}, successk
     will be send.
     Otherwise, e-mail with subject formatted with successargs and successkwargs will be send.
 
-    Exactly 1 e-mail will be send. All message will be aggregated to one long e-mail with the subject described above.
+    All messages (in the current Thread) will be aggregated to one long e-mail with the subject described in
+    OneMemoryHandler.get_subject() method. (see also below).
 
     You can have subject of the e-mails without place holders, for example, 'Aggregates log from the Demo application'.
 
@@ -379,9 +391,32 @@ def EmailStatus(emailLogger, logger=None, faildargs={}, successargs={}, successk
 
 def initConfig(**kwargs):
     """
+    This method can be optionally called prior any call to another function in this module.
+    It is indented to be called in the MainThread.
+    This method can be call with empty params.
+
+    By default, smtplib.SMTP class is used to send actual e-mail. You can change it to SMTP_SSL, LMTP,
+    or another class from smtplib by specifying default_smpt_cls_name.
+
+    smtplib.SMTP and some other classes (but not all) has default_port class-level field. If you use
+    class that doesn't have such field you have 2 options:
+        1.Specify port with default_smpt_port param.
+        2.Explicitly use port in mailhost param to SMTPHandler as list of mailhost and port.
+        In this case this method will emit warning that remind you not to forget to do it.
+
+    In any case, the order of the determination of the port is as following:
+
+    1. Port in mailhost param to SMTPHandler.
+    2. smtplib.default_smpt_cls_name if exists
+    3. default_smpt_port
+
     This method is idempotent.
 
-    :param kwargs:
+    :param default_smpt_cls_name: Optional
+            Default values is: 'SMTP'
+
+    :param default_smpt_port: Optional
+                Default values is: smtplib.default_smpt_cls_name if exists else None with emited warning.
     :return:
     """
 

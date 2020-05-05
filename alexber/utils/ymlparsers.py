@@ -231,7 +231,7 @@ def DisableVarSubst(*args, **kwargs):
 
 def initConfig(**kwargs):
     """
-    This method should be called prior any call to another function in this module.
+    This method can be optionally called prior any call to another function in this module.
     It is indented to be called in the MainThread.
     This method can be call with empty params.
 
