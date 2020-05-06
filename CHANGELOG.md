@@ -6,7 +6,9 @@ All notable changes to this project will be documented in this file.
 ## [Unrelased]
 
 
-## [0.5.1a] - TBD
+
+
+## [0.5.1] - 06-05-2020
 ### Added 
 
 - `mains` module explanation article https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf is published.
