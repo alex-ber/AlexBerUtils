@@ -19,21 +19,20 @@ import warnings
 import logging
 from logging.handlers import SMTPHandler as _logging_SMTPHandler
 from logging.handlers import MemoryHandler as _logging_MemoryHandler
-import smtplib
+from smtplib import SMTP as _SMTP
 import contextlib
-import atexit
 from collections.abc import Mapping
 from email.message import EmailMessage as _EmailMessage
 from email.policy import SMTPUTF8 as _SMTPUTF8
 from ..utils import threadlocal_var
+from . importer import importer
 from .parsers import is_empty
 from . _ymlparsers_extra import format_template as _format_template
 
 FINISHED = logging.FATAL+10
 logging.addLevelName(FINISHED, 'FINISHED')
 
-default_smpt_cls_name = 'SMTP'
-default_smpt_port = None
+default_smtp_cls = None
 
 import threading
 _thread_locals = threading.local()
@@ -44,13 +43,17 @@ class SMTPHandler(_logging_SMTPHandler):
     """
     It's purpose is to connect to SMTP server and actually send the e-mail.
     This class expects for record.msg to be built EmailMessage.
-    You can also change use of underline SMTP class to SMTP_SSL, LMTP, or another class from smtplib.
+    You can also change use of underline smtplib.SMTP class to smtplib.SMTP_SSL, smtplib.LMTP, or any another class.
 
     This implementation is Thread safe.
     """
     def __init__(self, *args, **kwargs):
-        smpt_cls_name = kwargs.pop('smptclsname', default_smpt_cls_name)
-        self.smpt_cls = getattr(smtplib, smpt_cls_name)
+        smtp_cls_name = kwargs.pop('smtpclsname', None)
+        if isinstance(smtp_cls_name, str):
+            smtp_cls = importer(smtp_cls_name)
+        else:
+            smtp_cls = smtp_cls_name
+        self.smtp_cls = smtp_cls
 
         super().__init__(*args, **kwargs)
 
@@ -67,14 +70,14 @@ class SMTPHandler(_logging_SMTPHandler):
             if msg is not None:
                 port = self.mailport
                 if not port:
-                    port = self.smpt_cls.default_port if hasattr(self.smpt_cls, 'default_port') else default_smpt_port
+                    port = self.smtp_cls.default_port
 
                 if port is None:
-                    raise ValueError("{self.smpt_cls} class that will be used doesn't contain default_port field."
-                                     "You should explicitly specify default_smpt_port.")
+                    raise ValueError("{self.smtp_cls} class that will be used doesn't contain default_port field."
+                                     "You should explicitly specify default_smtp_port.")
 
 
-                smtp = self.smpt_cls(self.mailhost, port, timeout=self.timeout)
+                smtp = self.smtp_cls(self.mailhost, port, timeout=self.timeout)
 
                 if self.username:
                     if self.secure is not None:
@@ -388,6 +391,9 @@ def EmailStatus(emailLogger, logger=None, faildargs={}, successargs={}, successk
     else:
         emailLogger.log(FINISHED, successargs, **successkwargs)
 
+class NoDefaultSmtpPortWarning(RuntimeWarning):
+    pass
+
 
 def initConfig(**kwargs):
     """
@@ -395,49 +401,37 @@ def initConfig(**kwargs):
     It is indented to be called in the MainThread.
     This method can be call with empty params.
 
-    By default, smtplib.SMTP class is used to send actual e-mail. You can change it to SMTP_SSL, LMTP,
-    or another class from smtplib by specifying default_smpt_cls_name.
+    By default, SMTP class from smtplib is used to send actual e-mail. You can change it to SMTP_SSL, LMTP,
+    or another class by specifying default_smtp_cls_name.
 
-    smtplib.SMTP and some other classes (but not all) has default_port class-level field. If you use
+    SMTP and some other classes (but not all) has default_port class-level field. If you use
     class that doesn't have such field you have 2 options:
-        1.Specify port with default_smpt_port param.
+        1.Specify port with default_smtp_port param.
         2.Explicitly use port in mailhost param to SMTPHandler as list of mailhost and port.
-        In this case this method will emit warning that remind you not to forget to do it.
 
     In any case, the order of the determination of the port is as following:
 
     1. Port in mailhost param to SMTPHandler.
-    2. smtplib.default_smpt_cls_name if exists
-    3. default_smpt_port
+    2. default_smtp_cls_name if exists
+    3. default_smtp_port
 
     This method is idempotent.
 
-    :param default_smpt_cls_name: Optional
-            Default values is: 'SMTP'
+    :param default_smtp_cls: Can be class or str. Optional
+            Default values is: 'smtplib.SMTP'
 
-    :param default_smpt_port: Optional
-                Default values is: smtplib.default_smpt_cls_name if exists else None with emited warning.
+    :param default_smtp_port: Optional
+                Default values is: smtplib.default_smtp_cls if exists else None with emited warning.
     :return:
     """
 
-    default_smpt_cls_name_p = kwargs.get('default_smpt_cls_name', None)
-    if default_smpt_cls_name_p is None:
-        default_smpt_cls_name_p = 'SMTP'
-    global default_smpt_cls_name
-    default_smpt_cls_name = default_smpt_cls_name_p
-
-    default_smpt_port_p = kwargs.get('default_smpt_port', None)
-    if default_smpt_port_p is None:
-        smpt_cls = getattr(smtplib, default_smpt_cls_name)
-        if not hasattr(smpt_cls, 'default_port'):
-            warning = (
-                f"You didn't explicetly specify default_smpt_port."
-                "{default_smpt_cls_name} class that will be used doesn't contain default_port field."
-                "You should explicitly specify port in your later use."
-            )
-            warnings.warn(warning, RuntimeWarning)
-    global default_smpt_port
-    default_smpt_port = default_smpt_cls_name_p
+    default_smtp_cls_p = kwargs.get('default_smtp_cls_name', None)
+    if default_smtp_cls_p is None:
+        default_smtp_cls_p = _SMTP
+    elif isinstance(default_smtp_cls_p, str):
+        default_smtp_cls_p = importer(default_smtp_cls_p)
+    global default_smtp_cls
+    default_smtp_cls = default_smtp_cls_p
 
 
 

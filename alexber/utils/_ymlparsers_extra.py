@@ -10,6 +10,31 @@ Note: API and implementation of this module is unstable and can change without p
 
 import warnings
 
+def format_template(template, **kwargs):
+    """
+    This is main method of this module.
+    Note: API of this method is unstable and can change without prior notice.
+
+    Template is expected to be compatible with Jinja2 one.
+
+    Current implementation make delimiters compatible with str.format() and use it.
+
+
+    :param template: str, typically with {{my_variable}}
+    :param jinja2ctx:  Jinja2 Environment that is consulted what is delimiter for variable's names.
+                       if is not provided, HiYaPyCo.jinja2ctx is used. See ymlparsers.initConfig().
+                       if is not provided, than defaults are used (see jinja2.defaults).
+    :param jinja2Lock: Lock to be used to atomically get variable_start_string and variable_end_string from jinja2ctx.
+                       if is not provided, HiYaPyCo.jinja2Lock is used.. See ymlparsers.initConfig().
+    :return: fromated str
+    """
+    if template is None:
+        return None
+    s = _convert_template_to_string_format(template, **kwargs)
+    ret = s.format(template, **kwargs)
+    return ret
+
+
 try:
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=r'.*?yaml*?', module=r'.*?ymlparsers.*?')
@@ -183,30 +208,6 @@ def _convert_template_to_string_format(template, **kwargs):
                 default_end = jinja2ctx.variable_end_string
 
     ret = __convert_template_to_string_format(template, default_start=default_start, default_end=default_end)
-    return ret
-
-def format_template(template, **kwargs):
-    """
-    This is main method of this module.
-    Note: API of this method is unstable and can change without prior notice.
-
-    Template is expected to be compatible with Jinja2 one.
-
-    Current implementation make delimiters compatible with str.format() and use it.
-
-
-    :param template: str, typically with {{my_variable}}
-    :param jinja2ctx:  Jinja2 Environment that is consulted what is delimiter for variable's names.
-                       if is not provided, HiYaPyCo.jinja2ctx is used. See ymlparsers.initConfig().
-                       if is not provided, than defaults are used (see jinja2.defaults).
-    :param jinja2Lock: Lock to be used to atomically get variable_start_string and variable_end_string from jinja2ctx.
-                       if is not provided, HiYaPyCo.jinja2Lock is used.. See ymlparsers.initConfig().
-    :return: fromated str
-    """
-    if template is None:
-        return None
-    s = _convert_template_to_string_format(template, **kwargs)
-    ret = s.format(template, **kwargs)
     return ret
 
 

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 from alexber.utils.init_app_conf import mask_value, merge_list_value_in_dicts, to_convex_map, \
     parse_config
 import alexber.utils.init_app_conf as init_app_conf
-from alexber.utils.init_app_conf import _create_default_parser
+from alexber.utils.init_app_conf import _create_default_parser, AppConfParser
 from alexber.utils.parsers import is_empty
 from tests.utils.ymlparsers_test import ymlparsersSetup, ymlparsersCleanup, exp_config_d
 from importlib.resources import path
@@ -41,12 +41,24 @@ def initappconfFalseFixture(mocker):
 
 
 
+class MyAppConfParser(AppConfParser):
+    pass
+
 def test_mask_value_default_as_none(request, initappconfFalseFixture):
     logger.info(f'{request._pyfuncitem.name}()')
 
     with pytest.raises(ValueError, match='None'):
         init_app_conf.initConfig(**{'default_parser_kwargs': {'implicit_convert': None}})
         mask_value('0.1')
+
+def test_initConfig_default_parser_cls_str(request, initappconfFalseFixture):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    class_name = '.'.join([__name__, MyAppConfParser.__name__])
+    init_app_conf.initConfig(**{'default_parser_cls': class_name})
+
+    pytest.assume(init_app_conf.default_parser_cls == MyAppConfParser)
+
 
 
 @pytest.mark.parametrize(

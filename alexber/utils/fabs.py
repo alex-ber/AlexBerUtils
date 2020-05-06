@@ -2,7 +2,7 @@
 This module is usable in your deployment script. See also `deploys` module.
 
 This module depends on some 3-rd party dependencies, in order to use it, you should have installed first. To do it
-run `pip3 install alex-ber-utils[fabric]`.
+run `python3 -m pip install alex-ber-utils[fabric]`.
 
 """
 
@@ -18,7 +18,7 @@ except ImportError:
 
     warning = (
         "You appear to be missing some optional dependencies;"
-        "please 'pip3 install alex-ber-utils[fabric]'."
+        "please 'python3 -m pip install alex-ber-utils[fabric]'."
     )
     warnings.warn(warning, ImportWarning)
     raise

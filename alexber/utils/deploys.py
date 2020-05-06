@@ -2,7 +2,7 @@
 This module is usable in your deployment script. See also `fabs` module.
 
 This module depends on some 3-rd party dependencies, in order to use it, you should have installed first. To do it
-run `pip3 install alex-ber-utils[yml]`.
+run `python3 -m pip install alex-ber-utils[yml]`.
 
 """
 

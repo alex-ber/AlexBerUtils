@@ -9,7 +9,7 @@ AlexBerUtils is collection of the small utilities. See CHANGELOG.md for detail d
 
 ### QuickStart
 ```bash
-pip3 install -U alex-ber-utils
+python3 -m pip install -U alex-ber-utils
 ```
 
 

@@ -2,7 +2,7 @@
 `ymlparsers` and `parser` modules serves as Low-Level API for this module.
 
 You may need to install some 3-rd party dependencies, in order to use it, you should have installed first. To do it
-run `pip3 install alex-ber-utils[yml]` in order to use it.
+run `python3 -m pip install alex-ber-utils[yml]` in order to use it.
 
 """
 import logging
@@ -18,6 +18,7 @@ try:
 except ImportError:
     pass
 
+from .importer import importer
 
 
 class conf(object):
@@ -463,7 +464,7 @@ def initConfig(**kwargs):
     It is indented to be called in the MainThread.
     This method can be call with empty params.
 
-    :param default_parser_cls: Optional.
+    :param default_parser_cls: can be class or str. Optional.
                 Default values is: AppConfParser
     :param default_parser_kwargs: this params will be used as default values in default_parser_cls.__init__() function.
                 Default values are
@@ -477,6 +478,8 @@ def initConfig(**kwargs):
     default_parser_cls_p = kwargs.get('default_parser_cls', None)
     if default_parser_cls_p is None:
         default_parser_cls_p = AppConfParser
+    elif isinstance(default_parser_cls_p, str):
+        default_parser_cls_p = importer(default_parser_cls_p)
     global default_parser_cls
     default_parser_cls = default_parser_cls_p
 

@@ -2,7 +2,9 @@ import logging
 import threading
 import time
 import pytest
-from alexber.utils.emails import SMTPHandler, OneMemoryHandler, _thread_locals
+from smtplib import SMTP as _SMTP, LMTP as _LMTP
+from alexber.utils.emails import SMTPHandler, OneMemoryHandler
+import alexber.utils.emails as emails
 #don't remove this
 from platform import uname
 from alexber.utils.emails import EmailStatus, FINISHED
@@ -14,7 +16,7 @@ def errorMailHandler(mocker):
 
     d1 = {
      #   'level': logging.DEBUG,
-        'smptclsname': 'SMTP',
+        'smtpclsname': 'smtplib.SMTP',
         'mailhost': ['smtp-relay.gmail.com', 587],
         'fromaddr': f'{{uname()[1]}}@gmail.com',
         'toaddrs': ['no-reply@gmail.com'],
@@ -155,7 +157,7 @@ def test_emails_intented_simple_success_wrong(request, mocker, emailsFixture, em
 @pytest.fixture
 def specialAbruptCleanup(request, mocker):
     yield None
-    setattr(_thread_locals, 'buffer', [])
+    setattr(emails._thread_locals, 'buffer', [])
 
 
 def test_emails_intented_abrupt_execution(request, mocker, emailsFixture, errorMailMemoryHandler, specialAbruptCleanup):
@@ -192,6 +194,20 @@ def test_emails_intented_failure(request, mocker, emailsFixture):
 
 
     check_failed(logrecord)
+
+
+def test_init_config_default(request, mocker, emailsFixture):
+    logger.info(f'{request._pyfuncitem.name}()')
+    emails.initConfig()
+    pytest.assume(_SMTP==emails.default_smtp_cls)
+
+
+def test_init_config2(request, mocker, emailsFixture):
+    logger.info(f'{request._pyfuncitem.name}()')
+    exp_default_smtp_port='9000'
+    emails.initConfig(default_smtp_cls_name='smtplib.LMTP')
+    pytest.assume(_LMTP==emails.default_smtp_cls)
+
 
 @pytest.mark.parametrize('emailsFixture', [False], indirect=True)
 def test_emails_multithreaded(request, mocker, emailsFixture):
@@ -232,8 +248,6 @@ def test_emails_multithreaded(request, mocker, emailsFixture):
             check_failed(logrecord)
         else:
             check_sucess(logrecord)
-
-
 
 
 

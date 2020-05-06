@@ -146,13 +146,19 @@ All messages (in the current Thread) will be aggregated to one long e-mail with 
 `OneMemoryHandler.get_subject()` method. 
 	
 `alexber.utils.emails.initConfig` - this method reset some defaults. This method is idempotent.
-By default, smtplib.SMTP class is used to send actual e-mail. You can change it to SMTP_SSL, LMTP,
+By default, `SMTP` class from `smtplib` is used to send actual e-mail. You can change it to `SMTP_SSL`, `LMTP`,
 or another class from smtplib by specifying default_smpt_cls_name.
 You can also specified default port for sending e-mails.
 
+`processInvokes` module has one primary function - `run_sub_process()` This method run subprocess and logs it's out 
+to the logger. This method is sophisticated decorator to `subprocess.run()`. It is useful, when your subprocess  
+run's a lot of time and you're interesting to receive it's `stdout` and `stderr`. By default, it's streamed to log.
+You can easily customize this behavior, see `initConig()` method.  
 
+`initConig()` This method can be optionally called prior any call to another function in this module. You can use your 
+custom class for the logging. For example, FilePipe. 
 
-
+run_sub_process
 
  
  
@@ -174,7 +180,13 @@ Some other misc changed done.
 - Fixed `parser.safe_eval` - safe_eval('%(message)s') was blow up, now it returns value as is. 
 See https://github.com/alex-ber/AlexBerUtils/issues/2  
 
+- Enhanced `importer.importer` - added support for PEP 420 (implicit Namespace Packages).  
+Namespace packages are a mechanism for splitting a single Python package across multiple directories on disk.
+When interpreted encounter with non-empty __path__ attribute it adds modules found in those locations
+to the current package.
+See https://github.com/alex-ber/AlexBerUtils/issues/3
 
+- In all documentation refference to `pip3` was changed to `python3 -m pip`
 
 ## [0.4.1] - 2020-04-02
 **BREAKING CHANGE** I highly recommend not to use 0.3.X versions.
