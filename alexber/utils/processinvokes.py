@@ -149,7 +149,7 @@ class LogSubProcessCall(object):
 
 def run_sub_process(*args, **kwargs):
     """
-    This method run subprocess and logs it's out to the logger.
+    This method run subprocess and logs it's output to the logger.
     This method is sophisticated decorator to subprocess.run(). It is useful, when your subprocess
     run's a lot of time and you're interesting to receive it's stdout and stderr. By default, it's streamed to log.
     You can easily customize this behavior, see `initConig()` method.

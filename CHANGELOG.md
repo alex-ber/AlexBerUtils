@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
-
+## [0.5.2] - TBD
+### Changed
+``processinvokes`` function ```run_sub_process``` - documentation typo fixed.
 
 
 ## [0.5.1] - 06-05-2020
@@ -159,13 +161,6 @@ You can easily customize this behavior, see `initConig()` method.
 
 `initConig()` This method can be optionally called prior any call to another function in this module. You can use your 
 custom class for the logging. For example, FilePipe. 
-
-run_sub_process
-
- 
- 
-
-
 
  
 ### Changed
