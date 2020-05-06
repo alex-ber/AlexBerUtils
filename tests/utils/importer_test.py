@@ -14,6 +14,16 @@ class TestImporter(object):
         path = kls()
         logger.info(path.resolve())
 
+    def test_imported_implicit_namespace_package(self, request):
+        logger.info(f'{request._pyfuncitem.name}()')
+
+        module_name = 'tests.utils.splitpackage.other_module'
+        module = importer(module_name)
+        value = module.theansweris()
+        evp_value = 42
+        pytest.assume(evp_value, value)
+
+
 
 def test_new_instance_function(request):
     logger.info(f'{request._pyfuncitem.name}()')
