@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 #adopted from scrapy
 def _walk_modules(path):
-    """Loads a module and all its submodules from the given module path and
+    """
+    Loads a module and all its submodules from the given module path and
     returns them. If *any* module throws an exception while importing, that
     exception is thrown back.
-
     """
 
     # Support for namespace packages is added. See PEP 420.
