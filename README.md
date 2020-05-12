@@ -103,6 +103,6 @@ python3 setup.py sdist upload
 
 AlexBerUtils requires the following modules.
 
-* Python 3.7+
+* Python 3.6+
 
 * PyYAML==5.1

@@ -5,10 +5,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
-## [0.5.2] - TBD
+## [0.5.2a] - 12/05/2020
+### Added 
+- `path()` function in `mains` module. For older Python version uses
+`importlib_resources` module. For newer version built in `importlib.resources`.
+- `load_dotenv()` function in `mains` module. Convinient wrapper for dotenv.load_dotenv(). 
+   
+
 ### Changed
 ``processinvokes`` function ```run_sub_process``` - documentation typo fixed.
-
+Lower Python version to 3.6.  
 
 ## [0.5.1] - 06-05-2020
 ### Added 
