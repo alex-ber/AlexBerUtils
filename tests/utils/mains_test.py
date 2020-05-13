@@ -4,8 +4,9 @@ import pytest
 
 logger = logging.getLogger(__name__)
 
-from alexber.utils.mains import fixabscwd, _sys, logger as real_logger
+from alexber.utils.mains import fixabscwd, logger as real_logger
 import os
+import sys
 
 
 _real_info = real_logger.info
@@ -31,7 +32,7 @@ def mock_info(mocker):
 
 @pytest.fixture
 def mock_main_module(mocker):
-    ret_mock = _sys.modules['__main__']
+    ret_mock = sys.modules['__main__']
     mocker.patch.object(ret_mock, '__file__', new=__file__)
     return ret_mock
 
