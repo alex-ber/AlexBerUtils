@@ -122,6 +122,7 @@ class Color(Enum):
      (None, True),
 
      ("something", False),
+     ("", True),
      #
      (1, False),
      (0, True),
