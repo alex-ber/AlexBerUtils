@@ -5,11 +5,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
+## [0.5.2b] - 19/05/2020
+### Added 
+- `path()` function in `mains` module. For older Python version uses
+`importlib_resources` module. For newer version built in `importlib.resources`.
+- `load_env()` function in `mains` module. Convenient method from loading environment variables
+inside packed format (eggs, etc). Use `path*()` function.
+- `fix_env()` function in `mains` module. For each key in ENV_KEYS, this method prepends full_prefix to os.environ[key].
+full_prefix is calculated as absolute path of `__init__.py` of ENV_PCK. 
+    
+
+
 ## [0.5.2a] - 12/05/2020
 ### Added 
 - `path()` function in `mains` module. For older Python version uses
 `importlib_resources` module. For newer version built in `importlib.resources`.
-- `load_dotenv()` function in `mains` module. Convinient wrapper for dotenv.load_dotenv(). 
+
    
 
 ### Changed

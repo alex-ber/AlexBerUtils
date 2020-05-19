@@ -2,7 +2,9 @@ import logging
 
 import os as _os
 import sys as _sys
-
+from collections import deque
+from .parsers import is_empty
+from .importer import importer
 
 logger = logging.getLogger(__name__)
 
@@ -49,30 +51,124 @@ def path():
     return _path
 
 
-def load_dotenv(dotenv_path, **kwargs):
+def load_env(**kwargs):
     """
-    Convinient wrapper for dotenv.load_dotenv().
+    Convenient method from loading environment variables
+    inside packed format (eggs, etc).
 
-    :param dotenv_path: path for .env file
-    :param kwargs: forwarded to dotenv.load_dotenv. Optional. Can override dotenv_path
+    Implementaion note:
+    If available it uses importlib.resources API,
+    if not it assumes existence of backport of importlib_resources.
+
+    :param ENV_PCK: package where to find .env file
+    :param ENV_NAME: Name of .env file. Optional.
     :return:
     """
+
+    # os.environ['AWS_DEFAULT_REGION'] = 'eu-central-1'
     try:
-        from dotenv import load_dotenv as _load_dotenv
+        from dotenv import load_dotenv
     except ImportError:
         import warnings
 
+
         warning = (
             "You appear to be missing some optional dependencies (python-dotenv);"
+            "please 'python3 -m pip install alex-ber-utils[python-dotenv]'."
         )
+
         warnings.warn(warning, ImportWarning)
         raise
 
-    d = {'dotenv_path':dotenv_path,
-         **kwargs
-         }
+    l_path = path()
 
-    _load_dotenv(**d)
+    ENV_PCK = kwargs.get('ENV_PCK', None)
+    if is_empty(ENV_PCK):
+        raise ValueError("ENV_PCK can't be empty")
+
+    ENV_NAME = kwargs.get('ENV_NAME', '.env')
+
+    with l_path(ENV_PCK, ENV_NAME) as full_path:
+        load_dotenv(dotenv_path=full_path)
 
 
+class OsEnvrionPathExpender(object):
+    DEFAULT_DELIMSEP = _os.pathsep   #';'
+    DEFAULT_ENVSEP = _os.path.sep   #/
+    DEFAULT_KEYSEP = ','
 
+
+    def __init__(self, **kwargs):
+        delimsep = kwargs.get('ENV_DELIM_SEP', None)
+        if is_empty(delimsep):
+            delimsep = OsEnvrionPathExpender.DEFAULT_DELIMSEP
+        self.delimsep = delimsep
+
+        envsep = kwargs.get('ENV_SEP', None)
+        if is_empty(envsep):
+            envsep = OsEnvrionPathExpender.DEFAULT_ENVSEP
+        self.envsep = envsep
+
+
+        keysep = kwargs.get('ENV_KEY_SEP', None)
+        if is_empty(keysep):
+            keysep = OsEnvrionPathExpender.DEFAULT_KEYSEP
+        self.keysep = keysep
+
+        env_keys = kwargs.get('ENV_KEYS', None) # 'NLTK_DATA'
+        if is_empty(env_keys):
+            raise ValueError('ENV_KEYS is not found in settings')
+        self.env_keys =  self._str_to_list(self.keysep, env_keys)
+
+        pck = kwargs.get('ENV_PCK', None)
+        if is_empty(pck):
+            raise ValueError('ENV_PCK is not found in settings')
+
+        self.pck = pck
+
+    def _str_to_list(self, sep, value):
+        ret = [w.strip() for w in value.split(sep)]
+        return ret
+
+    def _list_to_str(self, sep, *args):
+        ret = sep.join([*args])
+        return ret
+
+    def fix_abs_path(self):
+        l_path = path()
+
+        with l_path(self.pck, '__init__.py') as init_file:
+            full_prefix = str(init_file.parent.parent)
+
+            for env_key in self.env_keys:
+                rel_paths = self._str_to_list(self.delimsep, _os.environ[env_key])
+
+                buffersize = 0 if rel_paths is None else len(rel_paths)
+                env_values = deque(maxlen=buffersize)
+
+                for rel_path in rel_paths:
+                    abs_path = self._list_to_str(self.envsep, *[full_prefix, rel_path])
+                    env_values.append(abs_path)
+
+                values = self._list_to_str(self.delimsep, *env_values)
+                _os.environ[env_key] = values
+
+
+def fix_env(**kwargs):
+    """
+    For each key in ENV_KEYS, this method prepends full_prefix to os.environ[key].
+    full_prefix is calculated as absolute path of __init__.py of ENV_PCK.
+
+    :param ENV_KEYS keys of os.environ which will be fixed.
+    :param ENV_PCK: package to calcualte full_prefix.
+    :param ENV_KEY_SEP: seperator used in ENV_PCK. Optional. Default is ','
+    :param ENV_SEP: seperator that is used inside path. Optional. Default is os.path.sep.
+    :param ENV_DELIM_SEP: seperator that is used inside os.environ. Optional. Default is os.pathsep.
+    :param cls: class or str with implementation logic. Optional. Default is OsEnvrionPathExpender.
+    """
+
+    cls = kwargs.pop('cls', OsEnvrionPathExpender)
+    if isinstance(cls, str):
+        cls = importer(cls)
+    expender = cls(**kwargs)
+    expender.fix_abs_path()

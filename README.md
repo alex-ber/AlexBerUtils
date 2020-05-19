@@ -51,7 +51,7 @@ python3 -m pip install .[yml]   # installs Yml related dependencies
                                 # optionally used in ymlparsers_extra.py, emails.py)
 ```
 ```bash
-python3 -m pip install .[env]   # installs pydotenv (optionally used in deploys.py)
+python3 -m pip install .[env]   # installs pydotenv (optionally used in deploys.py and mains.py)
 ```
 
 #### Alternatively you install install from requirements file:
