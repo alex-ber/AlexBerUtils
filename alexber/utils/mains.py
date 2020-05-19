@@ -117,12 +117,12 @@ class OsEnvrionPathExpender(object):
 
         env_keys = kwargs.get('ENV_KEYS', None) # 'NLTK_DATA'
         if is_empty(env_keys):
-            raise ValueError('ENV_KEYS is not found in settings')
+            raise ValueError('ENV_KEYS is not found in kwargs')
         self.env_keys =  self._str_to_list(self.keysep, env_keys)
 
-        pck = kwargs.get('ENV_PCK', None)
+        pck = kwargs.get('ENV_MAIN_PCK', None)
         if is_empty(pck):
-            raise ValueError('ENV_PCK is not found in settings')
+            raise ValueError('ENV_MAIN_PCK is not found in kwargs')
 
         self.pck = pck
 
@@ -160,7 +160,7 @@ def fix_env(**kwargs):
     full_prefix is calculated as absolute path of __init__.py of ENV_PCK.
 
     :param ENV_KEYS keys of os.environ which will be fixed.
-    :param ENV_PCK: package to calcualte full_prefix.
+    :param ENV_MAIN_PCK: package to calcualte full_prefix.
     :param ENV_KEY_SEP: seperator used in ENV_PCK. Optional. Default is ','
     :param ENV_SEP: seperator that is used inside path. Optional. Default is os.path.sep.
     :param ENV_DELIM_SEP: seperator that is used inside os.environ. Optional. Default is os.pathsep.

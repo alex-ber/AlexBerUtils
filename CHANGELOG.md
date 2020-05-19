@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
-## [0.5.2b] - 19/05/2020
+## [0.5.2c] - 19/05/2020
 ### Added 
 - `path()` function in `mains` module. For older Python version uses
 `importlib_resources` module. For newer version built in `importlib.resources`.
