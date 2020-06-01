@@ -156,8 +156,12 @@ class OsEnvrionPathExpender(object):
 
 def fix_env(**kwargs):
     """
+    This method "fixes" os.environ relatively to the given ENV_MAIN_PCK package.
+    This method ignores current working directory or __main__ module's __file__ atrribute.
     For each key in ENV_KEYS, this method prepends full_prefix to os.environ[key].
-    full_prefix is calculated as absolute path of __init__.py of ENV_PCK.
+    full_prefix is calculated as absolute path of __init__.py of ENV_MAIN_PCK.
+
+
 
     :param ENV_KEYS keys of os.environ which will be fixed.
     :param ENV_MAIN_PCK: package to calcualte full_prefix.
