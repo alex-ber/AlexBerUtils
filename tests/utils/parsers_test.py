@@ -84,7 +84,7 @@ def test_args_parse_explicit_args(request, arg_parse_param):
         ('1000', 1000, int),
         ('0.1', 0.1, float),
         ('0.0', 0.0, float),
-        ('-0.0', 0.0, float),
+        ('-0.0', -0.0, float),
         ('-5', -5, int),
         ('0.1', None, Decimal),  #Not Supprted
         ('2019-04-01 16:31:51.513383', None, datetime),  #Not Supprted
