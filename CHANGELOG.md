@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
-## [0.5.2d] - 09/06/2020
+## [0.5.2e] - 09/06/2020
 ### Changed
 - `load_env()` function in `mains` module. Added kwargs forwarding. If dotenv_path or stream is present it will be used.
 Otherwise, dotenv_path will be constructed from ENV_PCK and ENV_NAME.  
