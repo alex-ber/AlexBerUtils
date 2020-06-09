@@ -56,12 +56,18 @@ def load_env(**kwargs):
     Convenient method from loading environment variables
     inside packed format (eggs, etc).
 
+    if dotenv_path or stream is present it will be used.
+    Otherwise, dotenv_path will be constructed from ENV_PCK and ENV_NAME.
+
+
     Implementaion note:
     If available it uses importlib.resources API,
     if not it assumes existence of backport of importlib_resources.
 
-    :param ENV_PCK: package where to find .env file
+    :param ENV_PCK: package where to find .env file Optional.
     :param ENV_NAME: Name of .env file. Optional.
+    :param dotenv_path:  absolute or relative path to .env file. Optional.
+    :param stream: `StringIO` object with .env content. Optional.
     :return:
     """
 
@@ -82,14 +88,21 @@ def load_env(**kwargs):
 
     l_path = path()
 
-    ENV_PCK = kwargs.get('ENV_PCK', None)
-    if is_empty(ENV_PCK):
-        raise ValueError("ENV_PCK can't be empty")
+    dotenv_path = kwargs.get('dotenv_path', None)
+    stream = kwargs.get('stream', None)
+    if is_empty(dotenv_path) and is_empty(stream):
+        ENV_PCK = kwargs.pop('ENV_PCK', None)
+        if is_empty(ENV_PCK):
+            raise ValueError("ENV_PCK can't be empty")
 
-    ENV_NAME = kwargs.get('ENV_NAME', '.env')
+        ENV_NAME = kwargs.pop('ENV_NAME', '.env')
+        with l_path(ENV_PCK, ENV_NAME) as full_path:
+            d = {**kwargs, 'dotenv_path': full_path}
 
-    with l_path(ENV_PCK, ENV_NAME) as full_path:
-        load_dotenv(dotenv_path=full_path)
+            load_dotenv(**d)
+    else:
+        load_dotenv(**kwargs)
+
 
 
 class OsEnvrionPathExpender(object):
