@@ -5,27 +5,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unrelased]
 
-## [0.5.2e] - 09/06/2020
-### Changed
-- `load_env()` function in `mains` module. Added kwargs forwarding. If dotenv_path or stream is present it will be used.
-Otherwise, dotenv_path will be constructed from ENV_PCK and ENV_NAME.  
 
-
-## [0.5.2c] - 19/05/2020
+## [0.5.2rc2] - 10/06/2020
 ### Added 
 - `path()` function in `mains` module. For older Python version uses
 `importlib_resources` module. For newer version built in `importlib.resources`.
-- `load_env()` function in `mains` module. Convenient method from loading environment variables
-inside packed format (eggs, etc). Use `path*()` function.
+- `load_env()` function in `mains` module. Added kwargs forwarding. if dotenv_path or stream is present it will be used.
+if ENV_PCK is present, dotenv_path will be constructed from ENV_PCK and ENV_NAME.
+Otherwise, kwargs will be forwarded as is to load_dotenv.
 - `fix_env()` function in `mains` module. For each key in ENV_KEYS, this method prepends full_prefix to os.environ[key].
 full_prefix is calculated as absolute path of `__init__.py` of ENV_PCK. 
-    
-
-
-## [0.5.2a] - 12/05/2020
-### Added 
-- `path()` function in `mains` module. For older Python version uses
-`importlib_resources` module. For newer version built in `importlib.resources`.
 
    
 

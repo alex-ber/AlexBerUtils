@@ -57,7 +57,8 @@ def load_env(**kwargs):
     inside packed format (eggs, etc).
 
     if dotenv_path or stream is present it will be used.
-    Otherwise, dotenv_path will be constructed from ENV_PCK and ENV_NAME.
+    if ENV_PCK is present, dotenv_path will be constructed from ENV_PCK and ENV_NAME.
+    Otherwise, kwargs will be forwarded as is to load_dotenv.
 
 
     Implementaion note:
@@ -90,8 +91,13 @@ def load_env(**kwargs):
 
     dotenv_path = kwargs.get('dotenv_path', None)
     stream = kwargs.get('stream', None)
-    if is_empty(dotenv_path) and is_empty(stream):
-        ENV_PCK = kwargs.pop('ENV_PCK', None)
+    ENV_PCK = kwargs.pop('ENV_PCK', None)
+
+    if not is_empty(dotenv_path) or not is_empty(stream) or \
+            (is_empty(dotenv_path) is None and is_empty(stream) is None and is_empty(ENV_PCK)):
+        load_dotenv(**kwargs)
+
+    else:
         if is_empty(ENV_PCK):
             raise ValueError("ENV_PCK can't be empty")
 
@@ -100,8 +106,8 @@ def load_env(**kwargs):
             d = {**kwargs, 'dotenv_path': full_path}
 
             load_dotenv(**d)
-    else:
-        load_dotenv(**kwargs)
+
+
 
 
 
