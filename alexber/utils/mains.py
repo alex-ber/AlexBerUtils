@@ -94,7 +94,7 @@ def load_env(**kwargs):
     ENV_PCK = kwargs.pop('ENV_PCK', None)
 
     if not is_empty(dotenv_path) or not is_empty(stream) or \
-            (is_empty(dotenv_path) is None and is_empty(stream) is None and is_empty(ENV_PCK)):
+            (is_empty(dotenv_path) and is_empty(stream) and is_empty(ENV_PCK)):
         load_dotenv(**kwargs)
 
     else:
