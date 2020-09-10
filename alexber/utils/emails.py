@@ -2,6 +2,7 @@
 This module contains extensions of the logging handlers.
 See https://docs.python.org/3/library/logging.handlers.html#module-logging.handlers for more details.
 
+See here https://medium.com/analytics-vidhya/my-emails-module-3ad36a4861c5 for documentation.
 All handlers are thread safe.
 
 It is better to use EmailStatus context manager with configured emailLogger.
@@ -33,6 +34,7 @@ FINISHED = logging.FATAL+10
 logging.addLevelName(FINISHED, 'FINISHED')
 
 default_smtp_cls = None
+default_smtp_port = None
 
 import threading
 _thread_locals = threading.local()
@@ -53,6 +55,8 @@ class SMTPHandler(_logging_SMTPHandler):
             smtp_cls = importer(smtp_cls_name)
         else:
             smtp_cls = smtp_cls_name
+        if smtp_cls is None:
+            smtp_cls = default_smtp_cls
         self.smtp_cls = smtp_cls
 
         super().__init__(*args, **kwargs)
@@ -70,7 +74,10 @@ class SMTPHandler(_logging_SMTPHandler):
             if msg is not None:
                 port = self.mailport
                 if not port:
-                    port = self.smtp_cls.default_port
+                    port = getattr(self.smtp_cls, 'default_port', None)
+
+                if port is None:
+                    port = default_smtp_port
 
                 if port is None:
                     raise ValueError("{self.smtp_cls} class that will be used doesn't contain default_port field."
@@ -282,7 +289,7 @@ class OneMemoryHandler(BaseOneMemoryHandler):
 
     def calc_abrupt_vars(self, *args, **kwargs):
         """
-        You can override this method. place holders, for example,
+        You can override this method.
 
         If your subject doesn't contains place holders, for example, 'Aggregates log from the Demo application',
         there is no need to override this method.
@@ -307,14 +314,14 @@ class OneMemoryHandler(BaseOneMemoryHandler):
         It is recommended to use EmailStatus context manager in order to avoid this.
 
         The default implementation checks if abruptvars kwargs was supplied in constructor. If it did, it will be used
-        put as self.abruptvars. If it doesn't OneMemoryHandler.DEFAULT_ABRUPT_VARS is used as self.abruptvars.
+        put as self.abruptvars. If it doesn't DEFAULT_ABRUPT_VARS is used as self.abruptvars.
 
         :param abruptvars: kwargs to be put as self.abruptvars. Optional.
 
         """
         abruptvars = kwargs.pop('abruptvars', None)
         if abruptvars is None:
-            self.abruptvars = OneMemoryHandler.DEFAULT_ABRUPT_VARS
+            self.abruptvars = self.DEFAULT_ABRUPT_VARS
         elif is_empty(abruptvars):
             self.abruptvars = {}
         else:
@@ -421,7 +428,7 @@ def initConfig(**kwargs):
             Default values is: 'smtplib.SMTP'
 
     :param default_smtp_port: Optional
-                Default values is: smtplib.default_smtp_cls if exists else None with emited warning.
+                Default values is: `smtplib.SMTP.default_port` if exists else None.
     :return:
     """
 
@@ -432,6 +439,14 @@ def initConfig(**kwargs):
         default_smtp_cls_p = importer(default_smtp_cls_p)
     global default_smtp_cls
     default_smtp_cls = default_smtp_cls_p
+
+    default_smtp_port_p = kwargs.get('default_smtp_port', None)
+    if default_smtp_port_p is None:
+        default_smtp_port_p = getattr(_SMTP, 'default_port', None)
+    elif isinstance(default_smtp_port_p, str):
+        default_smtp_port_p = importer(default_smtp_port_p)
+    global default_smtp_port
+    default_smtp_port = default_smtp_port_p
 
 
 

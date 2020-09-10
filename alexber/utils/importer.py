@@ -1,3 +1,6 @@
+"""
+See here https://medium.com/analytics-vidhya/how-to-write-easily-customizable-code-8b00b43406b2 for documentation.
+"""
 import importlib
 import logging
 import inspect

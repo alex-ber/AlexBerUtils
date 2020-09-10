@@ -1,7 +1,5 @@
 general:
   log:
-    formatters:
-      detail: '%(message)s'
     root:
       level: INFO
 

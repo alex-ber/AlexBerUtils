@@ -4,11 +4,21 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## [Unrelased]
+## [0.5.3] - 10/09/2020
+### Changed
+- `alexber.utils.emails.initConfig` is fixed. Before this default variables where ignored.
+- 2 Unit tests for `init_app_conf` are fixed. These fix are minors.
+  
+
 ### Documentation
 - `importer` module [https://medium.com/analytics-vidhya/how-to-write-easily-customizable-code-8b00b43406b2]
-- `fixabscwd()` functionin `mains` module.  [https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf]
+- `fixabscwd()` function in `mains` module.  [https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf]
 - My `parser` module [https://medium.com/analytics-vidhya/my-parser-module-429ed1457718]
- 
+- My `ymlparsers` module [https://medium.com/analytics-vidhya/my-ymlparsers-module-88221edf16a6]
+- My major `init_app_conf` module [https://medium.com/analytics-vidhya/my-major-init-app-conf-module-1a5d9fb3998c]
+- My `deploys` module [https://medium.com/analytics-vidhya/my-ymlparsers-module-88221edf16a6 for documentation]
+- My `emails` module [https://medium.com/analytics-vidhya/my-emails-module-3ad36a4861c5] 
+- My `processinvokes` module [https://medium.com/analytics-vidhya/my-processinvokes-module-de4d301518df]
 
 ## [0.5.2] - 21/06/2020
 ### Added 
@@ -19,7 +29,6 @@ if ENV_PCK is present, dotenv_path will be constructed from ENV_PCK and ENV_NAME
 Otherwise, kwargs will be forwarded as is to load_dotenv.
 - `fix_env()` function in `mains` module. For each key in ENV_KEYS, this method prepends full_prefix to os.environ[key].
 full_prefix is calculated as absolute path of `__init__.py` of ENV_PCK. 
-
    
 
 ### Changed
@@ -99,10 +108,10 @@ variables. This implementation is used to get type for arguments that we get fro
 This mechanism can be easily replaced with your own one.
 
 `to_convex_map()` This method receives dictionary with 'flat keys', it has simple key:value structure
-where value can't another dictionary.
+where value can't be another dictionary.
 It will return dictionary of dictionaries with natural key mapping,
-optionally entries will be filtered out according to white_list_flat_keys and
-optionally value will be implicitly converted to appropriate type.
+optionally, entries will be filtered out according to white_list_flat_keys and,
+optionally, value will be implicitly converted to appropriate type.
 
 In order to simulate dictionary of dictionaries 'flat keys' compose key from outer dict with key from inner dict
 separated with dot.
@@ -167,7 +176,7 @@ All messages (in the current Thread) will be aggregated to one long e-mail with 
 	
 `alexber.utils.emails.initConfig` - this method reset some defaults. This method is idempotent.
 By default, `SMTP` class from `smtplib` is used to send actual e-mail. You can change it to `SMTP_SSL`, `LMTP`,
-or another class from smtplib by specifying default_smpt_cls_name.
+or another class by specifying default_smpt_cls_name.
 You can also specified default port for sending e-mails.
 
 `processInvokes` module has one primary function - `run_sub_process()` This method run subprocess and logs it's out 

@@ -1,9 +1,10 @@
 """
 This module is usable in your deployment script. See also `fabs` module.
 
+See here https://medium.com/analytics-vidhya/my-ymlparsers-module-88221edf16a6 for documentation.
+
 This module depends on some 3-rd party dependencies, in order to use it, you should have installed first. To do it
 run `python3 -m pip install alex-ber-utils[yml]`.
-
 """
 
 from collections import OrderedDict
@@ -16,7 +17,6 @@ except ImportError:
 
 from .init_app_conf import merge_list_value_in_dicts, conf
 from .parsers import is_empty, parse_sys_args
-
 
 
 def split_path(filename, split_dirname):

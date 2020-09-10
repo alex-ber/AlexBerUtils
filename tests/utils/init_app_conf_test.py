@@ -625,7 +625,10 @@ def test_parse_yml(request, mocker, ymlparsersSetup, ymlparsersCleanup, initappc
                             'brief': {
                                 'format': '%(message)s'
                             },
-                            'detail': '%(message)s',
+                            'detail': {
+                                'format': '%(asctime)-15s %(levelname)s [%(name)s.%(funcName)s] %(message)s',
+                                'datefmt': '%Y-%m-%d %H:%M:%S'
+                            },
                         },
                         'root': {
                             'level': 'INFO'  # logging.INFO
@@ -673,7 +676,10 @@ def test_parse_config_true(request, mocker, ymlparsersSetup, ymlparsersCleanup, 
                             'brief': {
                                 'format': '%(message)s'
                             },
-                            'detail': '%(message)s',
+                            'detail': {
+                                'format': '%(asctime)-15s %(levelname)s [%(name)s.%(funcName)s] %(message)s',
+                                'datefmt': '%Y-%m-%d %H:%M:%S'
+                            },
                         },
                         'root': {
                             'level': 'INFO'  # logging.INFO

@@ -9,6 +9,8 @@ This module do use Jinja2's `Environment`.
 
 This module is low level API for init_app_conf.py, deploys.py. It is also optionally used in emails.py.
 
+See here https://medium.com/analytics-vidhya/my-ymlparsers-module-88221edf16a6 for documentation.
+
 """
 
 import warnings

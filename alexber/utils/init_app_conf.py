@@ -4,6 +4,7 @@
 You may need to install some 3-rd party dependencies, in order to use it, you should have installed first. To do it
 run `python3 -m pip install alex-ber-utils[yml]` in order to use it.
 
+See https://medium.com/analytics-vidhya/my-major-init-app-conf-module-1a5d9fb3998c for documentation.
 """
 import logging
 logger = logging.getLogger(__name__)
@@ -296,10 +297,10 @@ def _create_default_parser(**kwargs):
 
 def mask_value(value, implicit_convert=None):
     """
-    If implicit_convert is True,  or it is None, but implicit_convert=True was supplied to initConfig() method,
-    then we assume Python built-in types, including bool, and we're converting it to appropriate type.
-    If implicit_convert is False, or it is None, but False=True was supplied to initConfig() method,
-    then use value as is.
+    If implicit_convert=True, than for system args we assume Python built-in types, including bool,
+    and we're converting it to appropriate type.
+    Otherwise, implicit_convert will have the value that was set in `intiConfig()`. By default it is True.
+
 
     Bool values are case-insensitive.
 
@@ -320,10 +321,10 @@ def mask_value(value, implicit_convert=None):
 def to_convex_map(d, white_list_flat_keys=None, implicit_convert=None):
     """
     This method receives dictionary with 'flat keys', it has simple key:value structure
-    where value can't another dictionary.
+    where value can't be another dictionary.
     It will return dictionary of dictionaries with natural key mapping (see bellow),
-    optionally entries will be filtered out according to white_list_flat_keys and
-    optionally value will be implicitly converted to appropriate type.
+    optionally, entries will be filtered out according to white_list_flat_keys and,
+    optionally, value will be implicitly converted to appropriate type.
 
     In order to simulate dictionary of dictionaries 'flat keys' compose key from outer dict with key from inner dict
     separated with dot.
@@ -331,10 +332,10 @@ def to_convex_map(d, white_list_flat_keys=None, implicit_convert=None):
     that have one of the keys 'profiles' with corresponding value.
 
     if white_list_flat_keys is not None, it will be used to filter out entries from d.
-    If implicit_convert is True,  or it is None, but implicit_convert=True was supplied to initConfig() method,
-    it will be used to convert value to appropriate type. See mask_value() function.
-    If implicit_convert is False, or it is None, but False=True was supplied to initConfig() method,
-    the value will be used as is.
+    If implicit_convert=True, than for system args we assume Python built-in types, including bool,
+    and we're converting it to appropriate type.
+    Otherwise, implicit_convert will have the value that was set in `intiConfig()`. By default it is True.
+
 
     :param d: dict with flat keys
     :param white_list_flat_keys: Optional. if present, only keys that start with one of the elements listed here
@@ -367,20 +368,20 @@ def merge_list_value_in_dicts(flat_d, d, main_key, sub_key, implicit_convert=Non
     implicit_convert is applied only for flat_d.
 
 
-    If implicit_convert is True,  or it is None, but implicit_convert=True was supplied to initConfig() method,
-    then this method implicitly converts every element inside list to Python built-in type. See mask_value() function.
-    If implicit_convert is False, or it is None, but False=True was supplied to initConfig() method,
-    then use value as is.
+    If implicit_convert=True, than for system args we assume Python built-in types, including bool,
+    and we're converting it to appropriate type.
+    Otherwise, implicit_convert will have the value that was set in `intiConfig()`. By default it is True.
 
 
-    :param flat_d: flat dictionoray, usually one that was created from parsing system args.
+
+    :param flat_d: flat dictionary, usually one that was created from parsing system args.
     :param d: dictionary of dictionaries,  usually one that was created from parsing YAML file.
     :param main_key: d[main_key] is absent or dict.
     :param sub_key: d[main_key][sub_key] is absent or list.
     :param implicit_convert: if none, than value that was passed to initConfig() is used (default).
                              if True value attempt to convert value to appropriate type will be done,
                              if False value will be used as is. See mask_value() function.
-    :return: merged convreted value, typically one from flat_d, if empty than from d
+    :return: merged converted value, typically one from flat_d, if empty than from d
     """
     if default_parser_cls is None:
         raise ValueError("default_parser_cls can't be None")
@@ -431,10 +432,10 @@ def parse_config(argumentParser=None, args=None, implicit_convert=None):
 
     general.config.file is key that is used in returned dict that points to default yml file.
 
-    If implicit_convert is True,  or it is None, but implicit_convert=True was supplied to initConfig() method,
-    then for system args we assume Python built-in types, including bool, and we're converting it to appropriate type.
-    If implicit_convert is False, or it is None, but False=True was supplied to initConfig() method,
-    then system args we use value as is.
+    If implicit_convert=True, than for system args we assume Python built-in types, including bool,
+    and we're converting it to appropriate type.
+    Otherwise, implicit_convert will have the value that was set in `intiConfig()`. By default it is True.
+
 
 
     :param argumentParser:

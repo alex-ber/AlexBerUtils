@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 def fixabscwd():
+    """
+    See here https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf for documentation.
+    """
     logger.info(f"cwd is {_os.getcwd()}")
 
     main_module = _sys.modules['__main__']

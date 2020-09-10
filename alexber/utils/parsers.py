@@ -1,4 +1,6 @@
-
+"""
+See https://medium.com/analytics-vidhya/my-parser-module-429ed1457718 for documentation.
+"""
 import logging
 logger = logging.getLogger(__name__)
 from collections import OrderedDict
