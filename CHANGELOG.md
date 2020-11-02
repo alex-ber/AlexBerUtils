@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## [Unrelased]
+see [https://github.com/alex-ber/AlexBerUtils/issues/5]
+
+### Added
+- optional Dockerfile
+- optioanl .env.docker for refference.
+- Support of Python 3.8
+
+
+## [0.6.0a] - 02/11/2020
+### Changed
+- requirements*.txt - dependencies version changed, see https://github.com/alex-ber/AlexBerUtils/issues/6
+- Because of pytest upgrade `conftest.py` was changed:
+`pytest_configure()` was added to support dynamically used marks.
+- In `ymlparsers_test.py` deprecation warning removed (it will be error in Python 3.9)
+`collections.Mapping` was changed to `collections.abc.Mapping`. 
+
+
 ## [0.5.3] - 10/09/2020
 ### Changed
 - `alexber.utils.emails.initConfig` is fixed. Before this default variables where ignored.

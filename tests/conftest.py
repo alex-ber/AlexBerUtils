@@ -51,3 +51,12 @@ def pytest_collection_modifyitems(config, items):
     if not isyamlrelatedfound:
         skip_tests(items=items, keyword="yml", reason="yml is not installed..")
 
+#see https://docs.pytest.org/en/latest/mark.html
+#see https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "yml: yml is not installed.."
+    )
+    config.addinivalue_line(
+        "markers", "md: multidispatch is not installed.."
+    )

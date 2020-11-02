@@ -120,7 +120,7 @@ class TestYmlparsersInit(object):
 
         _safe_dump_d = ymlparsers._safe_dump_d
         assert _safe_dump_d is not None
-        b= isinstance(_safe_dump_d, collections.Mapping)
+        b= isinstance(_safe_dump_d, collections.abc.Mapping)
         pytest.assume(b)
 
         for k, exp_v in {'default_flow_style':False,
@@ -181,7 +181,7 @@ class TestYmlparsersInit(object):
 
         _load_d = ymlparsers._load_d
         assert _load_d is not None
-        b = isinstance(_load_d, collections.Mapping)
+        b = isinstance(_load_d, collections.abc.Mapping)
         pytest.assume(b)
 
         for k, exp_v in p_load.items():
@@ -190,7 +190,7 @@ class TestYmlparsersInit(object):
 
         _safe_dump_d = ymlparsers._safe_dump_d
         assert _safe_dump_d is not None
-        b = isinstance(_safe_dump_d, collections.Mapping)
+        b = isinstance(_safe_dump_d, collections.abc.Mapping)
         pytest.assume(b)
 
         for k, exp_v in p_safe_dump.items():
