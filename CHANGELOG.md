@@ -12,6 +12,13 @@ see [https://github.com/alex-ber/AlexBerUtils/issues/5]
 - Support of Python 3.8
 
 
+## [0.6.0a4] - 04/11/2020
+### Changed
+Email formatting changed in Python 3.8, see https://github.com/alex-ber/AlexBerUtils/issues/7
+
+Note that it is possible that `7bit` will be replaced with `8bit` as `Content-Transfer-Encoding`, 
+that I'm considering as ok.
+
 ## [0.6.0a] - 02/11/2020
 ### Changed
 - requirements*.txt - dependencies version changed, see https://github.com/alex-ber/AlexBerUtils/issues/6

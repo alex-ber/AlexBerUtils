@@ -160,7 +160,7 @@ class BaseOneMemoryHandler(_logging_MemoryHandler):
             msg = _EmailMessage(policy=_SMTPUTF8)
 
             msg['Subject'] = self.get_subject()
-            msg.set_content(body.getvalue(), subtype='html')
+            msg.set_content(body.getvalue(), subtype='html', cte='8bit')
 
         last_record.msg = msg
         return last_record
