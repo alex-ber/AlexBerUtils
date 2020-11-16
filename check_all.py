@@ -10,5 +10,4 @@ if __name__ == "__main__":
 #docker exec -it $(docker ps -q -n=1) bash
 #/etc/unlock_keyring.sh
 #python -m keyring set https://upload.pypi.org/legacy/ alex-ber
-#python -m keyring set https://github.com alex-ber
 #python setup.py clean sdist upload

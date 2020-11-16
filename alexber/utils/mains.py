@@ -191,6 +191,10 @@ class OsEnvrionPathRetry(BaseOsEnvrion):
             env_values = deque(maxlen=buffersize)
 
             for env_path in env_paths:
+                too_short = len(env_path)== 1 and env_path != '/'
+                if too_short:
+                    continue
+
                 env_path_p = Path(env_path)
                 is_exists = env_path_p.exists()
 
@@ -199,7 +203,7 @@ class OsEnvrionPathRetry(BaseOsEnvrion):
                     if len(drive) == 2 and drive[1] == ':':
                         env_path_p = env_path_p.as_posix()[2:]
 
-                env_values.append(env_path_p)
+                env_values.append(str(env_path_p))
 
             values = self._list_to_str(self.delimsep, *env_values)
             _os.environ[env_key] = values
