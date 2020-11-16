@@ -3,29 +3,33 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
-## [Unrelased]
-see [https://github.com/alex-ber/AlexBerUtils/issues/5]
 
+## [0.6.1] - 16/11/2020
 ### Added
 - optional Dockerfile
-- optioanl .env.docker for refference.
-- Support of Python 3.8
+- optional .env.docker for reference.
+- Support of Python 3.8 is validated, see https://github.com/alex-ber/AlexBerUtils/issues/5
 
-
-## [0.6.0a4] - 04/11/2020
-### Changed
-Email formatting changed in Python 3.8, see https://github.com/alex-ber/AlexBerUtils/issues/7
+- Email formatting changed in Python 3.8, see https://github.com/alex-ber/AlexBerUtils/issues/7
 
 Note that it is possible that `7bit` will be replaced with `8bit` as `Content-Transfer-Encoding`, 
 that I'm considering as ok.
 
-## [0.6.0a] - 02/11/2020
-### Changed
+- `check_all.py` to run all unit test.
+
+- `check_d.py` for sanity test.
+
+- .dockerignore
+
 - requirements*.txt - dependencies version changed, see https://github.com/alex-ber/AlexBerUtils/issues/6
 - Because of pytest upgrade `conftest.py` was changed:
 `pytest_configure()` was added to support dynamically used marks.
 - In `ymlparsers_test.py` deprecation warning removed (it will be error in Python 3.9)
 `collections.Mapping` was changed to `collections.abc.Mapping`. 
+
+### Changed
+- README.MD added section about Docker usage. 
+- setup.py to indicate support of Python 3.8
 
 
 ## [0.5.3] - 10/09/2020
