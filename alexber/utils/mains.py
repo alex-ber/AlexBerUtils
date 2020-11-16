@@ -112,41 +112,32 @@ def load_env(**kwargs):
 
 
 
-
-
-class OsEnvrionPathExpender(object):
-    DEFAULT_DELIMSEP = _os.pathsep   #';'
-    DEFAULT_ENVSEP = _os.path.sep   #/
+class BaseOsEnvrion:
+    DEFAULT_DELIMSEP = _os.pathsep  # ';'
+    DEFAULT_ENVSEP = _os.path.sep  # /
     DEFAULT_KEYSEP = ','
-
 
     def __init__(self, **kwargs):
         delimsep = kwargs.get('ENV_DELIM_SEP', None)
         if is_empty(delimsep):
-            delimsep = OsEnvrionPathExpender.DEFAULT_DELIMSEP
+            delimsep = self.DEFAULT_DELIMSEP
         self.delimsep = delimsep
 
         envsep = kwargs.get('ENV_SEP', None)
         if is_empty(envsep):
-            envsep = OsEnvrionPathExpender.DEFAULT_ENVSEP
+            envsep = self.DEFAULT_ENVSEP
         self.envsep = envsep
 
 
         keysep = kwargs.get('ENV_KEY_SEP', None)
         if is_empty(keysep):
-            keysep = OsEnvrionPathExpender.DEFAULT_KEYSEP
+            keysep = self.DEFAULT_KEYSEP
         self.keysep = keysep
 
-        env_keys = kwargs.get('ENV_KEYS', None) # 'NLTK_DATA'
+        env_keys = kwargs.get('ENV_KEYS', None) # 'KEY'
         if is_empty(env_keys):
             raise ValueError('ENV_KEYS is not found in kwargs')
-        self.env_keys =  self._str_to_list(self.keysep, env_keys)
-
-        pck = kwargs.get('ENV_MAIN_PCK', None)
-        if is_empty(pck):
-            raise ValueError('ENV_MAIN_PCK is not found in kwargs')
-
-        self.pck = pck
+        self.env_keys = self._str_to_list(self.keysep, env_keys)
 
     def _str_to_list(self, sep, value):
         ret = [w.strip() for w in value.split(sep)]
@@ -155,6 +146,18 @@ class OsEnvrionPathExpender(object):
     def _list_to_str(self, sep, *args):
         ret = sep.join([*args])
         return ret
+
+
+class OsEnvrionPathExpender(BaseOsEnvrion):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        pck = kwargs.get('ENV_MAIN_PCK', None)
+        if is_empty(pck):
+            raise ValueError('ENV_MAIN_PCK is not found in kwargs')
+
+        self.pck = pck
 
     def fix_abs_path(self):
         l_path = path()
@@ -174,6 +177,33 @@ class OsEnvrionPathExpender(object):
 
                 values = self._list_to_str(self.delimsep, *env_values)
                 _os.environ[env_key] = values
+
+
+class OsEnvrionPathRetry(BaseOsEnvrion):
+
+    def fix_retry_path(self):
+        from pathlib import Path
+
+        for env_key in self.env_keys:
+            env_paths = self._str_to_list(self.delimsep, _os.environ[env_key])
+
+            buffersize = 0 if env_paths is None else len(env_paths)
+            env_values = deque(maxlen=buffersize)
+
+            for env_path in env_paths:
+                env_path_p = Path(env_path)
+                is_exists = env_path_p.exists()
+
+                if not is_exists:
+                    drive = env_path_p.drive
+                    if len(drive) == 2 and drive[1] == ':':
+                        env_path_p = env_path_p.as_posix()[2:]
+
+                env_values.append(env_path_p)
+
+            values = self._list_to_str(self.delimsep, *env_values)
+            _os.environ[env_key] = values
+
 
 
 def fix_env(**kwargs):
@@ -198,3 +228,26 @@ def fix_env(**kwargs):
         cls = importer(cls)
     expender = cls(**kwargs)
     expender.fix_abs_path()
+
+
+def fix_retry_env(**kwargs):
+    """
+    This method "fixes" os.environ making path to Work both on Windows and Linux.
+
+    For each key in ENV_KEYS, this method check if the value can be successfully resolved
+    as path. If so, it does nothing. Otherwise, it strip away the drive part (i.e. C:\\)
+    changing os.environ entry.
+
+
+    :param ENV_KEYS keys of os.environ which will be "fixed".
+    :param ENV_KEY_SEP: seperator used in ENV_PCK. Optional. Default is ','
+    :param ENV_SEP: seperator that is used inside path. Optional. Default is os.path.sep.
+    :param ENV_DELIM_SEP: seperator that is used inside os.environ. Optional. Default is os.pathsep.
+    :param cls: class or str with implementation logic. Optional. Default is OsEnvrionPathRetry.
+    """
+
+    cls = kwargs.pop('cls', OsEnvrionPathRetry)
+    if isinstance(cls, str):
+        cls = importer(cls)
+    path_retry = cls(**kwargs)
+    path_retry.fix_retry_path()

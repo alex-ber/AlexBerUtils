@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
+## [0.6.2a] - 17/11/2020
+### Deprecation
+- `method_overloading_test.py` is deprecated and will be removed once AlexBerUtils will support 
+Python 3.9. It will happen approximately at 01.11.2021. 
+
+This test uses `multidispatch` project that wasn't updated since 2014. 
+In Python 3.8 it has following warning:
+
+`multidispatch.py:163: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.9 it will stop working
+    from collections import MutableMapping`
+
+### Added
+- class `OsEnvrionPathRetry`, function `fix_retry_env()` to `mains` module.
+
+### Changed
+- `OsEnvrionPathExpender` - refactored, functionality is preserved.
+
 
 ## [0.6.1] - 16/11/2020
 ### Added
