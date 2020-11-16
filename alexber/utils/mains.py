@@ -191,7 +191,7 @@ class OsEnvrionPathRetry(BaseOsEnvrion):
             env_values = deque(maxlen=buffersize)
 
             for env_path in env_paths:
-                is_too_short = len(env_path)== 1 and env_path != '/' and env_path != '\\'
+                is_too_short = len(env_path) == 1 and env_path != '/' and env_path != '\\'
                 if is_too_short:
                     continue
 

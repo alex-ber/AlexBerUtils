@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
-## [0.6.2a] - 17/11/2020
+## [0.6.2] - 17/11/2020
 ### Deprecation
 - `method_overloading_test.py` is deprecated and will be removed once AlexBerUtils will support 
 Python 3.9. It will happen approximately at 01.11.2021. 
