@@ -191,8 +191,8 @@ class OsEnvrionPathRetry(BaseOsEnvrion):
             env_values = deque(maxlen=buffersize)
 
             for env_path in env_paths:
-                too_short = len(env_path)== 1 and env_path != '/'
-                if too_short:
+                is_too_short = len(env_path)== 1 and env_path != '/' and env_path != '\\'
+                if is_too_short:
                     continue
 
                 env_path_p = Path(env_path)
@@ -255,3 +255,4 @@ def fix_retry_env(**kwargs):
         cls = importer(cls)
     path_retry = cls(**kwargs)
     path_retry.fix_retry_path()
+
