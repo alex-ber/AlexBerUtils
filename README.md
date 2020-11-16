@@ -76,6 +76,34 @@ python3 -m pip install -r requirements-yml.txt   # installs Yml related dependen
 python3 -m pip install -r requirements-env.txt   # installs pydotenv (optionally used in deploys.py)
 ```
 
+### Using Docker
+`alexberkovich/AlexBerUtils:latest`  contains all `AlexBerUtils` dependencies.
+This Dockerfile is very simple, you can take relevant part for you and put them into your Dockerfile.
+
+##
+Alternatively, you can use it as base Docker image for your project and add/upgrade 
+another dependencies as you need.
+
+For example:
+
+```Dockerfile
+FROM alexberkovich/alexberkovich/AlexBerUtils:latest
+
+COPY requirements.txt etc/requirements.txt
+
+RUN set -ex && \
+    #latest pip,setuptools,wheel
+    pip install --upgrade pip setuptools wheel && \
+    pip install alex_ber_utils 
+    pip install -r etc/requirements.txt 
+
+CMD ["/bin/sh"]
+#CMD tail -f /dev/null
+```
+
+where `requirements.txt` is requirements for your project.
+
+  
 
 ##
 
