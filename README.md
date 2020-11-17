@@ -87,7 +87,7 @@ another dependencies as you need.
 For example:
 
 ```Dockerfile
-FROM alexberkovich/alexberkovich/AlexBerUtils:latest
+FROM alexberkovich/alex_ber_utils:latest
 
 COPY requirements.txt etc/requirements.txt
 
