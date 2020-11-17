@@ -1,4 +1,4 @@
-FROM alexberkovich/alpine-anaconda3:0.0.5
+FROM alexberkovich/alpine-anaconda3:0.1.0
 
 COPY requirements.txt etc/requirements.txt
 COPY requirements-env.txt etc/requirements-env.txt
@@ -28,6 +28,6 @@ CMD tail -f /dev/null
 ##docker build --squash . -t utils-i
 #docker build . -t utils-i
 #docker exec -it $(docker ps -q -n=1) bash
-#docker tag utils-i alexberkovich/alex_ber_utils:0.6.1
-#docker push alexberkovich/alex_ber_utils:0.6.1
+#docker tag utils-i alexberkovich/alex_ber_utils:0.6.3
+#docker push alexberkovich/alex_ber_utils:0.6.3
 # EOF

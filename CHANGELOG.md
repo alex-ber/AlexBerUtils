@@ -3,14 +3,20 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
-## [Unreleased] 
+## [0.6.3] - 18/11/2020
+#### Changed
+- Base docker image version to 0.1.0, it has fix for potential security risk: Git was changed
+not to store credential as plain text, but to keep them in memory for 1 hour,
+see https://git-scm.com/docs/git-credential-cache
 
-### Documentation
+
 #### Updated
+### Documentation
 - My `deploys` module [https://medium.com/analytics-vidhya/my-deploys-module-26c5599f1b15 for documentation] 
 is updated to contain `fix_retry_env()` function in `mains` module.
 
 ### Added 
+### Documentation
 - `fix_retry_env()` function in `mains` module. [https://alex-ber.medium.com/make-path-to-file-on-windows-works-on-linux-402ed3624f66]
 
 
