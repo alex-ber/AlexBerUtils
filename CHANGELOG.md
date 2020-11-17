@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
+## [Unreleased] 
+
+### Documentation
+#### Updated
+- My `deploys` module [https://medium.com/analytics-vidhya/my-deploys-module-26c5599f1b15 for documentation] 
+is updated to contain `fix_retry_env()` function in `mains` module.
+
+### Added 
+- `fix_retry_env()` function in `mains` module. [https://alex-ber.medium.com/make-path-to-file-on-windows-works-on-linux-402ed3624f66]
+
+
 ## [0.6.2] - 17/11/2020
 ### Deprecation
 - `method_overloading_test.py` is deprecated and will be removed once AlexBerUtils will support 
@@ -61,7 +72,7 @@ that I'm considering as ok.
 - My `parser` module [https://medium.com/analytics-vidhya/my-parser-module-429ed1457718]
 - My `ymlparsers` module [https://medium.com/analytics-vidhya/my-ymlparsers-module-88221edf16a6]
 - My major `init_app_conf` module [https://medium.com/analytics-vidhya/my-major-init-app-conf-module-1a5d9fb3998c]
-- My `deploys` module [https://medium.com/analytics-vidhya/my-ymlparsers-module-88221edf16a6 for documentation]
+- My `deploys` module [https://medium.com/analytics-vidhya/my-deploys-module-26c5599f1b15 for documentation]
 - My `emails` module [https://medium.com/analytics-vidhya/my-emails-module-3ad36a4861c5] 
 - My `processinvokes` module [https://medium.com/analytics-vidhya/my-processinvokes-module-de4d301518df]
 
