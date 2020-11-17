@@ -69,10 +69,11 @@ that I'm considering as ok.
 ### Documentation
 - `importer` module [https://medium.com/analytics-vidhya/how-to-write-easily-customizable-code-8b00b43406b2]
 - `fixabscwd()` function in `mains` module.  [https://medium.com/@alex_ber/making-relative-path-to-file-to-work-d5d0f1da67bf]
+- `fix_retry_env()` function in `mains` module. [https://alex-ber.medium.com/make-path-to-file-on-windows-works-on-linux-402ed3624f66]
 - My `parser` module [https://medium.com/analytics-vidhya/my-parser-module-429ed1457718]
 - My `ymlparsers` module [https://medium.com/analytics-vidhya/my-ymlparsers-module-88221edf16a6]
 - My major `init_app_conf` module [https://medium.com/analytics-vidhya/my-major-init-app-conf-module-1a5d9fb3998c]
-- My `deploys` module [https://medium.com/analytics-vidhya/my-deploys-module-26c5599f1b15 for documentation]
+- My `deploys` module [https://medium.com/analytics-vidhya/my-deploys-module-26c5599f1b15]
 - My `emails` module [https://medium.com/analytics-vidhya/my-emails-module-3ad36a4861c5] 
 - My `processinvokes` module [https://medium.com/analytics-vidhya/my-processinvokes-module-de4d301518df]
 
