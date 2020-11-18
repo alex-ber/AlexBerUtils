@@ -10,7 +10,6 @@ not to store credential as plain text, but to keep them in memory for 1 hour,
 see https://git-scm.com/docs/git-credential-cache
 
 
-
 #### Updated
 ### Documentation
 - My `deploys` module [https://medium.com/analytics-vidhya/my-deploys-module-26c5599f1b15 for documentation] 
