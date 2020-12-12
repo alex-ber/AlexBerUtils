@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 alexberkovich/alpine-anaconda3:0.1.1 has some minor changes relative to alexberkovich/alpine-anaconda3:0.1.0.
 See [https://github.com/alex-ber/alpine-anaconda3/blob/master/CHANGELOG.md] for details.
 alexberkovich/alpine-anaconda3:0.1.1-slim is "slim" version of the same docker image, most unused packaged are removed.
+
 - update versions to pip==20.3.1 setuptools==51.0.0 wheel==0.36.1 
 
 ### Removed
