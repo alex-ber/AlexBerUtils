@@ -3,9 +3,20 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
+## [0.6.4] - 12/12/2020
+#### Changed
+- Base docker image version to alexberkovich/alpine-anaconda3:0.1.1-slim.
+alexberkovich/alpine-anaconda3:0.1.1 has some minor changes relative to alexberkovich/alpine-anaconda3:0.1.0.
+See [https://github.com/alex-ber/alpine-anaconda3/blob/master/CHANGELOG.md] for details.
+alexberkovich/alpine-anaconda3:0.1.1-slim is "slim" version of the same docker image, most unused packaged are removed.
+- update versions to pip==20.3.1 setuptools==51.0.0 wheel==0.36.1 
+
+### Removed
+- Script check_d.py
+
 ## [0.6.3] - 18/11/2020
 #### Changed
-- Base docker image version to 0.1.0, it has fix for potential security risk: Git was changed
+- Base docker image version to alexberkovich/alpine-anaconda3:0.1.0, it has fix for potential security risk: Git was changed
 not to store credential as plain text, but to keep them in memory for 1 hour,
 see https://git-scm.com/docs/git-credential-cache
 
