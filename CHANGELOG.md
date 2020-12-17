@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
+
+## Unreleased
+#### Changed
+- Base docker image version to alexberkovich/alpine-anaconda3:0.2.0-slim.
+alexberkovich/alpine-anaconda3:0.1.1 has some minor changes relative to alexberkovich/alpine-anaconda3:0.1.1.
+See [https://github.com/alex-ber/alpine-anaconda3/blob/master/CHANGELOG.md] for details.
+
+
 ## [0.6.4] - 12/12/2020
 #### Changed
 - Base docker image version to alexberkovich/alpine-anaconda3:0.1.1-slim.
