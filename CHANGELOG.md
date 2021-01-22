@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 #### Changed
-- Base docker image version to alexberkovich/alpine-anaconda3:0.2.0-slim.
+- Base docker image version to alexberkovich/alpine-anaconda3:0.2.1-slim.
 alexberkovich/alpine-anaconda3:0.1.1 has some minor changes relative to alexberkovich/alpine-anaconda3:0.1.1.
 See [https://github.com/alex-ber/alpine-anaconda3/blob/master/CHANGELOG.md] for details.
 

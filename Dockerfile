@@ -1,4 +1,4 @@
-FROM alexberkovich/alpine-anaconda3:0.2.0-slim
+FROM alexberkovich/alpine-anaconda3:0.2.1-slim
 
 COPY requirements.txt etc/requirements.txt
 COPY requirements-env.txt etc/requirements-env.txt
