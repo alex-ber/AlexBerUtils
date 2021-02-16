@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
 alexberkovich/alpine-anaconda3:0.1.1 has some minor changes relative to alexberkovich/alpine-anaconda3:0.1.1.
 See [https://github.com/alex-ber/alpine-anaconda3/blob/master/CHANGELOG.md] for details.
 
+#### Updated
+### Documentation
+- See [https://github.com/alex-ber/AlexBerUtils/issues/8] Config file from another directory is not resolved
+(using `argumentParser` with `--general.config.file` can't be passed to `init_app_conf.parse_config()`) 
+
 
 ## [0.6.4] - 12/12/2020
 #### Changed
