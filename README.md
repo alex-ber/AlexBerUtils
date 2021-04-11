@@ -122,9 +122,19 @@ pytest
 ## Installing new version
 See https://docs.python.org/3.1/distutils/uploading.html 
 
+
+## Installing new version to venv
 ```bash
-python3 setup.py sdist upload
+python38 -m pip uninstall --yes alex_ber_utils
+python38 setup.py clean sdist bdist_wheel
+python38 -m pip install --find-links=./dist alex_ber_utils==0.6.5
 ```
+
+##Manual upload
+```bash
+#python setup.py clean sdist upload
+```
+
 
 ## Requirements
 

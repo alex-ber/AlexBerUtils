@@ -2,11 +2,18 @@ import logging
 
 import os as _os
 import sys as _sys
+import contextlib
 from collections import deque
 from .parsers import is_empty
 from .importer import importer
 
 logger = logging.getLogger(__name__)
+
+
+# inspider by https://github.com/theskumar/python-dotenv/blob/12439aac2d7c98b5acaf51ae3044b1659dc086ae/src/dotenv/main.py#L250
+def _is_interactive(module):
+    """ Decide whether this is running in a REPL or IPython notebook """
+    return not hasattr(module, '__file__')
 
 
 def fixabscwd():
@@ -17,12 +24,7 @@ def fixabscwd():
 
     main_module = _sys.modules['__main__']
 
-    #inspider by https://github.com/theskumar/python-dotenv/blob/12439aac2d7c98b5acaf51ae3044b1659dc086ae/src/dotenv/main.py#L250
-    def _is_interactive():
-        """ Decide whether this is running in a REPL or IPython notebook """
-        return not hasattr(main_module, '__file__')
-
-    if _is_interactive() or getattr(_sys, 'frozen', False):
+    if _is_interactive(main_module) or getattr(_sys, 'frozen', False):
         # Should work without __file__, e.g. in REPL or IPython notebook.
         pass
     else:
@@ -256,3 +258,66 @@ def fix_retry_env(**kwargs):
     path_retry = cls(**kwargs)
     path_retry.fix_retry_path()
 
+
+@contextlib.contextmanager
+def FixRelCwd(relPackage, logger=None):
+    """
+    This context-manager temporary changes current working directory to the one where relPackage is installed.
+    If relPackage is Python script (or main method of entire application) that relies on relative path,
+    for example, in order to get some resource from the file-system (for example, some configuration file,
+    that lies in the same directory as relPackage) and you want to call relPackage from another directory, this
+    context-manager makes relPackage 'just work'.
+
+    :param relPackage: - installed package
+    :param logger: - optionally, logger to be used, if not specifed, default one will be used.
+    :return:
+    """
+    if logger is None:
+        logger = logging.getLogger(__name__)
+    logger.debug(f"cwd is {_os.getcwd()}")
+
+    main_module = _sys.modules['__main__']
+
+    if _is_interactive(main_module) or getattr(_sys, 'frozen', False):
+        # Should work without __file__, e.g. in REPL or IPython notebook.
+        pass
+    else:
+        try:
+            cwd = _os.getcwd()
+            dir = _os.path.dirname(_os.path.realpath(relPackage.__file__))
+            logger.debug(f"Going to change os.chdir('{dir}')")
+            _os.chdir(dir)
+            yield dir
+        finally:
+             _os.chdir(cwd)
+
+@contextlib.contextmanager
+def GuardedWorkerException(logger=None, suppress=False, default_exc_message="Worker failed"):
+    """
+    surround with try-except because of worker exceptions cause the pool.join() to halt forever - and thus memory leak!
+
+    It is very difficult if not impossible to pickle 'exceptions' back to the parent process.
+    Simple ones work, but many others don't.
+    For example, CalledProcessError is not pickable (my guess, this is because of stdout, stderr data-members).
+
+    see https://stackoverflow.com/questions/15314189/python-multiprocessing-pool-hangs-at-join
+    see https://bugs.python.org/issue9400
+
+    This bug still exists in Python 3.
+
+    :param logger to log the exception. If None, exception will be logged to sys.stderr.
+    :param suppress whether to suppress exception. Default False - Exception with default_exc_message
+    will be raised.
+    :param default_exc_message. If suppress is False, this will be used as message for Exception.
+    """
+    try:
+        yield None
+    except Exception as e:
+        if logger is None:
+            import traceback
+            print("Caught exception in worker proccess", file=_sys.stderr)
+            traceback.print_exc(file=_sys.stderr)
+        else:
+            logger.error("Caught exception in worker proccess", exc_info=e)
+        if not suppress:
+            raise Exception(default_exc_message)
