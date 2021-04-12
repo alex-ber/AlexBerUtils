@@ -269,7 +269,7 @@ def FixRelCwd(relPackage, logger=None):
     context-manager makes relPackage 'just work'.
 
     :param relPackage: - installed package
-    :param logger: - optionally, logger to be used, if not specifed, default one will be used.
+    :param logger: - optionally, logger to be used, if not specified, default one will be used.
     :return:
     """
     if logger is None:

@@ -3,9 +3,35 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
-
 ## Unreleased
+
+## [0.6.5] - 12-04-2021
+### Added
+- `FixRelCwd` context-manager in `mains` module - This context-manager temporary changes current working directory to 
+the one where relPackage is installed. What if you have some script or application that use relative path and you 
+want to invoke in from another directory. To get things more complicated. maybe your “external” code also use 
+*relative* path, but relative to another directory. 
+See [https://alex-ber.medium.com/making-more-yo-relative-path-to-file-to-work-fbf6280f9511] for details.
+
+- `GuardedWorkerException` context-manager in `mains` module - context manager that mitigate exception propogation 
+from another process. It is very difficult if not impossible to pickle exceptions back to the parent process.
+Simple ones work, but many others don’t. 
+For example, CalledProcessError is not pickable (my guess, this is because of stdout, stderr data-members).
+This means, that if child process raise CalledProcessError that is not catched, it will propagate to the parent 
+process, but the propagation will fail, apparently because of bug in Python itself. 
+This cause *pool.join() to halt forever — and thus memory leak!*
+See [https://alex-ber.medium.com/exception-propagation-from-another-process-bb09894ba4ce] for details.
+
+- `join_files()` function in `files` module - Suppose, that you have some multi-threaded/multi-process application 
+where each thread/process creates some file (each thread/process create different file) 
+and you want to join them to one file. 
+See [https://alex-ber.medium.com/join-files-cc5e38e3c658] for details.
+
+
 #### Changed
+- `fixabscwd()` function in `mains` module - minour refactoring - moving out some internal helper function for reuse 
+in new function.
+
 - Base docker image version to alexberkovich/alpine-anaconda3:0.2.1-slim.
 alexberkovich/alpine-anaconda3:0.1.1 has some minor changes relative to alexberkovich/alpine-anaconda3:0.1.1.
 See [https://github.com/alex-ber/alpine-anaconda3/blob/master/CHANGELOG.md] for details.
