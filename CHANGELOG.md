@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## Unreleased
-## [0.6.6b1] - 13-06-2021
+## [0.6.6b2] - 13-06-2021
 ### Added
 - `stdLogging` module. The main function is `initStream()`. This is Thin adapter layer that redirects stdout/stderr 
 (or any other stream-like object) to standard Python's logger. Based on 
@@ -16,7 +16,10 @@ But, because of https://unix.stackexchange.com/questions/616616/separate-stdout-
 sufficient only to do it for stderr for me.
  
 #### Changed
-- Doockerfiles base-image. Now, you can transparentely switch betwee AMD64 to ARM 64 proccessor.  
+- `Doockerfiles` base-image. Now, you can transparentely switch betwee AMD64 to ARM 64 proccessor.
+- `cffi` dependency from 1.14.3 to 1.14.5.
+- `cryptography` dependency from 3.1.1 to 3.4.7.
+
 
 ## [0.6.5] - 12-04-2021
 ### Added
