@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## Unreleased
-## [0.6.6b2] - 13-06-2021
+## [0.6.6b3] - 13-06-2021
 ### Added
 - `stdLogging` module. The main function is `initStream()`. This is Thin adapter layer that redirects stdout/stderr 
 (or any other stream-like object) to standard Python's logger. Based on 
