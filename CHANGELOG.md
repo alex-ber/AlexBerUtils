@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## Unreleased
-## [0.6.6b3] - 13-06-2021
+
+## [0.6.6] - 13-06-2021
 ### Added
 - `stdLogging` module. The main function is `initStream()`. This is Thin adapter layer that redirects stdout/stderr 
 (or any other stream-like object) to standard Python's logger. Based on 
@@ -14,6 +15,7 @@ Quote from  https://stackoverflow.com/questions/47325506/making-python-loggers-l
 logger. If you want you can also redirect stdout, by making 2 calls to initStream() package-level method. 
 But, because of https://unix.stackexchange.com/questions/616616/separate-stdout-and-stderr-for-docker-run it is 
 sufficient only to do it for stderr for me.
+See [https://alex-ber.medium.com/stdlogging-module-d5d69ff7103f] for details.
  
 #### Changed
 - `Doockerfiles` base-image. Now, you can transparentely switch betwee AMD64 to ARM 64 proccessor.
