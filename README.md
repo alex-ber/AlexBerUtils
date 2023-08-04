@@ -143,4 +143,4 @@ AlexBerUtils requires the following modules.
 
 * Python 3.6+
 
-* PyYAML==5.1
+* PyYAML>=6.0.1

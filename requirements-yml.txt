@@ -1,4 +1,4 @@
-PyYAML==5.1
-HiYaPyCo==0.4.16
-Jinja2==2.11.2
-MarkupSafe==1.1.1
+PyYAML==6.0.1
+HiYaPyCo==0.5.1
+Jinja2==3.1.2
+MarkupSafe==2.1.3

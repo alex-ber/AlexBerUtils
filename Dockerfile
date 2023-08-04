@@ -2,7 +2,7 @@
 
 #ARG ARCH=
 ARG ARCH=amd64
-FROM --platform=linux/${ARCH} alexberkovich/alpine-python3:0.3.3
+FROM --platform=linux/${ARCH} alexberkovich/alpine-python3:0.3.5
 ARG ARCH
 ENV ARCH=${ARCH}
 
@@ -20,7 +20,8 @@ COPY requirements-tests.txt etc/requirements-tests.txt
 
 RUN set -ex && \
     #latest pip,setuptools,wheel
-    pip install --upgrade pip==20.3.1 setuptools==51.0.0 wheel==0.36.1 && \
+    pip install --upgrade pip==23.2.1 setuptools==68.0.0 wheel==0.36.1 && \
+    #because of upgrade of PyYAML
     pip install -r etc/requirements.txt && \
     pip install -r etc/requirements-env.txt && \
     pip install -r etc/requirements-yml.txt && \

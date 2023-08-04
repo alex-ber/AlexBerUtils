@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+
+## [0.7.0] - 04-08-2023
+
+#### Changed
+- 
+- Upgrade pyparsing==2.4.7 to 3.1.1.
+- Upgrade cryptography from 3.4.7 to 41.0.3.
+- Upgrade invoke from 1.4.1 to 1.7.3.
+- Upgrade six from 1.15.0 to 1.16.0.
+- Upgrade colorama from 0.4.3 to 0.4.4.
+- Change declaration of namespace to `declare_namespace()` mechanism.
+
+### Added
+- Explicit dependency on pyOpenSSL==22.1.0 (lowest version where cryptography version is 
+pinned). cryptography's and pyOpenSSL's version change should be in sync.
+
 ## [0.6.6] - 13-06-2021
 ### Added
 - `stdLogging` module. The main function is `initStream()`. This is Thin adapter layer that redirects stdout/stderr 
