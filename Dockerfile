@@ -16,28 +16,29 @@ COPY requirements-yml.txt etc/requirements-yml.txt
 COPY requirements-fabric.txt etc/requirements-fabric.txt
 COPY requirements-md.txt etc/requirements-md.txt
 COPY requirements-tests.txt etc/requirements-tests.txt
+COPY requirements-piptools.txt etc/requirements-piptools.txt
 
 
 RUN set -ex && \
-    #latest pip,setuptools,wheel
-    pip install --upgrade pip==23.2.1 setuptools==68.0.0 wheel==0.36.1 && \
-    #because of upgrade of PyYAML
-    pip install -r etc/requirements.txt && \
-    pip install -r etc/requirements-env.txt && \
-    pip install -r etc/requirements-yml.txt && \
-    pip install -r etc/requirements-fabric.txt && \
-    pip install -r etc/requirements-md.txt && \
-    pip install -r etc/requirements-tests.txt
+     #latest pip,setuptools,wheel
+     python -m pip install --no-cache-dir --upgrade pip==23.1.2 setuptools==67.8.0  \
+         #python -Wignore::DeprecationWarning -m piptools compile --no-strip-extras requirements.in \
+         wheel==0.36.1 pip-tools==7.3.0 && \
+     python -m pip install -U wheel==0.36.1 && \
+     python -Wignore::DeprecationWarning -m pip install --no-cache-dir -r /etc/requirements.txt \
+        -r etc/requirements-env.txt -r etc/requirements-yml.txt -r etc/requirements-fabric.txt \
+        -r etc/requirements-md.txt -r etc/requirements-tests.txt -r etc/requirements-piptools.txt
 
 
 #CMD ["/bin/sh"]
 CMD tail -f /dev/null
 
-
+#docker system prune --all
+#
 #docker rmi -f utils-i
 #docker rm -f utils
 ##docker build --no-cache --squash . -t utils-i
-#docker build . -t utils-i
+#docker build --no-cache . -t utils-i
 #docker exec -it $(docker ps -q -n=1) bash
 #docker tag utils-i alexberkovich/alex_ber_utils:0.6.6
 #docker push alexberkovich/alex_ber_utils:0.6.6

@@ -1,3 +1,0 @@
-PyYAML
-HiYaPyCo>=0.4.16
-Jinja2>1

@@ -2,7 +2,7 @@ import logging
 logger = logging.getLogger(__name__)
 import pytest
 
-from alexber.utils.props import Properties
+from alexber.utils.props import Properties, lazyproperty
 from importlib.resources import open_text
 
 
@@ -45,6 +45,31 @@ def test_parse_java_properties(request):
          'playerb.cls': b_cls_name,}
 
     assert expdd==d
+
+class ProperyBase:
+
+    @property
+    def answer(self):
+        return -1
+
+class ProperyDerived(ProperyBase):
+    @property
+    def answer(self):
+        return 42
+
+def test_regular_properties_support_override(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    a = ProperyDerived()
+    actual = a.answer
+    assert 42 == actual
+
+class LazyProperty:
+    def __init__(self, a=42):
+        self._answer = a
+
+    @lazyproperty
+    def answer(self):
+        return self._make_long_calc()
 
 
 

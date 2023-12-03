@@ -54,12 +54,15 @@ python3 -m pip install .[yml]   # installs Yml related dependencies
 python3 -m pip install .[env]   # installs pydotenv (optionally used in deploys.py and mains.py)
 ```
 
-#### Alternatively you install install from requirements file:
+#### Alternatively you install from requirements file:
 ```bash
 python3 -m pip install -r requirements.txt # only installs "required"
 ```
 ```bash
 python3 -m pip install -r requirements-tests.txt # installs dependencies for tests
+```
+```bash
+python3 -m pip install -r requirements-piptools.txt # installs dependencies for pip-tools
 ```
 ```bash
 python3 -m pip install -r requirements-md.txt   # installs multidispatcher (used in method_overloading_test.py)
