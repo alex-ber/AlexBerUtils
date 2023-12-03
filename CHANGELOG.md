@@ -24,16 +24,19 @@ was changed to false (to use unittest.mock).
 - PyNaClis upgraded from 1.3.0 to 1.5.0
 - HiYaPyCo upgraded from 0.5.1 to 0.5.4
  
+ 
 
 
 ### Added
 - new extra-group, with name requirements-piptools.txt is added.
 - alexber.utils.props.lazyproperty is added. TODO: add test for it
+- New file requirements.ini that have all high-level dependecies together.
+- New file requirements.all that have pinned low-level dependecies resolution.
+
 
 ### Removed
 - mock package was removed. pytest will use unittest.mock. See Changed
 p.1 above.
-- pyOpenSSL was removed.
 - six was removed.
 
 ## [0.7.0] - 04-08-2023

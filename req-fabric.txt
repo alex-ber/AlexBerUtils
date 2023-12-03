@@ -1,1 +1,2 @@
 fabric>=2.5.0
+pyOpenSSL[cryptography] >= 23.3.0
