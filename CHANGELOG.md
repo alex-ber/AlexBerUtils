@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## [0.8.0] In progress
-lazyproperty
+
 
 ### Changed
 - In setup.cfg flag mock_use_standalone_module
@@ -14,15 +14,15 @@ was changed to false (to use unittest.mock).
 - Many version of the packages in extra was updated to latest:
 - python-dotenv from 0.15.0 to 1.0.0.
 - MarkupSafe is **downgraded** from 2.1.3 to 2.0.1
-- bcryptis upgraded from 3.2.0 to 4.1.1
-- cffiis upgraded from 1.14.5 to 1.16.0
-- cryptographyis upgraded from 38.0.4 to to 41.0.7
-- fabricis upgraded from 2.5.0 to 3.2.2
-- invokeis upgraded from 1.7.3 to 2.2.0
-- paramikois upgraded from 2.7.2 to 3.3.1
-- pycparseris upgraded from 2.20 to 2.21
-- PyNaClis upgraded from 1.3.0 to 1.5.0
-- HiYaPyCo upgraded from 0.5.1 to 0.5.4
+- bcrypt is upgraded from 3.2.0 to 4.1.1
+- cffi is upgraded from 1.14.5 to 1.16.0
+- cryptography is upgraded from 38.0.4 to to 41.0.7
+- fabric is upgraded from 2.5.0 to 3.2.2
+- invoke is upgraded from 1.7.3 to 2.2.0
+- paramiko is upgraded from 2.7.2 to 3.3.1
+- pycparser is upgraded from 2.20 to 2.21
+- PyNaCl is upgraded from 1.3.0 to 1.5.0
+- HiYaPyCo is upgraded from 0.5.1 to 0.5.4
  
  
 
@@ -30,7 +30,7 @@ was changed to false (to use unittest.mock).
 ### Added
 - new extra-group, with name requirements-piptools.txt is added.
 - alexber.utils.props.lazyproperty is added. TODO: add test for it
-- New file requirements.ini that have all high-level dependecies together.
+- New file requirements.in that have all high-level dependecies together.
 - New file requirements.all that have pinned low-level dependecies resolution.
 
 

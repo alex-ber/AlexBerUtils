@@ -1,6 +1,7 @@
-pyyaml==6.0.1
 python-dotenv>=1.0.0
 fabric>=2.5.0
+pyOpenSSL >= 23.3.0
+cryptography >= 41.0.7
 multidispatch>=0.2
 pip-tools>=7.3.0
 PyYAML==6.0.1
@@ -10,4 +11,3 @@ pytest-assume==2.3.3
 pytest-mock==3.12.0
 HiYaPyCo>=0.4.16
 Jinja2>1
-pyOpenSSL[cryptography]

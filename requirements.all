@@ -16,6 +16,7 @@ click==8.1.7
     # via pip-tools
 cryptography==41.0.7
     # via
+    #   -r requirements.in
     #   paramiko
     #   pyopenssl
 decorator==5.1.1
@@ -28,7 +29,7 @@ fabric==3.2.2
     # via -r requirements.in
 hiyapyco==0.5.4
     # via -r requirements.in
-importlib-metadata==6.10.0
+importlib-metadata==7.0.0
     # via build
 iniconfig==2.0.0
     # via pytest
@@ -58,7 +59,7 @@ pycparser==2.21
     # via cffi
 pynacl==1.5.0
     # via paramiko
-pyopenssl[cryptography]==23.3.0
+pyopenssl==23.3.0
     # via -r requirements.in
 pyproject-hooks==1.0.0
     # via build
