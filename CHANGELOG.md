@@ -5,8 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-## [0.8.0] In progress
-
+## [0.8.0] 04.12.2023
 
 ### Changed
 - In setup.cfg flag mock_use_standalone_module
