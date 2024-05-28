@@ -1,9 +1,9 @@
-import enum
 import logging
-
+import enum
+from enum import Enum
 import pytest
 
-from alexber.utils.enums import Enum
+
 from alexber.utils.parsers import ConfigParser, ArgumentParser, safe_eval, is_empty, parse_boolean, parse_sys_args
 
 logger = logging.getLogger(__name__)

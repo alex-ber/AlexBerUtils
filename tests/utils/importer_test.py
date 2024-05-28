@@ -95,6 +95,17 @@ class PlayerAbstractFullWithoutAbstractMethod(object, metaclass=ABCMeta):
         pass
 
 
+class PlayerPhilosopher:
+    def __init_subclass__(cls, default_name, **kwargs):
+        super().__init_subclass__(**kwargs)
+        logger.debug(f"Called __init_subclass({cls}, {default_name})")
+        cls.default_name = default_name
+
+
+class PlayerAustralianPhilosopher(PlayerPhilosopher, default_name="Bruce"):
+    pass
+
+
 
 def test_new_instance_arg(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -146,8 +157,7 @@ def test_new_instance(request, plcls):
 
 def test_new_instance_init_subclass(request):
     logger.info(f'{request._pyfuncitem.name}()')
-    module_name, _ = __name__.rsplit(".", 1)
-    input = '.'.join([module_name, 'method_overloading_test', 'PlayerAustralianPhilosopher'])
+    input = '.'.join([__name__, PlayerAustralianPhilosopher.__name__])
 
     player=new_instance(input)
     assert player is not None

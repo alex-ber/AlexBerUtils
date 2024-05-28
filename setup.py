@@ -5,7 +5,7 @@ from setuptools import setup
 
 
 #VERSION should be defined before importing UploadCommand
-VERSION = '0.8.1a6'
+VERSION = '0.9.0a0'
 from alexber.utils import UploadCommand
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
@@ -25,7 +25,6 @@ install_requires = get_content('requirements.txt')
 tests_require = get_content('requirements-tests.txt')
 
 extras = {
-    'md': get_content('req-md.txt'),
     'fabric' : get_content('req-fabric.txt'),
     'yaml' : get_content('req-yml.txt'),
     'yml' : get_content('req-yml.txt'),
