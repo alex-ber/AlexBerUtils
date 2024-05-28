@@ -52,4 +52,5 @@ if __name__ == "__main__":
 #/etc/unlock_keyring.sh
 #pip install keyrings.alt
 #python -m keyring set https://upload.pypi.org/legacy/ alex-ber
+#set $HOME/.pypirc
 #python setup.py clean sdist upload
