@@ -11,3 +11,4 @@ pytest-assume==2.3.3
 pytest-mock==3.12.0
 HiYaPyCo>=0.4.16
 Jinja2>1
+packaging>=24.0
