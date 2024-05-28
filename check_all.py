@@ -49,6 +49,6 @@ if __name__ == "__main__":
     main()
 
 #docker exec -it $(docker ps -q -n=1) bash
-#/etc/unlock_keyring.sh
-#set $HOME/.pypirc
+#nano $HOME/.pypirc + chmod 600 $HOME/.pypirc
+#use gihub login token for password
 #python setup.py clean sdist upload
