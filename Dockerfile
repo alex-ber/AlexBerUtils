@@ -2,7 +2,7 @@
 
 #ARG ARCH=
 ARG ARCH=amd64
-FROM --platform=linux/${ARCH} alexberkovich/alpine-python3:0.3.5
+FROM --platform=linux/${ARCH} alexberkovich/alpine-python39:0.4.0
 ARG ARCH
 ENV ARCH=${ARCH}
 
@@ -19,15 +19,17 @@ COPY requirements-tests.txt etc/requirements-tests.txt
 COPY requirements-piptools.txt etc/requirements-piptools.txt
 
 
-
 RUN set -ex && \
-     #latest pip,setuptools,wheel
-     python -m pip install --no-cache-dir --upgrade pip==23.1.2 setuptools==67.8.0  \
-         #python -Wignore::DeprecationWarning -m piptools compile --no-strip-extras requirements.in \
-         wheel==0.36.1 pip-tools==7.3.0 && \
-     python -Wignore::DeprecationWarning -m pip install --no-cache-dir -r /etc/requirements.txt \
+     #latest pip,setuptools,wheel \
+     #reason for setuptools==65.6.3 \
+     #https://stackoverflow.com/questions/76043689/pkg-resources-is-deprecated-as-an-api#comment136784284_76044568 \
+     python -m pip install --no-cache-dir --upgrade pip==23.1.2 setuptools==65.6.3  \
+             #python -m piptools compile --no-strip-extras requirements.in \
+         pip-tools==7.3.0 && \
+     python -m pip install --no-cache-dir -r /etc/requirements.txt \
         -r etc/requirements-env.txt -r etc/requirements-yml.txt -r etc/requirements-fabric.txt \
         -r etc/requirements-md.txt -r etc/requirements-tests.txt -r etc/requirements-piptools.txt
+
 
 
 #CMD ["/bin/sh"]
