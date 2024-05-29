@@ -1,10 +1,12 @@
 import inspect
-#from inspect import signature as inspect_signature
+from functools import wraps
+from typing import Dict, List, Any, Optional, Callable, Type
+
 import logging
 logger = logging.getLogger(__name__)
 
 
-def issetdescriptor(object):
+def issetdescriptor(object: Any) -> bool:
     """Return true if the object is a method descriptor with setters.
 
     But not if ismethod() or isclass() or isfunction() are true.
@@ -17,38 +19,78 @@ def issetdescriptor(object):
     return hasattr(tp, "__set__")
 
 
-def ismethod(object):
-    '''
-    If object is class, return false.
-    If object is not function, return false.
-
-    :param object:
-    :return: false if object is not a class and not a function. Otherwise, return true iff signature has 2 params.
-    '''
-    if inspect.isclass(object):
-        return False
-
-    if not inspect.isfunction(object):
-        return False
+import inspect
+from typing import Any
 
 
-    return True
+def ismethod(object: Any) -> bool:
+    """Check if the given object is a method.
 
-def has_method(cls, methodName):
-    '''
-    Check if class cls has method with name methodName directly,
-    or in one of it's super-classes.
+    If the object is a class, return False.
+    If the object is not a function or method, return False.
 
-    :param cls:
-    :param methodName:
-    :return:
-    '''
+    :param object: The object to check.
+    :return: True if the object is a method, False otherwise.
+    """
+    return inspect.ismethod(object) or (inspect.isfunction(object) and hasattr(object, '__self__'))
 
-    #see https://mail.python.org/pipermail/python-dev/2010-August/103200.html
-    #see https://docs.python.org/3.7/library/abc.html
+def has_method(cls: Type, methodName: str) -> bool:
+    """
+    Check if class cls has a method with name methodName directly,
+    or in one of its super-classes.
 
-    #logger.info(list(methodName in B.__dict__ for B in cls.__mro__))
+    :param cls: The class to check.
+    :param methodName: The name of the method to look for.
+    :return: True if the method exists, False otherwise.
+    """
+    return inspect.isroutine(getattr(cls, methodName, None))
 
-    if any(methodName in B.__dict__ for B in cls.__mro__):
-        return True
-    return False
+
+def update_function_defaults(func: Callable, new_defaults: Optional[Dict[str, Any]] = None,
+                             remove_defaults: Optional[List[str]] = None, is_forced: bool = False):
+    """
+    Decorator to change and remove default values.
+
+    :param func: function/method to apply on.
+    :param new_defaults: Dictionary of new default values to apply.
+    :param remove_defaults: List of parameter names to remove default values from.
+    :param is_forced: If False (default), only func's params that do have default value will be updated.
+                      If True, all func's params will be updated that are mentioned by name in new_defaults and remove_defaults.
+    :return: Decorated function with modified default values.
+    """
+    if new_defaults is None:
+        new_defaults = {}
+    if remove_defaults is None:
+        remove_defaults = []
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # Get the signature of the original function
+        sig = inspect.signature(func)
+
+        # Create a new signature with updated default values
+        new_params = []
+        for param in sig.parameters.values():
+            if is_forced or param.default is not inspect.Parameter.empty:
+                if param.name in new_defaults:
+                    new_param = param.replace(default=new_defaults[param.name])
+                elif param.name in remove_defaults:
+                    new_param = param.replace(default=inspect.Parameter.empty)
+                else:
+                    new_param = param
+            else:
+                new_param = param
+            new_params.append(new_param)
+
+        new_sig = sig.replace(parameters=new_params)
+
+        # Bind the arguments to the new signature
+        bound_args = new_sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        # Call the original function with the bound arguments
+        _bounded_args = bound_args.args
+        _bounded_kwargs = bound_args.kwargs
+        return func(*_bounded_args, **_bounded_kwargs)
+
+    return wrapper
