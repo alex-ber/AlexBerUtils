@@ -141,6 +141,8 @@ python -m pip install --find-links=./dist alex_ber_utils==0.6.5
 
 AlexBerUtils requires the following modules.
 
-* Python 3.9+
+* Python 3.8+
 
 * PyYAML>=6.0.1
+
+* packaging<24.0,>=23.2

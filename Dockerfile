@@ -1,13 +1,5 @@
-#FROM alexberkovich/alpine-anaconda3:0.3.2-slim
+FROM alexberkovich/alpine-anaconda3:0.3.2-slim
 
-#ARG ARCH=
-ARG ARCH=amd64
-FROM --platform=linux/${ARCH} alexberkovich/alpine-python39:0.4.0
-ARG ARCH
-ENV ARCH=${ARCH}
-
-RUN set -ex && \
-   echo $ARCH > /etc/ARCH
 
 
 COPY requirements.txt etc/requirements.txt

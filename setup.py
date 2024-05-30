@@ -115,7 +115,7 @@ try:
             'Operating System :: Unix',
             'Natural Language :: English',
         ],
-        python_requires='>=3.9',
+        python_requires='>=3.8',
         zip_safe=False,
 
     )

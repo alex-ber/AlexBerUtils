@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## Unreleased
+## [0.10.0] 31.05.2024
+### Changed
+- Fixed README.md to include packaging<24.0,>=23.2
+- Minimum library requirement is Python 3.8 now (not 3.9).
+- Dockerfile's base docker image was changed to be based on Python 3.8 (not 3.9).
+- importlib-metadata and it's dependency zipp are back. This is backport from Python 3.9.
+It is a library that provides access to the metadata of installed packages. It was 
+originally developed as a backport of the `importlib.metadata` module introduced in Python 3.8, 
+allowing users of earlier Python versions to access package metadata in a consistent way.
+It is used by `build`.
 
 ## [0.9.1] 31.05.2024
 ### Changed
