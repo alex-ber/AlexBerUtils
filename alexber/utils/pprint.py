@@ -1,10 +1,31 @@
 """
-This module has the e
+This module effectively changes default values of the standard pprint.pprint module.
+Intended usage:
 
-effectively changes default values of standard pprint-related functions.
-It does it by monkey-patching, so you should import this module BEFORE
-you're importing pprint or any function from theire.
+instead of: from pprint import pprint
+use:        from alexber.utils.pprint import pprint
 
+You can utilize any publicly available functions from pprint, including *.
+
+One of the main changes is to set sort_dicts=False.
+From Python 3.7 onward, dictionary order of dict is guaranteed to be the insertion order.
+This behavior was an implementation detail of CPython from version 3.6.
+As a result, the order of keys is now deterministic, eliminating the need to sort keys.
+
+The defaults are:
+
+indent: 4,
+width: 120,
+depth: None,
+stream: None,
+compact: False,
+sort_dicts: False,
+underscore_numbers: False
+
+If a value is absent in your Python version's pprint (for example, underscore_numbers was added only in Python 3.10),
+and you are using a lower version (e.g., Python 3.9), this argument will be safely ignored.
+
+See https://alex-ber.medium.com/my-pprint-module-f25a7b695e5f for more details.
 """
 
 

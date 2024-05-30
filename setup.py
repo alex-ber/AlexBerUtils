@@ -5,7 +5,7 @@ from setuptools import setup
 
 
 #VERSION should be defined before importing UploadCommand
-VERSION = '0.9.0a1'
+VERSION = '0.9.0'
 from alexber.utils import UploadCommand
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
@@ -115,7 +115,7 @@ try:
             'Operating System :: Unix',
             'Natural Language :: English',
         ],
-        python_requires='>=3.6',
+        python_requires='>=3.9',
         zip_safe=False,
 
     )
