@@ -1,2 +1,0 @@
-alexber
-tests_data
