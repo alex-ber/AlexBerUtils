@@ -1,5 +1,5 @@
 import inspect
-from functools import wraps
+import functools
 from typing import Dict, List, Any, Optional, Callable, Type
 
 import logging
@@ -19,8 +19,6 @@ def issetdescriptor(object: Any) -> bool:
     return hasattr(tp, "__set__")
 
 
-import inspect
-from typing import Any
 
 
 def ismethod(object: Any) -> bool:
@@ -63,7 +61,7 @@ def update_function_defaults(func: Callable, new_defaults: Optional[Dict[str, An
     if remove_defaults is None:
         remove_defaults = []
 
-    @wraps(func)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         # Get the signature of the original function
         sig = inspect.signature(func)
@@ -94,3 +92,22 @@ def update_function_defaults(func: Callable, new_defaults: Optional[Dict[str, An
         return func(*_bounded_args, **_bounded_kwargs)
 
     return wrapper
+
+
+def resolve_function_args(func: Callable, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    """
+    Map both explicit and default arguments of a function call by parameter name.
+
+    Parameters:
+    - func: The function whose arguments are to be mapped.
+    - args: Positional arguments passed to the function.
+    - kwargs: Keyword arguments passed to the function.
+
+    Returns:
+    - A dictionary mapping parameter names to their corresponding values.
+    """
+    sig = inspect.signature(func)
+    bound_args = sig.bind_partial(*args, **kwargs)
+    bound_args.apply_defaults()
+    return bound_args.arguments
+

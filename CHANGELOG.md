@@ -5,8 +5,69 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-## [0.8.1a] 04.12.2023
+## [0.9.0b] 30.05.2024
+### Changed
 
+- Minimum library requirement is Python 3.9 now.
+- Dockerfile's base docker image was changed to be based on Python 3.9
+- Some functionality was moved from dropped method_overloading_test.py to importer_test.py
+- Implementation of inspects.ismethod() and inspects.has_method() was changed. 
+- inspect_test.py was changed. inspects.has_method() now expected to return False on property
+(as it should in the first place).
+- In Dockerfile setuptools was **downgraded** from 67.8.0 to 65.6.3. 
+See https://stackoverflow.com/questions/76043689/pkg-resources-is-deprecated-as-an-api#comment136784284_76044568
+- In Dockerfile reference to requirements-md.txt was droped.
+- To requirements.in, req-piptools.txt and req-tests.txt packaging<24.0,>=23.2 was added.
+- All requirements.txt was regenerated, so version has changed:
+- importlib-metadata (and it's dependency zipp) were dropped.
+- bcrypt upgraded from 4.1.1 to 4.1.3.
+- build from 1.0.3 to 1.2.1.
+- cryptography from 41.0.7 to 42.0.7.
+- exceptiongroup from 1.2.0 to 1.2.1.
+- hiyapyco from 0.5.4 to 0.6.0.
+- jinja2 from 3.1.2 to 3.1.4.
+- markupsafe from 2.1.3 to 2.1.5.
+- paramiko from 3.3.1 to 3.4.0
+- pip-tools from 7.3.0 to 7.4.1
+- pluggy from 1.3.0 to 1.5.0
+- pycparser 2.21 to 2.22.
+- pyopenssl from 23.3.0 to 24.1.0.
+- pyproject-hooks from 1.0.0 to 1.1.0.
+- python-dotenv from 1.0.0 to 1.0.1
+- wheel from 0.42.0 to 0.43.0
+ 
+- (minor) Import to dropped enums.py was removed from parsers_test.py 
+
+### Added
+- inspects.resolve_function_args() - maps both explicit and default arguments of a function call by parameter name.
+- inspects.update_function_defaults() - decorator to change and remove default value.
+- pprint.py module. This module effectively changes the default values of the standard `pprint.pprint` module. Intended Usage:
+
+Instead of:
+
+```python
+from pprint import pprint
+```
+use
+```python
+from alexber.utils.pprint import pprint
+```
+
+The defaults are:
+- `indent`: 4
+- `width`: 120
+- `depth`: None
+- `stream`: None
+- `compact`: False
+- `sort_dicts`: False
+- `underscore_numbers`: False
+
+See docstring of pprint.py module for more details.
+
+### Removed
+- Optional dependency alex-ber-utils[md] was removed. Unit-tests for multidispatch was removed.
+Also files req-md.txt and requirements-md.txt was deleted. 
+- Module enums was removed. It does monkey-patching to standard library's enums, that breaks them in Python 3.9+.
 
 ## [0.8.0] 04.12.2023
 
