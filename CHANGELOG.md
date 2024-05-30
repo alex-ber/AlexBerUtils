@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.9.1] 31.05.2024
+### Changed
+- Fixed README.md to reflect changes in 0.9.0.
+
 ## [0.9.0] 31.05.2024
 
 
