@@ -5,7 +5,7 @@ from setuptools import setup
 
 
 #VERSION should be defined before importing UploadCommand
-VERSION = '0.10.0'
+VERSION = '0.10.1'
 from alexber.utils import UploadCommand
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
@@ -98,12 +98,11 @@ try:
             # https://en.wikipedia.org/wiki/CPython#Version_history
             'Programming Language :: Python',
             'Programming Language :: Python :: 3 :: Only',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
             'Programming Language :: Python :: 3.11',
+            'Programming Language :: Python :: 3.12',
             'Programming Language :: Python :: Implementation :: CPython',
             "Topic :: Utilities",
             'Topic :: Software Development :: Libraries :: Python Modules',
