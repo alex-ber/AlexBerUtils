@@ -145,4 +145,4 @@ AlexBerUtils requires the following modules.
 
 * PyYAML>=6.0.1
 
-* packaging<24.0,>=23.2
+* packaging>=23.2

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
 ## Unreleased
+## [0.10.2b] 05.05.2024
+- Lose packaging constraint to packaging>=23.2.
+- Fixed README.md to include packaging>=23.2.
+
 ## [0.10.1] 31.05.2024
 ### Changed
 - Remove no longer supported Python versions 3.6 and 3.7 from setup's classifier.
