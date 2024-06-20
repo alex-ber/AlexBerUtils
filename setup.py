@@ -5,7 +5,7 @@ from setuptools import setup
 
 
 #VERSION should be defined before importing UploadCommand
-VERSION = '0.11.0a0'
+VERSION = '0.11.0a1'
 from alexber.utils import UploadCommand
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
@@ -29,8 +29,9 @@ extras = {
     'yaml' : get_content('req-yml.txt'),
     'yml' : get_content('req-yml.txt'),
     'env' : get_content('req-env.txt'),
+    'np' : get_content('req-np.txt'),
     'tests': tests_require,
-    'piptools' : get_content('req-env.txt')
+    'piptools' : get_content('req-piptools.txt')
 }
 
 lnk_data = os.path.join('alexber', SHORT_NAME, 'data')
