@@ -6,6 +6,7 @@ COPY requirements.txt etc/requirements.txt
 COPY requirements-env.txt etc/requirements-env.txt
 COPY requirements-yml.txt etc/requirements-yml.txt
 COPY requirements-fabric.txt etc/requirements-fabric.txt
+COPY requirements-np.txt etc/requirements-np.txt
 COPY requirements-tests.txt etc/requirements-tests.txt
 COPY requirements-piptools.txt etc/requirements-piptools.txt
 
@@ -19,6 +20,7 @@ RUN set -ex && \
          pip-tools==7.3.0 && \
      python -m pip install --no-cache-dir -r /etc/requirements.txt \
         -r etc/requirements-env.txt -r etc/requirements-yml.txt -r etc/requirements-fabric.txt \
+        -r etc/requirements-np.txt \
         -r etc/requirements-tests.txt -r etc/requirements-piptools.txt
 
 

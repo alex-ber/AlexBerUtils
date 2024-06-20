@@ -2,7 +2,7 @@
 This is essentially wrapper arround HiYaPyCo project with streamlined and extended API and couple of work-arrounds.
 
 This module depends on some 3-rd party dependencies, in order to use it, you should have installed first. To do it
-run `python3 -m pip install alex-ber-utils[yml]`.
+run `python -m pip install alex-ber-utils[yml]`.
 
 This module doesn't use any package-level variables in hiYaPyCo module, including hiYaPyCo.jinja2env.
 This module do use Jinja2's `Environment`.
@@ -24,7 +24,7 @@ except ImportError:
 
     warning = (
         "You appear to be missing some optional dependencies (jinja2);"
-        "please 'python3 -m pip install alex-ber-utils[yml]'."
+        "please 'python -m pip install alex-ber-utils[yml]'."
     )
     warnings.warn(warning, ImportWarning)
     raise
@@ -36,7 +36,7 @@ except ImportError:
 
     warning = (
         "You appear to be missing some optional dependencies (hiyapyco);"
-        "please 'python3 -m pip install alex-ber-utils[yml]'."
+        "please 'python -m pip install alex-ber-utils[yml]'."
     )
     warnings.warn(warning, ImportWarning)
     raise
@@ -48,7 +48,7 @@ except AttributeError as e:
 
     warning = (
         "You appear to be missing some optional yml parsing dependencies (hiyapyco should be at least 0.4.16);"
-        "please 'python3 -m pip install alex-ber-utils[yml]'."
+        "please 'python -m pip install alex-ber-utils[yml]'."
     )
     warnings.warn(warning, ImportWarning)
     raise ImportError(str(e)) from e

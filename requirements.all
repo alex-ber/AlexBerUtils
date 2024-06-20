@@ -45,6 +45,8 @@ markupsafe==2.1.5
     #   jinja2
 multidispatch==0.2
     # via -r requirements.in
+numpy==1.24.4
+    # via -r requirements.in
 packaging==23.2
     # via
     #   -r requirements.in

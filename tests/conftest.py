@@ -9,12 +9,20 @@ import pytest
 
 isyamlrelatedfound = False
 try:
-    #python3 -m pip install .[yaml]
+    #python -m pip install .[yaml]
     import alexber.utils._ymlparsers_extra as ymlparsers_extra
     if ymlparsers_extra._isHiYaPyCoAvailable and ymlparsers_extra._isJinja2DefaultAvailable:
         isyamlrelatedfound = True
 except ImportError:
     pass
+
+isnumpyfound = False
+try:
+    import numpy as np
+    isnumpyfound = True
+except ImportError:
+    pass
+
 
 
 #see https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
@@ -40,6 +48,9 @@ def pytest_collection_modifyitems(config, items):
     if not isyamlrelatedfound:
         skip_tests(items=items, keyword="yml", reason="yml is not installed..")
 
+    if not isnumpyfound:
+        skip_tests(items=items, keyword="np", reason="numpy is not installed..")
+
 #see https://docs.pytest.org/en/latest/mark.html
 #see https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
 def pytest_configure(config):
@@ -47,5 +58,5 @@ def pytest_configure(config):
         "markers", "yml: yml is not installed.."
     )
     config.addinivalue_line(
-        "markers", "md: multidispatch is not installed.."
+        "markers", "np: numpy is not installed.."
     )

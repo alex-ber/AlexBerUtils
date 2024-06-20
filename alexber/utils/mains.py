@@ -86,7 +86,7 @@ def load_env(**kwargs):
 
         warning = (
             "You appear to be missing some optional dependencies (python-dotenv);"
-            "please 'python3 -m pip install alex-ber-utils[python-dotenv]'."
+            "please 'python -m pip install alex-ber-utils[python-dotenv]'."
         )
 
         warnings.warn(warning, ImportWarning)

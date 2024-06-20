@@ -2,7 +2,7 @@
 `ymlparsers` and `parser` modules serves as Low-Level API for this module.
 
 You may need to install some 3-rd party dependencies, in order to use it, you should have installed first. To do it
-run `python3 -m pip install alex-ber-utils[yml]` in order to use it.
+run `python -m pip install alex-ber-utils[yml]` in order to use it.
 
 See https://medium.com/analytics-vidhya/my-major-init-app-conf-module-1a5d9fb3998c for documentation.
 """

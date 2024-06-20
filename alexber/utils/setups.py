@@ -54,7 +54,7 @@ class UploadCommand(setuptools.Command):
         #os.system('python3 setup.py sdist bdist_wheel')
 
         self.status('Uploading the package to PyPI via Twine...')
-        # python3 -m keyring set https://upload.pypi.org/legacy/ alex-ber
+        # python -m keyring set https://upload.pypi.org/legacy/ alex-ber
         os.system('twine upload dist/*')
 
         self.status('Pushing git tags...')
