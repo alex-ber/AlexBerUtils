@@ -6,10 +6,31 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-## [0.11.0a0] 20.06.2024
-TBD
+## [0.11.0b0] 22.06.2024
+### Added
+- New module `in_memory_similarity_search` added. 
+
+This module is usable to calculate cosine similarity for small number of vectors.
+
+It has 2 public function and 1 type hint.
+
+- `find_most_similar()` - this function identifies the most similar text to a given 
+input text from a list of provided texts. It uses an embedding class instance to convert 
+texts into vectors and calculates the cosine similarity based on the specified Euclidean norm. 
+The function returns a tuple containing the index and the most similar text.
+
+- `find_most_similar_with_scores()` - this function finds the most similar texts to a given 
+input text from a list of provided texts and returns their cosine similarity scores. 
+It uses an embedding class instance to convert texts into vectors and calculates the 
+similarity based on the specified Euclidean norm. 
+The function returns a list of tuples, each containing the index, text, and similarity score. 
+
+See https://alex-ber.medium.com/in-memory-similarity-search-998582fbb802 for details.
+
+
+### Changed
 - Removed leftover from multidispatch dependecy.
-- Rename python3 to python accross the documentation.
+- Rename python3 to python across the documentation.
 
 ## [0.10.2] 05.05.2024
 - Lose packaging constraint to packaging>=23.2.
