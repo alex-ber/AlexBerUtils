@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-## [0.11.0b0] 22.06.2024
+## [0.11.0] 22.06.2024
 ### Added
 - New module `in_memory_similarity_search` added. 
 
