@@ -460,8 +460,8 @@ def test_locking_access_sync_method(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     obj = mocker.Mock()
     lock = mocker.Mock()
-    lock.__enter__ = mocker.AsyncMock(return_value=None)
-    lock.__exit__ = mocker.AsyncMock(return_value=None)
+    lock.__enter__ = mocker.Mock(return_value=None)
+    lock.__exit__ = mocker.Mock(return_value=None)
 
     mixin = LockingAccessMixin(obj=obj, lock=lock)
 
@@ -507,8 +507,8 @@ def test_locking_access_property_handling(request, mocker):
 
     obj = TestClass()
     lock = mocker.Mock()
-    lock.__enter__ = mocker.AsyncMock(return_value=None)
-    lock.__exit__ = mocker.AsyncMock(return_value=None)
+    lock.__enter__ = mocker.Mock(return_value=None)
+    lock.__exit__ = mocker.Mock(return_value=None)
 
     mixin = LockingAccessMixin(obj=obj, lock=lock)
     assert mixin.prop == "value"
@@ -524,8 +524,8 @@ def test_locking_access_special_case_for_pydantic(request, mocker):
 
     obj = PydanticModel()
     lock = mocker.Mock()
-    lock.__enter__ = mocker.AsyncMock(return_value=None)
-    lock.__exit__ = mocker.AsyncMock(return_value=None)
+    lock.__enter__ = mocker.Mock(return_value=None)
+    lock.__exit__ = mocker.Mock(return_value=None)
 
     mixin = LockingAccessMixin(obj=obj, lock=lock)
     wrapped_method = mixin._copy_and_set_values
