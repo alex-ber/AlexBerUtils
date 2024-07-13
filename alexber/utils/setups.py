@@ -70,3 +70,28 @@ class UploadCommand(setuptools.Command):
 
         sys.exit()
 
+class CleanCommand(setuptools.Command):
+    """Custom clean command to tidy up the project root."""
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        for dirpath, dirnames, filenames in os.walk('.'):
+            for filename in filenames:
+                if filename.endswith(('.pyc', '.pyo', '.pyd')):
+                    file_path = os.path.join(dirpath, filename)
+                    print(f'Removing {file_path}')
+                    os.remove(file_path)
+            for dirname in dirnames:
+                if dirname == '__pycache__':
+                    dir_path = os.path.join(dirpath, dirname)
+                    print(f'Removing {dir_path}')
+                    _my_rmtree(dir_path)
+        _my_rmtree('build', ignore_errors=True)
+        _my_rmtree('dist', ignore_errors=True)
+        _my_rmtree('*.egg-info', ignore_errors=True)
