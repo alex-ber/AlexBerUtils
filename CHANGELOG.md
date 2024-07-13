@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+## [0.11.1] TBD
+
 
 ## [0.11.0] 22.06.2024
 ### Added
