@@ -173,21 +173,44 @@ except ImportError:
 try:
     from pydantic import BaseModel
 
-    _is_available_pydantic = True
+    _is_available_pydantic_v2 = True
 except ImportError:
-    _is_available_pydantic = False
+    _is_available_pydantic_v2 = False
+
+try:
+    from pydantic.v1 import BaseModel
+
+    _is_available_pydantic_v1 = True
+except ImportError:
+    _is_available_pydantic_v1 = False
 
 
 
-def _is_pydantic_obj(obj):
-    if not _is_available_pydantic:
+def _is_pydantic_v1_obj(obj):
+    if not _is_available_pydantic_v1:
         return False
     ret = None
     try:
-        from pydantic import BaseModel
-        ret = isinstance(obj, BaseModel)
+        from pydantic.v1 import BaseModel as BaseModelv1
+        ret = isinstance(obj, BaseModelv1)
     except ImportError:
         ret = False
+    return ret
+
+def _is_pydantic_v2_obj(obj):
+    if not _is_available_pydantic_v2:
+        return False
+    ret = None
+    try:
+        from pydantic import BaseModel as BaseModelv2
+        ret = isinstance(obj, BaseModelv2)
+    except ImportError:
+        ret = False
+    return ret
+
+
+def _is_pydantic_obj(obj):
+    ret = _is_pydantic_v1_obj(obj) or _is_pydantic_v2_obj(obj)
     return ret
 
 class LockingPedanticObjMixin(RootMixin):

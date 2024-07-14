@@ -439,24 +439,6 @@ def test_property_locking_access_mixin(request, mocker):
     assert mixin.prop == "value"
 
 
-def test_is_pydantic_obj_with_pydantic_object_mixin(request, mocker):
-    logger.info(f'{request._pyfuncitem.name}()')
-    mocker.patch('alexber.utils.thread_locals._is_pydantic_obj', return_value=True)
-
-    obj = mocker.Mock()
-    mixin = LockingPedanticObjMixin(obj=obj)
-    assert mixin._is_pedantic_obj is True
-
-
-def test_is_pydantic_obj_with_non_pydantic_object_mixin(request, mocker):
-    logger.info(f'{request._pyfuncitem.name}()')
-    mocker.patch('alexber.utils.thread_locals._is_pydantic_obj', return_value=False)
-
-    obj = mocker.Mock()
-    mixin = LockingPedanticObjMixin(obj=obj)
-    assert mixin._is_pedantic_obj is False
-
-
 def test_locking_access_sync_method(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     obj = mocker.Mock()
@@ -644,8 +626,6 @@ def test_coerce_base_language_model_checks_proxy_obj(request, mocker):
     assert isinstance(proxy._obj, MockBaseLanguageModel)
 
 
-
-
 # Define a mock BaseModel class
 class MockBaseModel:
     pass
@@ -653,11 +633,13 @@ class MockBaseModel:
 
 @pytest.fixture
 def mocker_pydantic(mocker):
-    # Mock the availability of pydantic
-    mocker.patch('alexber.utils.thread_locals._is_available_pydantic', True)
+    # Mock the availability of pydantic v1 and v2
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v1', True)
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v2', True)
     # Mock the import of pydantic and its BaseModel
     mocker.patch.dict('sys.modules', {
-        'pydantic': mocker.MagicMock(BaseModel=MockBaseModel)
+        'pydantic': mocker.MagicMock(BaseModel=MockBaseModel),
+        'pydantic.v1': mocker.MagicMock(BaseModel=MockBaseModel)
     })
     return mocker
 
@@ -673,25 +655,49 @@ def test_is_pydantic_obj_with_pydantic_model(request, mocker_pydantic):
     assert result is True
 
 
-def test_is_pydantic_obj_with_pydantic_unavailable(request, mocker):
+def test_is_pydantic_obj_with_pydantic_v1_unavailable(request, mocker):
     logger.info(f'{request.node.name}()')
 
-    # Mock the availability of pydantic
-    mocker.patch('alexber.utils.thread_locals._is_available_pydantic', False)
+    # Mock the availability of pydantic v1
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v1', False)
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v2', True)
+
+    # Mock the import of pydantic.v1 to raise ImportError
+    mocker.patch.dict('sys.modules', {'pydantic.v1': None})
+    mocker.patch.dict('sys.modules', {'pydantic': mocker.MagicMock(BaseModel=MockBaseModel)})
 
     # Create an instance of the mock BaseModel
     obj = MockBaseModel()
 
     # Call the function and assert the result
     result = _is_pydantic_obj(obj)
-    assert result is False
+    assert result is True
+
+
+def test_is_pydantic_obj_with_pydantic_v2_unavailable(request, mocker):
+    logger.info(f'{request.node.name}()')
+
+    # Mock the availability of pydantic v2
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v1', True)
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v2', False)
+
+    # Mock the import of pydantic to raise ImportError
+    mocker.patch.dict('sys.modules', {'pydantic': None})
+    mocker.patch.dict('sys.modules', {'pydantic.v1': mocker.MagicMock(BaseModel=MockBaseModel)})
+
+    # Create an instance of the mock BaseModel
+    obj = MockBaseModel()
+
+    # Call the function and assert the result
+    result = _is_pydantic_obj(obj)
+    assert result is True
 
 
 def test_is_pydantic_obj_with_import_error(request, mocker):
     logger.info(f'{request.node.name}()')
 
     # Mock the import of pydantic to raise ImportError
-    mocker.patch.dict('sys.modules', {'pydantic': None})
+    mocker.patch.dict('sys.modules', {'pydantic': None, 'pydantic.v1': None})
 
     # Create an instance of the mock BaseModel
     obj = MockBaseModel()
@@ -713,6 +719,22 @@ def test_is_pydantic_obj_with_non_pydantic_object(request, mocker_pydantic):
     # Call the function and assert the result
     result = _is_pydantic_obj(obj)
     assert result is False
+
+
+def test_is_pydantic_obj_with_pydantic_object_mixin(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    mocker.patch('alexber.utils.thread_locals._is_pydantic_obj', return_value=True)
+    obj = mocker.Mock()
+    mixin = LockingPedanticObjMixin(obj=obj)
+    assert mixin._is_pedantic_obj is True
+
+
+def test_is_pydantic_obj_with_non_pydantic_object_mixin(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    mocker.patch('alexber.utils.thread_locals._is_pydantic_obj', return_value=False)
+    obj = mocker.Mock()
+    mixin = LockingPedanticObjMixin(obj=obj)
+    assert mixin._is_pedantic_obj is False
 
 if __name__ == "__main__":
     pytest.main([__file__])
