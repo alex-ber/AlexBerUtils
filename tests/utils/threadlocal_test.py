@@ -169,9 +169,6 @@ def test_threadlocal_var_exists(request, mocker):
     with pytest.raises(ValueError):
         get_threadlocal_var(thread_locals, 'nonexist')
 
-
-
-
 def test_sync_acquire_release(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     lock = RLock()
@@ -313,6 +310,29 @@ def test_mixed_threads_and_tasks(request, mocker):
         thread.join()
 
     assert len(results) == 40  # 2 threads * 5 iterations * 2 messages per iteration + 2 tasks * 5 iterations * 2 messages per iteration
+
+@pytest.mark.asyncio
+async def test_condition_variable_avoids_deadlock(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    lock = RLock()
+    results = []
+
+    def thread_task(thread_id):
+        for _ in range(5):
+            with lock:
+                results.append(f"Thread {thread_id} acquired lock")
+                assert lock._sync_owner == threading.current_thread()
+                assert lock._sync_count == 1
+            results.append(f"Thread {thread_id} released lock")
+
+    threads = [threading.Thread(target=thread_task, args=(i,)) for i in range(3)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(results) == 30  # 3 threads * 5 iterations * 2 messages per iteration
+
 
 def test_call_synchronous_function(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
