@@ -281,7 +281,7 @@ class LockingDefaultLockMixin(RootMixin):
 def _coerce_base_language_model(proxy):
     if not _is_available_base_language_model:
         return
-    if isinstance(proxy.obj, BaseLanguageModel):
+    if isinstance(proxy._obj, BaseLanguageModel):
         BaseLanguageModel.register(type(proxy))
 
 class LockingBaseLanguageModelMixin(RootMixin):
