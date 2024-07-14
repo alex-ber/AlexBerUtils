@@ -288,7 +288,8 @@ class LockingBaseLanguageModelMixin(RootMixin):
     def __init__(self, **kwargs):
         self._obj = kwargs.get('obj')
         validate_param(self._obj, 'obj')
-        _coerce_base_language_model(self._obj)
+        _coerce_base_language_model(self)
+
 
 
 class LockingDefaultAndBaseLanguageModelMixin(LockingDefaultLockMixin, LockingBaseLanguageModelMixin):
