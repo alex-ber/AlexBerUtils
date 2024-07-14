@@ -34,7 +34,8 @@ def validate_param(param_value, param_name):
         raise ValueError(f"Expected {param_name} param not found")
 
 
-
+import asyncio
+import threading
 
 class RLock:
     def __init__(self):
@@ -44,32 +45,31 @@ class RLock:
         self._async_owner = None  # Owner of the asynchronous lock
         self._sync_count = 0  # Reentrancy count for synchronous lock
         self._async_count = 0  # Reentrancy count for asynchronous lock
+        self._condition = threading.Condition(self._sync_lock)  # Condition variable for synchronization
 
     def acquire(self):
-        self._sync_lock.acquire()  # Acquire the underlying lock to enter the critical section
-        try:
+        with self._condition:
             current_thread = threading.current_thread()
             if self._sync_owner == current_thread:
                 self._sync_count += 1
                 return True  # Already acquired, no need to acquire again
+            while self._sync_owner is not None:
+                self._condition.wait()  # Wait until the lock is available
             self._sync_owner = current_thread
             self._sync_count = 1
             return True  # Successfully acquired
-        finally:
-            self._sync_lock.release()  # Release the underlying lock to exit the critical section
 
     def release(self):
-        self._sync_lock.acquire()  # Acquire the underlying lock to enter the critical section
-        try:
+        with self._condition:
             current_thread = threading.current_thread()
             if self._sync_owner == current_thread:
                 self._sync_count -= 1
                 if self._sync_count == 0:
                     self._sync_owner = None
-                    self._sync_lock.release()  # Release the underlying lock
-        finally:
-            if self._sync_count != 0:
-                self._sync_lock.release()  # Ensure the lock is released if not fully released
+                    self._condition.notify_all()  # Notify all waiting threads
+                return True  # Successfully released
+            else:
+                raise RuntimeError("Cannot release a lock that's not owned by the current thread")
 
     async def async_acquire(self):
         await self._async_lock.acquire()  # Acquire the underlying lock to enter the critical section
@@ -78,6 +78,8 @@ class RLock:
             if self._async_owner == current_task:
                 self._async_count += 1
                 return True  # Already acquired, no need to acquire again
+            while self._async_owner is not None:
+                await asyncio.sleep(0)  # Yield control to the event loop
             self._async_owner = current_task
             self._async_count = 1
             return True  # Successfully acquired
@@ -93,6 +95,9 @@ class RLock:
                 if self._async_count == 0:
                     self._async_owner = None
                     self._async_lock.release()  # Release the underlying lock
+                return True  # Successfully released
+            else:
+                raise RuntimeError("Cannot release a lock that's not owned by the current task")
         finally:
             if self._async_count != 0:
                 self._async_lock.release()  # Ensure the lock is released if not fully released
@@ -110,6 +115,7 @@ class RLock:
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.async_release()
+
 
 class LockingIterableMixin(RootMixin):
     def __init__(self, **kwargs):
