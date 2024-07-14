@@ -278,19 +278,17 @@ class LockingDefaultLockMixin(RootMixin):
 
         super().__init__(**kwargs)
 
-def _coerce_base_language_model(obj):
+def _coerce_base_language_model(proxy):
     if not _is_available_base_language_model:
         return
-    if isinstance(obj, BaseLanguageModel):
-        BaseLanguageModel.register(type(obj))
+    if isinstance(proxy.obj, BaseLanguageModel):
+        BaseLanguageModel.register(type(proxy))
 
 class LockingBaseLanguageModelMixin(RootMixin):
     def __init__(self, **kwargs):
         self._obj = kwargs.get('obj')
         validate_param(self._obj, 'obj')
         _coerce_base_language_model(self)
-
-
 
 class LockingDefaultAndBaseLanguageModelMixin(LockingDefaultLockMixin, LockingBaseLanguageModelMixin):
     def __init__(self, **kwargs):

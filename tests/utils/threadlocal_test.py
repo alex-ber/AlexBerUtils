@@ -571,8 +571,8 @@ def test_coerce_base_language_model_with_base_language_model(request, mocker):
 
     mocker.patch('alexber.utils.thread_locals.BaseLanguageModel', MockBaseLanguageModel)
 
-    class TestModel(MockBaseLanguageModel):
-        pass
+    class TestModel:
+        obj = MockBaseLanguageModel()
 
     obj = TestModel()
     mock_register = mocker.patch.object(MockBaseLanguageModel, 'register')
@@ -591,9 +591,12 @@ def test_coerce_base_language_model_with_non_base_language_model(request, mocker
 
     mocker.patch('alexber.utils.thread_locals.BaseLanguageModel', MockBaseLanguageModel)
 
-    obj = mocker.Mock()
+    class TestModel:
+        obj = mocker.Mock()
+
+    proxy = TestModel()
     mock_register = mocker.patch.object(MockBaseLanguageModel, 'register')
-    _coerce_base_language_model(obj)
+    _coerce_base_language_model(proxy)
     mock_register.assert_not_called()
 
 
@@ -612,19 +615,32 @@ def test_locking_base_language_model_mixin_calls_coerce(request, mocker):
 
     # Mock the _coerce_base_language_model function
     mock_coerce = mocker.patch('alexber.utils.thread_locals._coerce_base_language_model')
-
     class MockRootMixin:
         pass
-
     class LockingBaseLanguageModelMixin(MockRootMixin, MockBaseLanguageModel):
         def __init__(self, **kwargs):
             self._obj = kwargs.get('obj')
             mock_coerce(self)
-
     obj = mocker.Mock()
     instance = LockingBaseLanguageModelMixin(obj=obj)
-
     mock_coerce.assert_called_once_with(instance)
+
+def test_coerce_base_language_model_checks_proxy_obj(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    mocker.patch('alexber.utils.thread_locals._is_available_base_language_model', True)
+    class MockBaseLanguageModel:
+        @staticmethod
+        def register(cls):
+            pass
+    mocker.patch('alexber.utils.thread_locals.BaseLanguageModel', MockBaseLanguageModel)
+    class TestModel:
+        obj = MockBaseLanguageModel()
+    proxy = TestModel()
+    mock_register = mocker.patch.object(MockBaseLanguageModel, 'register')
+    _coerce_base_language_model(proxy)
+    mock_register.assert_called_once_with(type(proxy))
+    # Ensure that the function checks proxy.obj and not just obj
+    assert isinstance(proxy.obj, MockBaseLanguageModel)
 
 if __name__ == "__main__":
     pytest.main([__file__])
