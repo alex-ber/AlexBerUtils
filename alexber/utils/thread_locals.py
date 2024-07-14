@@ -290,6 +290,9 @@ class LockingBaseLanguageModelMixin(RootMixin):
         validate_param(self._obj, 'obj')
         _coerce_base_language_model(self)
 
+        super().__init__(**kwargs)
+
+
 class LockingDefaultAndBaseLanguageModelMixin(LockingDefaultLockMixin, LockingBaseLanguageModelMixin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
