@@ -5,7 +5,8 @@ import threading
 import types
 from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
     LockingIterableMixin, LockingIterator, LockingAsyncIterableMixin, LockingAsyncIterator, LockingAccessMixin, \
-    LockingPedanticObjMixin, LockingDefaultLockMixin, _coerce_base_language_model, LockingBaseLanguageModelMixin
+    LockingPedanticObjMixin, LockingDefaultLockMixin, _coerce_base_language_model, LockingBaseLanguageModelMixin, \
+    _is_pydantic_obj
 from alexber.utils.thread_locals import threadlocal_var, get_threadlocal_var, del_threadlocal_var
 
 logger = logging.getLogger(__name__)
@@ -641,6 +642,77 @@ def test_coerce_base_language_model_checks_proxy_obj(request, mocker):
     mock_register.assert_called_once_with(type(proxy))
     # Ensure that the function checks proxy.obj and not just obj
     assert isinstance(proxy._obj, MockBaseLanguageModel)
+
+
+
+
+# Define a mock BaseModel class
+class MockBaseModel:
+    pass
+
+
+@pytest.fixture
+def mocker_pydantic(mocker):
+    # Mock the availability of pydantic
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic', True)
+    # Mock the import of pydantic and its BaseModel
+    mocker.patch.dict('sys.modules', {
+        'pydantic': mocker.MagicMock(BaseModel=MockBaseModel)
+    })
+    return mocker
+
+
+def test_is_pydantic_obj_with_pydantic_model(request, mocker_pydantic):
+    logger.info(f'{request.node.name}()')
+
+    # Create an instance of the mock BaseModel
+    obj = MockBaseModel()
+
+    # Call the function and assert the result
+    result = _is_pydantic_obj(obj)
+    assert result is True
+
+
+def test_is_pydantic_obj_with_pydantic_unavailable(request, mocker):
+    logger.info(f'{request.node.name}()')
+
+    # Mock the availability of pydantic
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic', False)
+
+    # Create an instance of the mock BaseModel
+    obj = MockBaseModel()
+
+    # Call the function and assert the result
+    result = _is_pydantic_obj(obj)
+    assert result is False
+
+
+def test_is_pydantic_obj_with_import_error(request, mocker):
+    logger.info(f'{request.node.name}()')
+
+    # Mock the import of pydantic to raise ImportError
+    mocker.patch.dict('sys.modules', {'pydantic': None})
+
+    # Create an instance of the mock BaseModel
+    obj = MockBaseModel()
+
+    # Call the function and assert the result
+    result = _is_pydantic_obj(obj)
+    assert result is False
+
+
+def test_is_pydantic_obj_with_non_pydantic_object(request, mocker_pydantic):
+    logger.info(f'{request.node.name}()')
+
+    # Create an instance of a non-pydantic object
+    class NonPydanticObject:
+        pass
+
+    obj = NonPydanticObject()
+
+    # Call the function and assert the result
+    result = _is_pydantic_obj(obj)
+    assert result is False
 
 if __name__ == "__main__":
     pytest.main([__file__])
