@@ -1,5 +1,6 @@
 include *.md
 include *.txt
+include *.sh
 recursive-include tests *.py
 recursive-include tests_data *.ini
 recursive-include tests_data *.properties

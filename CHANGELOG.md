@@ -13,6 +13,8 @@ RootMixin
 RLock
 LockingProxy
 pyproject.toml
+prof_to_callgrind.sh
+prof_to_callgrind.py
 
 
 ## [0.11.0] 22.06.2024
