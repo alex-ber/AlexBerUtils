@@ -44,4 +44,4 @@ docker pull alexberkovich/alex_ber_utils:latest
 docker run --rm \
     -v "$PROJECT_DIR:/opt/project" \
     alexberkovich/alex_ber_utils:latest \
-    python /opt/project/$APP_DIR/prof_to_callgrind.py /opt/project/$APP_DIR/$INPUT_FILE /opt/project/$APP_DIR/$OUTPUT_FILE
+    python /opt/project/$APP_DIR/alexber/utils/prof_to_callgrind.py /opt/project/$APP_DIR/$INPUT_FILE /opt/project/$APP_DIR/$OUTPUT_FILE
