@@ -3,7 +3,7 @@
 # Define default values
 DEFAULT_INPUT="my_program.prof"
 DEFAULT_OUTPUT="my_program.callgrind"
-DEFAULT_PROJECT_DIR="/mnt/c/dev/work/scrapyFW"
+DEFAULT_PROJECT_DIR="/mnt/c/dev/work/scrapyFW/public"
 DEFAULT_APP_DIR="AlexBerUtils"
 
 # Function to display help
