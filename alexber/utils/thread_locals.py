@@ -1,8 +1,7 @@
 #inspired by https://stackoverflow.com/questions/1408171/thread-local-storage-in-python
-import threading
-import asyncio
-import inspect
 import functools
+import inspect
+
 
 def threadlocal_var(thread_locals, varname, factory, *args, **kwargs):
   v = getattr(thread_locals, varname, None)
@@ -52,14 +51,6 @@ def validate_param(param_value, param_name):
         raise ValueError(f"Expected {param_name} param not found")
 
 
-import threading
-import asyncio
-from collections import deque
-
-import threading
-import asyncio
-from collections import deque
-
 import asyncio
 import threading
 from collections import deque
@@ -70,6 +61,8 @@ class RLock:
     A reentrant lock that supports both synchronous and asynchronous operations.
     The `RLock` class provides mechanisms to acquire and release locks in both synchronous
     and asynchronous contexts, ensuring proper synchronization and reentrancy.
+
+    See https://alex-ber.medium.com/a6b9a9021be8 for more details.
     """
 
     def __init__(self):
@@ -563,29 +556,6 @@ class LockingBaseLanguageModelMixin(RootMixin):
         _coerce_base_language_model(self)
         super().__init__(**kwargs)
 
-class LockingDefaultLockMixin(RootMixin):
-    """
-    A mixin class that provides a default lock if none is provided.
-
-    The `LockingDefaultLockMixin` class ensures that a default lock is used
-    if no lock is provided during initialization.
-
-    """
-    def __init__(self, **kwargs):
-        """
-        Initializes the mixin with the object and lock.
-
-        Parameters:
-        **kwargs: Arbitrary keyword arguments, including 'obj' for the object
-                  and 'lock' for the lock.
-        """
-        lock = kwargs.get("lock", None)
-        if not lock:
-            lock = RLock()
-        kwargs['lock'] = lock
-        self._lock = lock
-        super().__init__(**kwargs)
-
 
 
 # Flags to check the availability of Pydantic and BaseLanguageModel
@@ -675,6 +645,8 @@ class LockingProxy(LockingDefaultAndBaseLanguageModelMixin, LockingIterableMixin
     The `LockingProxy` class ensures that access to the wrapped object is thread-safe
     by using a provided lock. It supports iterable, async iterable, attribute access,
     and callable objects.
+
+    See https://alex-ber.medium.com/7a7a14021427 for more details.
 
     """
     def __init__(self, **kwargs):

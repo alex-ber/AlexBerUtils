@@ -5,22 +5,42 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
-## [0.11.1] TBD
+## [0.11.1] 23.07.2024
 ### Added
 
 - `RLock`  class to provide a reentrant lock that supports both synchronous and asynchronous 
 operations. This lock ensures fairness by handling acquisition requests in the order they are made, 
-both for threads and asynchronous tasks.
+both for threads and asynchronous tasks. See https://alex-ber.medium.com/a6b9a9021be8 for more details
 
 - `LockingProxy` class to provide a comprehensive locking mechanism, ensuring thread-safe access and operations 
-for various object types including iterables, async iterables, attributes, and callables.
+for various object types including iterables, async iterables, attributes, and callables. See 
+https://alex-ber.medium.com/7a7a14021427 for more details.
 
+- `prof_to_callgrind.sh` script for converting `.prof` files to `.callgrind` format using Docker.
+See https://alex-ber.medium.com/converting-prof-files-to-callgrind-f6ae56fae0d3 for more details.
+ 
+- `prof_to_callgrind.py` to handle the conversion of `profile` statistics to `callgrind` files. 
+See https://alex-ber.medium.com/converting-prof-files-to-callgrind-f6ae56fae0d3 for more details.
 
+# Profiling Script with High-Resolution Timer
 
-TBD:
-prof_to_callgrind.sh
-prof_to_callgrind.py
-END OF TBD
+This script demonstrates how to set up a cProfile profiler in Python using a high-resolution timer based on `time.perf_counter_ns()`.
+
+```python
+import time
+import cProfile
+
+# Define a precise timer function using time.perf_counter_ns()
+def precise_timer():
+    return time.perf_counter_ns()
+
+# Create a cProfile.Profile object with the precise timer function
+profiler = cProfile.Profile(timer=precise_timer)
+
+# Usage note:
+# The profiler is now configured to use the precise_timer function, 
+# which provides higher resolution timing measurements in nanoseconds.
+```
 
 #### Misc
 - `pyproject.toml` to specify build system requirements and configurations, 
