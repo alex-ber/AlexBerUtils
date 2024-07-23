@@ -3,6 +3,7 @@ import pytest
 import asyncio
 import threading
 import types
+from collections import deque
 from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
     LockingIterableMixin, LockingIterator, LockingAsyncIterableMixin, LockingAsyncIterator, LockingAccessMixin, \
     LockingPedanticObjMixin, LockingDefaultLockMixin, _coerce_base_language_model, LockingBaseLanguageModelMixin, \
@@ -235,6 +236,39 @@ async def test_async_context_manager(request, mocker):
     assert lock._async_owner is None
     assert lock._async_count == 0
 
+def test_sync_fairness(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    lock = RLock()
+    results = []
+
+    def thread_func(thread_id):
+        lock.acquire()
+        results.append(thread_id)
+        lock.release()
+
+    threads = [threading.Thread(target=thread_func, args=(i,)) for i in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert results == [0, 1, 2], f"Results were {results}"
+
+@pytest.mark.asyncio
+async def test_async_fairness(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    lock = RLock()
+    results = []
+
+    async def async_task(task_id):
+        await lock.async_acquire()
+        results.append(task_id)
+        await lock.async_release()
+
+    tasks = [asyncio.create_task(async_task(i)) for i in range(3)]
+    await asyncio.gather(*tasks)
+
+    assert results == [0, 1, 2], f"Results were {results}"
 
 def test_call_synchronous_function(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -296,7 +330,6 @@ def test_locking_iterator(request, mocker):
     assert lock.__enter__.call_count == 3 + 1   #1 for iterator exhaustion
     assert lock.__exit__.call_count == 3 + 1   #1 for iterator exhaustion
 
-
 @pytest.mark.asyncio
 async def test_locking_async_iterable_mixin(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -322,7 +355,6 @@ async def test_locking_async_iterable_mixin(request, mocker):
     assert lock.__aenter__.call_count == 3 + 1   #1 for iterator exhaustion
     assert lock.__aexit__.call_count == 3 + 1   #1 for iterator exhaustion
 
-
 @pytest.mark.asyncio
 async def test_locking_async_iterator(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -346,7 +378,6 @@ async def test_locking_async_iterator(request, mocker):
     assert lock.__aenter__.call_count == 3 + 1   #1 for iterator exhaustion
     assert lock.__aexit__.call_count == 3 + 1   #1 for iterator exhaustion
 
-
 def test_property_locking_access_mixin(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -359,7 +390,6 @@ def test_property_locking_access_mixin(request, mocker):
     lock = mocker.Mock()
     mixin = LockingAccessMixin(obj=obj, lock=lock)
     assert mixin.prop == "value"
-
 
 def test_locking_access_sync_method(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -379,7 +409,6 @@ def test_locking_access_sync_method(request, mocker):
     assert result == "result"
     lock.__enter__.assert_called_once()
     lock.__exit__.assert_called_once()
-
 
 @pytest.mark.asyncio
 async def test_locking_access_async_method(request, mocker):
@@ -401,7 +430,6 @@ async def test_locking_access_async_method(request, mocker):
     lock.__aenter__.assert_called_once()
     lock.__aexit__.assert_called_once()
 
-
 def test_locking_access_property_handling(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
 
@@ -417,7 +445,6 @@ def test_locking_access_property_handling(request, mocker):
 
     mixin = LockingAccessMixin(obj=obj, lock=lock)
     assert mixin.prop == "value"
-
 
 def test_locking_access_special_case_for_pydantic(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -464,7 +491,6 @@ def test_coerce_base_language_model_not_available(request, mocker):
     # Since we are mocking, we should check that BaseLanguageModel.register is not called
     assert not mocker.patch('alexber.utils.thread_locals.BaseLanguageModel').register.called
 
-
 def test_coerce_base_language_model_with_base_language_model(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     mocker.patch('alexber.utils.thread_locals._is_available_base_language_model', True)
@@ -484,7 +510,6 @@ def test_coerce_base_language_model_with_base_language_model(request, mocker):
     _coerce_base_language_model(obj)
     mock_register.assert_called_once_with(type(obj))
 
-
 def test_coerce_base_language_model_with_non_base_language_model(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     mocker.patch('alexber.utils.thread_locals._is_available_base_language_model', True)
@@ -503,7 +528,6 @@ def test_coerce_base_language_model_with_non_base_language_model(request, mocker
     mock_register = mocker.patch.object(MockBaseLanguageModel, 'register')
     _coerce_base_language_model(proxy)
     mock_register.assert_not_called()
-
 
 def test_locking_base_language_model_mixin_calls_coerce(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -547,11 +571,9 @@ def test_coerce_base_language_model_checks_proxy_obj(request, mocker):
     # Ensure that the function checks proxy.obj and not just obj
     assert isinstance(proxy._obj, MockBaseLanguageModel)
 
-
 # Define a mock BaseModel class
 class MockBaseModel:
     pass
-
 
 @pytest.fixture
 def mocker_pydantic(mocker):
@@ -564,7 +586,6 @@ def mocker_pydantic(mocker):
         'pydantic.v1': mocker.MagicMock(BaseModel=MockBaseModel)
     })
     return mocker
-
 
 def test_is_pydantic_obj_with_pydantic_model(request, mocker_pydantic):
     logger.info(f'{request.node.name}()')
@@ -595,7 +616,6 @@ def test_is_pydantic_obj_with_pydantic_v1_unavailable(request, mocker):
     result = _is_pydantic_obj(obj)
     assert result is True
 
-
 def test_is_pydantic_obj_with_pydantic_v2_unavailable(request, mocker):
     logger.info(f'{request.node.name}()')
 
@@ -614,7 +634,6 @@ def test_is_pydantic_obj_with_pydantic_v2_unavailable(request, mocker):
     result = _is_pydantic_obj(obj)
     assert result is True
 
-
 def test_is_pydantic_obj_with_import_error(request, mocker):
     logger.info(f'{request.node.name}()')
 
@@ -627,7 +646,6 @@ def test_is_pydantic_obj_with_import_error(request, mocker):
     # Call the function and assert the result
     result = _is_pydantic_obj(obj)
     assert result is False
-
 
 def test_is_pydantic_obj_with_non_pydantic_object(request, mocker_pydantic):
     logger.info(f'{request.node.name}()')
@@ -642,14 +660,12 @@ def test_is_pydantic_obj_with_non_pydantic_object(request, mocker_pydantic):
     result = _is_pydantic_obj(obj)
     assert result is False
 
-
 def test_is_pydantic_obj_with_pydantic_object_mixin(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     mocker.patch('alexber.utils.thread_locals._is_pydantic_obj', return_value=True)
     obj = mocker.Mock()
     mixin = LockingPedanticObjMixin(obj=obj)
     assert mixin._is_pedantic_obj is True
-
 
 def test_is_pydantic_obj_with_non_pydantic_object_mixin(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')

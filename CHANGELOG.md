@@ -6,15 +6,44 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 ## [0.11.1] TBD
-misc
-pyproject.toml
-validate_param
-RootMixin
-RLock
-LockingProxy
-pyproject.toml
+### Added
+
+- `RLock`  class to provide a reentrant lock that supports both synchronous and asynchronous 
+operations. This lock ensures fairness by handling acquisition requests in the order they are made, 
+both for threads and asynchronous tasks.
+
+- `LockingProxy` class to provide a comprehensive locking mechanism, ensuring thread-safe access and operations 
+for various object types including iterables, async iterables, attributes, and callables.
+
+
+
+TBD:
 prof_to_callgrind.sh
 prof_to_callgrind.py
+END OF TBD
+
+#### Misc
+- `pyproject.toml` to specify build system requirements and configurations, 
+ensuring compatibility with `setuptools`>=42 and `wheel`.
+
+- `validate_param()` function to check for the presence of required parameters 
+and raise a ValueError if they are missing.
+
+- `RootMixin` class with an initializer that stops the delegation chain
+
+- `LockingIterableMixin` to provide locking for iterable objects, ensuring thread-safe iteration.
+
+- `LockingAsyncIterableMixin` to provide locking for asynchronous iterable objects, ensuring thread-safe iteration.
+
+- `LockingAccessMixin` to provide locking for attribute access, ensuring thread-safe access to object attributes.
+
+- `LockingCallableMixin` to provide locking for callable objects, ensuring thread-safe execution of callable objects.
+
+- `LockingDefaultLockMixin` to provide a default lock if none is provided during initialization.
+
+- `LockingBaseLanguageModelMixin` to provide locking for BaseLanguageModel objects, ensuring thread-safe access.
+
+- `LockingDefaultAndBaseLanguageModelMixin` to combine default lock and BaseLanguageModel locking.
 
 
 ## [0.11.0] 22.06.2024
