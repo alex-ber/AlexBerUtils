@@ -12,17 +12,6 @@ from alexber.utils.thread_locals import threadlocal_var, get_threadlocal_var, de
 
 logger = logging.getLogger(__name__)
 
-async def example_task(return_value):
-    return return_value
-
-def create_coroutine_mock(mocker, return_value=None):
-    async def mock_coroutine(*args, **kwargs):
-        return return_value
-
-    mock = mocker.AsyncMock(wraps=mock_coroutine)
-    mock.__code__ = mock_coroutine.__code__
-    mock.__class__ = types.FunctionType
-    return mock
 
 def test_get_threadlocal_var_empty(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -170,6 +159,19 @@ def test_threadlocal_var_exists(request, mocker):
     with pytest.raises(ValueError):
         get_threadlocal_var(thread_locals, 'nonexist')
 
+async def example_task(return_value):
+    return return_value
+
+def create_coroutine_mock(mocker, return_value=None):
+    async def mock_coroutine(*args, **kwargs):
+        return return_value
+
+    mock = mocker.AsyncMock(wraps=mock_coroutine)
+    mock.__code__ = mock_coroutine.__code__
+    mock.__class__ = types.FunctionType
+    return mock
+
+### Basic Tests for Synchronous Locks
 def test_sync_acquire_release(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     lock = RLock()
@@ -236,6 +238,7 @@ async def test_async_context_manager(request, mocker):
     assert lock._async_owner is None
     assert lock._async_count == 0
 
+### Additional Fairness Tests
 def test_sync_fairness(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     lock = RLock()
@@ -270,6 +273,7 @@ async def test_async_fairness(request, mocker):
 
     assert results == [0, 1, 2], f"Results were {results}"
 
+### Other Callable and Iterable Tests for Completeness
 def test_call_synchronous_function(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     obj = mocker.Mock(return_value="result")
@@ -312,8 +316,8 @@ def test_locking_iterable_mixin(request, mocker):
     assert result == [1, 2, 3]
 
     # Verify the exact number of calls to __enter__ and __exit__
-    assert lock.__enter__.call_count == 3 + 1   #1 for iterator exhaustion
-    assert lock.__exit__.call_count == 3 + 1    #1 for iterator exhaustion
+    assert lock.__enter__.call_count == 3 + 1   # 1 for iterator exhaustion
+    assert lock.__exit__.call_count == 3 + 1    # 1 for iterator exhaustion
 
 def test_locking_iterator(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -327,8 +331,8 @@ def test_locking_iterator(request, mocker):
     assert next(iterator) == 3
     with pytest.raises(StopIteration):
         next(iterator)
-    assert lock.__enter__.call_count == 3 + 1   #1 for iterator exhaustion
-    assert lock.__exit__.call_count == 3 + 1   #1 for iterator exhaustion
+    assert lock.__enter__.call_count == 3 + 1   # 1 for iterator exhaustion
+    assert lock.__exit__.call_count == 3 + 1    # 1 for iterator exhaustion
 
 @pytest.mark.asyncio
 async def test_locking_async_iterable_mixin(request, mocker):
@@ -352,8 +356,8 @@ async def test_locking_async_iterable_mixin(request, mocker):
     assert result == [0, 1, 2]
 
     # Verify the exact number of calls to __aenter__ and __aexit__
-    assert lock.__aenter__.call_count == 3 + 1   #1 for iterator exhaustion
-    assert lock.__aexit__.call_count == 3 + 1   #1 for iterator exhaustion
+    assert lock.__aenter__.call_count == 3 + 1   # 1 for iterator exhaustion
+    assert lock.__aexit__.call_count == 3 + 1    # 1 for iterator exhaustion
 
 @pytest.mark.asyncio
 async def test_locking_async_iterator(request, mocker):
@@ -375,8 +379,8 @@ async def test_locking_async_iterator(request, mocker):
     assert result == [0, 1, 2]
 
     # Verify the exact number of calls to __aenter__ and __aexit__
-    assert lock.__aenter__.call_count == 3 + 1   #1 for iterator exhaustion
-    assert lock.__aexit__.call_count == 3 + 1   #1 for iterator exhaustion
+    assert lock.__aenter__.call_count == 3 + 1   # 1 for iterator exhaustion
+    assert lock.__aexit__.call_count == 3 + 1    # 1 for iterator exhaustion
 
 def test_property_locking_access_mixin(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
@@ -568,7 +572,7 @@ def test_coerce_base_language_model_checks_proxy_obj(request, mocker):
     mock_register = mocker.patch.object(MockBaseLanguageModel, 'register')
     _coerce_base_language_model(proxy)
     mock_register.assert_called_once_with(type(proxy))
-    # Ensure that the function checks proxy.obj and not just obj
+    # Ensure that the function checks proxy._obj and not just obj
     assert isinstance(proxy._obj, MockBaseLanguageModel)
 
 # Define a mock BaseModel class
@@ -597,7 +601,6 @@ def test_is_pydantic_obj_with_pydantic_model(request, mocker_pydantic):
     result = _is_pydantic_obj(obj)
     assert result is True
 
-
 def test_is_pydantic_obj_with_pydantic_v1_unavailable(request, mocker):
     logger.info(f'{request.node.name}()')
 
@@ -620,8 +623,8 @@ def test_is_pydantic_obj_with_pydantic_v2_unavailable(request, mocker):
     logger.info(f'{request.node.name}()')
 
     # Mock the availability of pydantic v2
-    mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v1', True)
     mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v2', False)
+    mocker.patch('alexber.utils.thread_locals._is_available_pydantic_v1', True)
 
     # Mock the import of pydantic to raise ImportError
     mocker.patch.dict('sys.modules', {'pydantic': None})

@@ -60,12 +60,16 @@ import threading
 import asyncio
 from collections import deque
 
+import asyncio
+import threading
+from collections import deque
+
 
 class RLock:
     """
     A reentrant lock that supports both synchronous and asynchronous operations.
     The `RLock` class provides mechanisms to acquire and release locks in both synchronous
-    and asynchronous contexts, ensuring proper synchronization, reentrancy, and fairness.
+    and asynchronous contexts, ensuring proper synchronization and reentrancy.
     """
 
     def __init__(self):
@@ -90,7 +94,6 @@ class RLock:
     def acquire(self):
         """
         Acquires the synchronous lock, blocking until it is available.
-        Ensures fairness by handling lock acquisition requests in order.
         Returns:
             bool: True if the lock was successfully acquired.
         """
@@ -100,12 +103,9 @@ class RLock:
                 self._sync_count += 1
                 return True  # Already acquired, no need to acquire again
 
-            event = threading.Event()
-            self._sync_waiting.append((current_thread, event))
-            while self._sync_owner is not None or self._sync_waiting[0][0] != current_thread:
-                self._sync_condition.release()
-                event.wait()  # Wait until the lock is available
-                self._sync_condition.acquire()
+            self._sync_waiting.append(current_thread)
+            while self._sync_owner is not None or self._sync_waiting[0] != current_thread:
+                self._sync_condition.wait()  # Wait until the lock is available
 
             self._sync_waiting.popleft()
             self._sync_owner = current_thread
@@ -115,7 +115,6 @@ class RLock:
     def release(self):
         """
         Releases the synchronous lock.
-        Ensures fairness by notifying the next waiting thread.
         Returns:
             bool: True if the lock was successfully released.
         Raises:
@@ -127,9 +126,7 @@ class RLock:
                 self._sync_count -= 1
                 if self._sync_count == 0:
                     self._sync_owner = None
-                    if self._sync_waiting:
-                        _, next_event = self._sync_waiting[0]
-                        next_event.set()  # Notify the next waiting thread
+                    self._sync_condition.notify_all()  # Notify all waiting threads
                 return True  # Successfully released
             else:
                 raise RuntimeError("Cannot release a lock that's not owned by the current thread")
@@ -137,7 +134,6 @@ class RLock:
     async def async_acquire(self):
         """
         Acquires the asynchronous lock, blocking until it is available.
-        Ensures fairness by handling lock acquisition requests in order.
         Returns:
             bool: True if the lock was successfully acquired.
         """
@@ -147,14 +143,12 @@ class RLock:
                 self._async_count += 1
                 return True  # Already acquired, no need to acquire again
 
-            event = asyncio.Event()
-            self._async_waiting.append((current_task, event))
-            while self._async_owner is not None or self._async_waiting[0][0] != current_task:
-                await self._async_condition.release()
-                await event.wait()  # Wait until the lock is available
-                await self._async_condition.acquire()
+            self._async_waiting.append(current_task)
 
-            self._async_waiting.popleft()
+            while self._async_owner is not None or self._async_waiting[0] != current_task:
+                await self._async_condition.wait()  # Wait until the lock is available
+
+            self._async_waiting.popleft()  # Remove the task from waiting queue once it acquires the lock
             self._async_owner = current_task
             self._async_count = 1
             return True  # Successfully acquired
@@ -162,7 +156,6 @@ class RLock:
     async def async_release(self):
         """
         Releases the asynchronous lock.
-        Ensures fairness by notifying the next waiting task.
         Returns:
             bool: True if the lock was successfully released.
         Raises:
@@ -174,9 +167,7 @@ class RLock:
                 self._async_count -= 1
                 if self._async_count == 0:
                     self._async_owner = None
-                    if self._async_waiting:
-                        _, next_event = self._async_waiting[0]
-                        next_event.set()  # Notify the next waiting task
+                    self._async_condition.notify_all()  # Notify all waiting tasks
                 return True  # Successfully released
             else:
                 raise RuntimeError("Cannot release a lock that's not owned by the current task")
