@@ -696,6 +696,7 @@ def _execute_async_in_sync(afunc_call):
     Raises:
         RuntimeError: If the function is called from the main thread while an event loop is running.
     """
+    logger.info("_execute_async_in_sync()")
 
     has_running_loop = False
 
@@ -760,6 +761,7 @@ def lift_to_async(afunc, /, *args, **kwargs):
     Returns:
         The result of the asynchronous function call.
     """
+    logger.info("lift_to_async()")
 
     ctx = contextvars.copy_context()
     afunc_call = functools.partial(ctx.run, afunc, *args, **kwargs)

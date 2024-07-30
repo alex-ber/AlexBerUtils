@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
-## [0.11.2] TBD
+## [0.11.2] 30.07.2024
 ### Added
 - Introduced `is_running_in_main_thread()` utility function to check if the current thread 
 is the main thread.
