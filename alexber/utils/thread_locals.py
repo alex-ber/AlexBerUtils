@@ -1,6 +1,15 @@
 #inspired by https://stackoverflow.com/questions/1408171/thread-local-storage-in-python
+import logging
+import concurrent.futures
+import contextvars
 import functools
 import inspect
+
+logger = logging.getLogger(__name__)
+
+
+#should be initlialzied via initConfig() method, see below.
+_EVENT_LOOP = None
 
 
 def threadlocal_var(thread_locals, varname, factory, *args, **kwargs):
@@ -92,7 +101,7 @@ class RLock:
         """
         with self._sync_condition:
             current_thread = threading.current_thread()
-            if self._sync_owner == current_thread:
+            if self._sync_owner is current_thread:
                 self._sync_count += 1
                 return True  # Already acquired, no need to acquire again
 
@@ -115,7 +124,7 @@ class RLock:
         """
         with self._sync_condition:
             current_thread = threading.current_thread()
-            if self._sync_owner == current_thread:
+            if self._sync_owner is current_thread:
                 self._sync_count -= 1
                 if self._sync_count == 0:
                     self._sync_owner = None
@@ -132,7 +141,7 @@ class RLock:
         """
         async with self._async_condition:
             current_task = asyncio.current_task()
-            if self._async_owner == current_task:
+            if self._async_owner is current_task:
                 self._async_count += 1
                 return True  # Already acquired, no need to acquire again
 
@@ -156,7 +165,7 @@ class RLock:
         """
         async with self._async_condition:
             current_task = asyncio.current_task()
-            if self._async_owner == current_task:
+            if self._async_owner is current_task:
                 self._async_count -= 1
                 if self._async_count == 0:
                     self._async_owner = None
@@ -658,3 +667,120 @@ class LockingProxy(LockingDefaultAndBaseLanguageModelMixin, LockingIterableMixin
                   and 'lock' for the lock.
         """
         super().__init__(**kwargs)
+
+
+def is_running_in_main_thread():
+    """
+    Checks if the current thread is the main thread.
+
+    Returns:
+        bool: True if the current thread is the main thread, False otherwise.
+    """
+    logger.info("is_running_in_main_thread()")
+
+    ret = threading.current_thread() is threading.main_thread()
+    logger.info(f"Going to return {ret}")
+    return ret
+
+
+def _execute_async_in_sync(afunc_call):
+    """
+    Executes an asynchronous function call in a synchronous context.
+
+    Args:
+        afunc_call: The asynchronous function call to be executed.
+
+    Returns:
+        The result of the asynchronous function call.
+
+    Raises:
+        RuntimeError: If the function is called from the main thread while an event loop is running.
+    """
+
+    has_running_loop = False
+
+    try:
+        loop = asyncio.get_running_loop()
+        has_running_loop = True
+    except RuntimeError:
+        logger.info("Resetting EVENT_LOOP")
+        loop = _EVENT_LOOP
+        asyncio.set_event_loop(loop)
+
+    if has_running_loop:
+        logger.info('The event loop is running.')
+        if is_running_in_main_thread():
+            s = """
+            If we have a running event loop, we should be on a non-MainThread; otherwise, we will block the event loop. 
+            The easiest way to achieve this is to use asyncio.to_thread() before making the call. 
+            In any case, you should execute your synchronous function on a separate thread, so any blocking will occur 
+            on that thread and not on the main thread that runs the event loop.			
+            """
+
+            raise RuntimeError(s)
+
+        logger.info("But we're running on a non-MainThread, so we're good.")
+        logger.info("Going to submit a coroutine to a given event loop from a different thread and execute it in a thread-safe way.")
+        logger.info("Going to block current thread and wait for result")
+
+        future = concurrent.futures.Future()
+
+        # Define a callback to set the result of the concurrent.futures.Future
+        def on_complete(task):
+            if task.exception():
+                future.set_exception(task.exception())
+            else:
+                future.set_result(task.result())
+
+        # Schedule the coroutine and add the callback
+        task = asyncio.run_coroutine_threadsafe(afunc_call(), loop)
+        task.add_done_callback(lambda t: on_complete(t))
+        result = future.result()
+
+    else:
+        logger.info("The event loop is NOT running.")
+        logger.info("Submitting a coroutine to the event loop from a different thread in a thread-safe manner.")
+        logger.info("This will start the event loop.")
+        logger.info("The current thread will continue to run.")
+
+        result = asyncio.run_coroutine_threadsafe(afunc_call(), loop).result()
+
+    return result
+
+
+def lift_to_async(afunc, /, *args, **kwargs):
+    """
+    Executes an asynchronous function in a synchronous context preserving ContextVar's context.
+
+    Args:
+        afunc: The asynchronous function to be executed.
+        *args: Positional arguments to pass to the function.
+        **kwargs: Keyword arguments to pass to the function.
+
+    Returns:
+        The result of the asynchronous function call.
+    """
+
+    ctx = contextvars.copy_context()
+    afunc_call = functools.partial(ctx.run, afunc, *args, **kwargs)
+    result = _execute_async_in_sync(afunc_call)
+    return result
+
+
+def initConfig(**kwargs):
+    """
+    Initializes the configuration required for using the lift_to_async() method.
+
+    This function is intended to be called from the MainThread.
+    It can be called with empty parameters.
+    It should be called with running event loop.
+
+    Args:
+        **kwargs: Optional keyword arguments to configure the initialization.
+
+    Returns:
+        None
+    """
+    _loop = asyncio.get_running_loop()  #raises exception, if there is no running event loop
+    global _EVENT_LOOP
+    _EVENT_LOOP = _loop

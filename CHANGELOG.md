@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+## [0.11.2] TBD
+### Added
+- Introduced `is_running_in_main_thread()` utility function to check if the current thread 
+is the main thread.
+
+- A configuration initializer `initConfig()` has been added. 
+You MUST call `initConfig()` from the MainThread before using `lift_to_async()`.
+It initializes the necessary configuration for using the `lift_to_async()` method. 
+
+- `lift_to_async()` primitive ensures seamless execution of async functions in a 
+synchronous environment, while preserving the context of ContextVar instances.
+It makes easier to integrate async calls within existing synchronous codebases.
+
+### Changed
+
+- In the `RLock` class, the comparison of the lock owner with the current thread/task was changed 
+from using the equality operator (`==`) to the `is` operator. 
+This change should not affect the functionality because the `__eq__` method was not overridden.
+
+
 ## [0.11.1] 23.07.2024
 ### Added
 
