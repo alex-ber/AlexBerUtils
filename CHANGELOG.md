@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+
+## [0.11.3] 30.07.2024
+
+### Added
+- New class `AsyncCache` which supports both LFU (Least Frequently Used) and LRU (Least Recently Used) caching policies 
+with optional Time-to-Live (TTL) for cache entries.
+Additional profiling and statistics gathering for cache hits, misses, average, max, and min execution times.
+- New decorator `async_cache()` for applying asynchronous caching to a function with configurable caching policy and TTL.
+- `HashableWrapper` class: This class wraps an object to make it hashable.
+It provides a fallback for objects that do not natively support hashing by using the string representation for hashing.
+- `make_hashable()` function: A utility to convert various types of objects into hashable types. 
+This function handles mappings, iterables, and objects with the `__hash__` method. 
+Non-hashable objects are wrapped in a `HashableWrapper` to ensure compatibility as dictionary keys or set members.
+- `is_iterable()` function: A utility to check if a value is iterable, excluding `None`, `str`, and `bytes`. 
+- `is_mapping()` function: A utility to check if a value is a mapping (dict-like). 
+It determines this by checking whether the given value implements the `.items()` method 
+and whether that method is callable.
+
 ## [0.11.2] 30.07.2024
 ### Added
 - Introduced `is_running_in_main_thread()` utility function to check if the current thread 

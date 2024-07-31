@@ -321,3 +321,81 @@ def GuardedWorkerException(logger=None, suppress=False, default_exc_message="Wor
             logger.error("Caught exception in worker proccess", exc_info=e)
         if not suppress:
             raise Exception(default_exc_message)
+
+
+
+def is_iterable(value):
+    """
+    Check if a value is iterable, excluding None, str and bytes.
+
+    Args:
+        value: The value to check.
+
+    Returns:
+        bool: True if the value is iterable, False otherwise.
+    """
+    if value is None or isinstance(value, (str, bytes)):
+        return False
+
+    try:
+        iter(value)
+        return True
+    except TypeError:
+        return False
+
+def is_mapping(value):
+    """
+    Check if a value is a mapping.
+
+    Args:
+        value: The value to check.
+
+    Returns:
+        bool: True if the value is a mapping, False otherwise.
+    """
+    try:
+        return hasattr(value, 'items') and callable(value.items)
+    except AttributeError:
+        return False
+
+def make_hashable(obj):
+    """
+    Recursively convert objects to hashable types.
+
+    This function ensures that objects can be used as keys in dictionaries
+    or elements in sets. It handles mappings, iterables, and objects that have
+    a `__hash__` method or fall back to string representation for non-hashable objects.
+
+    Args:
+        obj: The object to be converted.
+
+    Returns:
+        A hashable representation of the object, or a HashableWrapper instance
+        if the object is inherently non-hashable.
+    """
+    if is_mapping(obj):
+        return frozenset((make_hashable(k), make_hashable(v)) for k, v in obj.items())
+    elif is_iterable(obj):
+        return tuple(make_hashable(e) for e in obj)
+    elif hasattr(obj, '__hash__') and obj.__hash__:
+        return obj
+    else:
+        return HashableWrapper(obj)
+
+class HashableWrapper:
+    """
+    Wraps an object to make it hashable. This is a fallback for objects that
+    do not natively support hashing.
+    """
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return hash(str(self.obj))
+
+    def __eq__(self, other):
+        return isinstance(other, HashableWrapper) and self.obj == other.obj
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}({repr(self.obj)})'
+
