@@ -5,12 +5,16 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
-## [0.11.5] 31.07.2024
+## [0.11.6] 31.07.2024
+- `_LRUCache` and `_LFUCache` now supports the in operator.
+Beforehand the work of the `AsyncCache` was incorrect.
+
+## [0.11.5] 31.07.2024 YANKED
 
 ### Changed
 - `async_cache()` is now support correctly methods. 
 
-## [0.11.4] 31.07.2024 WINKED
+## [0.11.4] 31.07.2024 YANKED
 
 ### Changed
 - `async_cache()` is now support correctly methods. 

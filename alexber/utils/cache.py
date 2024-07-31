@@ -33,6 +33,8 @@ class _LRUCache:
     def __len__(self) -> int:
         return len(self.cache)
 
+    def __contains__(self, key: Any) -> bool:
+        return key in self.cache
     def clear(self):
         self.cache.clear()
         self.order.clear()
@@ -85,6 +87,9 @@ class _LFUCache:
 
     def __len__(self) -> int:
         return len(self.cache)
+
+    def __contains__(self, key: Any) -> bool:
+        return key in self.cache
 
     def clear(self):
         self.cache.clear()
