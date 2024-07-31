@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
-## [0.11.4] 31.07.2024
+## [0.11.5] 31.07.2024
+
+### Changed
+- `async_cache()` is now support correctly methods. 
+
+## [0.11.4] 31.07.2024 WINKED
 
 ### Changed
 - `async_cache()` is now support correctly methods. 

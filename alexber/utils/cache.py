@@ -4,7 +4,7 @@ from collections import defaultdict, deque
 from typing import Any, Optional, Union
 from .thread_locals import RLock
 from .mains import make_hashable, HashableWrapper
-from .inspects import ismethod
+import inspect
 
 class _LRUCache:
     """A simple LRU (Least Recently Used) cache implementation."""
@@ -227,13 +227,19 @@ def async_cache(maxsize=_MAX_SIZE_SENTINEL, ttl=_TTL_SENTINEL, policy="LFU"):
     def decorator(fn):
         @functools.wraps(fn)
         async def wrapped_instance(*args, **kwargs):
-            b = ismethod(fn)
-            if b:
-                # The function is a method bound to an instance
-                cache_key = make_hashable((id(fn.__self__), args, frozenset(kwargs.items())))
+            if not args:
+                # No positional arguments; cache key based only on keyword arguments
+                cache_key = make_hashable((None, frozenset(kwargs.items())))
             else:
-                # The function is a standalone function
-                cache_key = make_hashable((args, frozenset(kwargs.items())))
+                # Check if the first argument is a class instance (indicating a bound method)
+                b = inspect.isclass(args[0].__class__)
+                if b:
+                    # The function is a method bound to an instance
+                    instance_id = id(args[0])
+                    cache_key = make_hashable((instance_id, args[1:], frozenset(kwargs.items())))
+                else:
+                    # The function is a standalone function
+                    cache_key = make_hashable((args, frozenset(kwargs.items())))
 
             # Try to get the result from the cache
             try:
