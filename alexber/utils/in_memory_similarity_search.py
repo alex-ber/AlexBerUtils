@@ -127,13 +127,13 @@ def find_most_similar_with_scores(
             - A float representing the similarity score.
 
         If no comparison texts are provided (*args is empty),
-        the function returns [((some negative index, input_text), 1.0)].
+        the function returns [((some negative index, input_text), 0.0)].
     """
     logger.info("find_most_similar_with_scores()")
     if not args:
         # List[Tuple[Tuple[int, str], float]]
-        # (i, example), score (-1, input_text), 1.0
-        return [((-1, input_text), 1.0)]
+        # (i, example), score (-1, input_text), 0.0
+        return [((-1, input_text), 0.0)]
 
     input_v: np.ndarray = _calc_embedding_as_matrix(embeddings, input_text)
     example_embeddings_d: Dict[Tuple[int, str], np.ndarray] = {
