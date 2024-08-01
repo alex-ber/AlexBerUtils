@@ -121,11 +121,19 @@ def find_most_similar_with_scores(
         verbose (bool): If True, logs additional information. Default is True.
 
     Returns:
-        List[Tuple[Tuple[int, str], float]]: List of tuples containing the (index, text), and similarity score.
+        List[Tuple[Tuple[int, str], float]]: A list of tuples where each tuple contains:
+            - A sub-tuple (index, text): index is the position of the text in the input list,
+              and text is the corresponding text.
+            - A float representing the similarity score.
+
+        If no comparison texts are provided (*args is empty),
+        the function returns [((some negative index, input_text), 1.0)].
     """
     logger.info("find_most_similar_with_scores()")
     if not args:
-        return [(input_text, 1.0)]
+        # List[Tuple[Tuple[int, str], float]]
+        # (i, example), score (-1, input_text), 1.0
+        return [((-1, input_text), 1.0)]
 
     input_v: np.ndarray = _calc_embedding_as_matrix(embeddings, input_text)
     example_embeddings_d: Dict[Tuple[int, str], np.ndarray] = {
@@ -175,7 +183,9 @@ def find_most_similar(
         verbose (bool): If True, logs additional information. Default is True.
 
     Returns:
-        Tuple[int, str]: Tuple containing the index and the most similar text.
+        Tuple[int, str]: A tuple containing the index and the most similar text.
+
+    If no comparison texts are provided (*args is empty), the function returns (some negative index, input_text).
     """
     logger.info("find_most_similar()")
     sorted_similarities_l: List[Tuple[Tuple[int, str], float]] = \

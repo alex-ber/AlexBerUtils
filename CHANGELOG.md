@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+## [0.11.7] 01.08.2024
+### Changed
+- `find_most_similar()` and `find_most_similar()` was fixed for the edge case when no comparison texts are provided. 
+If no texts are provided, `find_most_similar_with_scores()` now returns [(some negative number, input_text), 1.0)], 
+and `find_most_similar()` returns (some negative number, input_text). 
+Docstrings of both method were also changed to reflect this change. 
+ 
+
 ## [0.11.6] 31.07.2024
+### Changed
+
 - `_LRUCache` and `_LFUCache` now supports the in operator.
 Beforehand the work of the `AsyncCache` was incorrect.
 
