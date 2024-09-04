@@ -4,5 +4,96 @@
 #
 #    pip-compile --output-file=requirements.txt req.txt
 #
+bcrypt==4.2.0
+    # via paramiko
+build==1.2.1
+    # via pip-tools
+cffi==1.17.0
+    # via
+    #   cryptography
+    #   pynacl
+click==8.1.7
+    # via pip-tools
+cryptography==43.0.1
+    # via
+    #   -r requirements.in
+    #   paramiko
+    #   pyopenssl
+decorator==5.1.1
+    # via fabric
+deprecated==1.2.14
+    # via fabric
+exceptiongroup==1.2.2
+    # via pytest
+fabric==3.2.2
+    # via -r requirements.in
+hiyapyco==0.6.1
+    # via -r requirements.in
+importlib-metadata==8.4.0
+    # via build
+iniconfig==2.0.0
+    # via pytest
+invoke==2.2.0
+    # via fabric
+jinja2==3.1.4
+    # via
+    #   -r requirements.in
+    #   hiyapyco
+markupsafe==2.1.5
+    # via
+    #   hiyapyco
+    #   jinja2
+multidispatch==0.2
+    # via -r requirements.in
+numpy==1.24.4
+    # via -r requirements.in
+packaging==23.2
+    # via
+    #   -r requirements.in
+    #   build
+    #   pytest
+paramiko==3.4.1
+    # via fabric
+pip-tools==7.4.1
+    # via -r requirements.in
+pluggy==1.5.0
+    # via pytest
+pycparser==2.22
+    # via cffi
+pynacl==1.5.0
+    # via paramiko
+pyopenssl==24.2.1
+    # via -r requirements.in
+pyproject-hooks==1.1.0
+    # via
+    #   build
+    #   pip-tools
+pytest==7.4.3
+    # via
+    #   -r requirements.in
+    #   pytest-assume
+    #   pytest-asyncio
+    #   pytest-mock
+pytest-assume==2.3.3
+    # via -r requirements.in
+pytest-asyncio==0.21.1
+    # via -r requirements.in
+pytest-mock==3.12.0
+    # via -r requirements.in
+python-dotenv==1.0.1
+    # via -r requirements.in
 pyyaml==6.0.1
-    # via -r req.txt
+    # via
+    #   -r requirements.in
+    #   hiyapyco
+tomli==2.0.1
+    # via
+    #   build
+    #   pip-tools
+    #   pytest
+wheel==0.44.0
+    # via pip-tools
+wrapt==1.16.0
+    # via deprecated
+zipp==3.20.1
+    # via importlib-metadata
