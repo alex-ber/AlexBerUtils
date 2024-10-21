@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+## [0.11.9] TBD
+`randoms.py`
+
+
 ## [0.11.8] 01.08.2024
 ### Changed
 - `find_most_similar()` and `find_most_similar()` was fixed for the edge case when no comparison texts are provided. 
