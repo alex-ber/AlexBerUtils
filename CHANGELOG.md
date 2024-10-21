@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - The `Sampler` class can optionally use NumPy for sampling if it is available. This allows for potentially faster and more efficient sampling operations.
 - If NumPy is not available, the class defaults to using Python's standard `random` module, ensuring compatibility across environments.
 - Note: The expovariate method has been adjusted to align with NumPy's exponential function, using the scale directly as the mean of the distribution.
-
+max_retries
 
 ## [0.11.9] 21.10.2024
 ### Added

@@ -1,16 +1,28 @@
 import logging
 import random as _random
 import math
+import warnings
+from typing import Union, Optional
 from .thread_locals import validate_param, RootMixin
 
 # Initialize a logger for this module
 logger = logging.getLogger(__name__)
+
+# Define a custom warning for optional NumPy support
+class OptionalNumpyWarning(Warning):
+    """Custom warning to indicate that NumPy is not available and a fallback to standard Python is used."""
 
 # Try to import NumPy
 try:
     import numpy as np
     USE_NUMPY = True
 except ImportError:
+    warning_message = (
+        "NumPy module wasn't found. Falling back to standard Python. "
+        "Using NumPy may lead to a performance boost. "
+        "You can install it by running 'python -m pip install alex-ber-utils[numpy]'."
+    )
+    warnings.warn(warning_message, OptionalNumpyWarning)
     USE_NUMPY = False
 
 class BaseSampler(RootMixin):
@@ -30,30 +42,34 @@ class BaseSampler(RootMixin):
 
     Attributes:
         distribution (str): The distribution to sample from.
-        shape (float): Shape parameter for the distribution, controlling the spread and skewness.
+        shape (Union[float, np.float32, np.float64]): Shape parameter for the distribution, controlling the spread and skewness.
                        For log-normal, it represents sigma of the underlying normal distribution.
-        scale (float): Scale parameter for the distribution, shifting the distribution and determining its median.
+        scale (Union[float, np.float32, np.float64]): Scale parameter for the distribution, shifting the distribution and determining its median.
                        For log-normal, it represents exp(mu) of the underlying normal distribution.
                        For exponential, it is used directly as the mean of the distribution.
-        lower_bound (float): Lower bound for the sampled value. Default is None (interpreted as -Inf).
-        upper_bound (float): Upper bound for the sampled value. Default is None (interpreted as +Inf).
+        lower_bound (Optional[Union[float, np.float32, np.float64]]): Lower bound for the sampled value. Default is None (interpreted as unbounded).
+        upper_bound (Optional[Union[float, np.float32, np.float64]]): Upper bound for the sampled value. Default is None (interpreted as unbounded).
+        max_retries (int): Maximum number of attempts to sample a valid value. Default is 1000.
     """
 
-    def __init__(self, distribution: str, shape: float, scale: float,
-                 lower_bound: float = None, upper_bound: float = None):
+    def __init__(self, **kwargs):
         """
         Initialize the BaseSampler with required and optional parameters.
 
-        :param distribution: The distribution to sample from.
-        :param shape: Shape parameter for the distribution.
-        :param scale: Scale parameter for the distribution.
-        :param lower_bound: Lower bound for the sampled value. Default is None (interpreted as unbounded).
-        :param upper_bound: Upper bound for the sampled value. Default is None (interpreted as unbounded).
+        :param kwargs: Keyword arguments for initialization.
         """
         logger.info("__init__()")
-        super().__init__(distribution, shape, scale, lower_bound, upper_bound)
+        super().__init__(**kwargs)
 
-        validate_param(distribution, "distribution")
+        self.distribution = kwargs.get('distribution', None)
+        validate_param(self.distribution, "distribution")
+        self.shape = kwargs.get('shape', None)
+        validate_param(self.shape, "shape")
+        self.scale = kwargs.get('scale', None)
+        validate_param(self.scale, "scale")
+        self.lower_bound = kwargs.get('lower_bound', -math.inf)
+        self.upper_bound = kwargs.get('upper_bound', math.inf)
+        self.max_retries = kwargs.get('max_retries', 1000)
 
         # Validate distribution
         self.supported_distributions = {
@@ -61,20 +77,10 @@ class BaseSampler(RootMixin):
             'gammavariate', 'gauss', 'betavariate', 'paretovariate', 'weibullvariate'
         }
 
-        if distribution not in self.supported_distributions:
-            raise ValueError(f"Unsupported distribution: {distribution}")
+        if self.distribution not in self.supported_distributions:
+            raise ValueError(f"Unsupported distribution: {self.distribution}")
 
-        self.distribution = distribution
-        self.shape = shape
-        validate_param(self.shape, "shape")
-        self.scale = scale
-        validate_param(self.scale, "scale")
-
-        # Interpret None bounds as -Inf and +Inf
-        self.lower_bound = lower_bound if lower_bound is not None else -math.inf
-        self.upper_bound = upper_bound if upper_bound is not None else math.inf
-
-    def get_sample(self) -> float:
+    def get_sample(self) -> Union[float, np.float32, np.float64]:
         """
         Get a sample from the specified distribution.
 
@@ -88,10 +94,10 @@ if USE_NUMPY:
         A class to sample from various statistical distributions using NumPy.
         """
 
-        def __init__(self, distribution: str, shape: float, scale: float,
-                     lower_bound: float = None, upper_bound: float = None,
-                     random_seed: int = None, random_state: np.random.RandomState = None):
-            super().__init__(distribution, shape, scale, lower_bound, upper_bound)
+        def __init__(self, **kwargs):
+            random_seed = kwargs.pop('random_seed', None)
+            random_state = kwargs.pop('random_state', None)
+            super().__init__(**kwargs)
 
             # Use the provided random_state or create a new one
             if random_state is not None:
@@ -99,7 +105,7 @@ if USE_NUMPY:
             else:
                 self.random_state = np.random.RandomState(random_seed)
 
-        def get_sample(self) -> float:
+        def get_sample(self) -> Union[float, np.float32, np.float64]:
             logger.info("get_sample()")
 
             # Map distribution names to numpy random methods
@@ -115,10 +121,11 @@ if USE_NUMPY:
                 'weibullvariate': lambda: self.random_state.weibull(self.shape) * self.scale
             }
 
-            while True:
+            for _ in range(self.max_retries):
                 sampled_value = distribution_methods[self.distribution]()
                 if self.lower_bound <= sampled_value <= self.upper_bound:
                     return sampled_value
+            raise RuntimeError("Failed to sample a valid value within the specified bounds after max retries.")
 else:
     class Sampler(BaseSampler):
         """
@@ -128,10 +135,10 @@ else:
         using the scale directly as the mean of the distribution.
         """
 
-        def __init__(self, distribution: str, shape: float, scale: float,
-                     lower_bound: float = None, upper_bound: float = None,
-                     random_seed: int = None, random_instance: _random.Random = None):
-            super().__init__(distribution, shape, scale, lower_bound, upper_bound)
+        def __init__(self, **kwargs):
+            random_seed = kwargs.pop('random_seed', None)
+            random_instance = kwargs.pop('random_instance', None)
+            super().__init__(**kwargs)
 
             # Use the provided random_instance or create a new one
             if random_instance is not None:
@@ -139,7 +146,7 @@ else:
             else:
                 self.random_instance = _random.Random(random_seed)
 
-        def get_sample(self) -> float:
+        def get_sample(self) -> Union[float, np.float32, np.float64]:
             logger.info("get_sample()")
 
             # Map distribution names to random instance methods
@@ -155,7 +162,8 @@ else:
                 'weibullvariate': lambda: self.random_instance.weibullvariate(self.shape, self.scale)
             }
 
-            while True:
+            for _ in range(self.max_retries):
                 sampled_value = distribution_methods[self.distribution]()
                 if self.lower_bound <= sampled_value <= self.upper_bound:
                     return sampled_value
+            raise RuntimeError("Failed to sample a valid value within the specified bounds after max retries.")
