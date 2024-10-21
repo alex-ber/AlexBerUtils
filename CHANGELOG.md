@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
-## [0.11.9] TBD
+## [0.11.9] 21.10.2024
 ### Added
 
 - **Sampler Class**: Introduced the `Sampler` class, a flexible utility for sampling from various statistical distributions.

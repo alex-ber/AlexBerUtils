@@ -11,6 +11,17 @@ class Sampler:
     """
     A class to sample from various statistical distributions with configurable parameters.
 
+    Supported Distributions:
+        - 'lognormvariate': Log-normal distribution.
+        - 'normalvariate': Normal distribution.
+        - 'expovariate': Exponential distribution.
+        - 'vonmisesvariate': Von Mises distribution.
+        - 'gammavariate': Gamma distribution.
+        - 'gauss': Gaussian distribution.
+        - 'betavariate': Beta distribution.
+        - 'paretovariate': Pareto distribution.
+        - 'weibullvariate': Weibull distribution.
+
     Attributes:
         distribution (str): The distribution to sample from.
         shape (float): Shape parameter for the distribution, controlling the spread and skewness.
@@ -40,6 +51,7 @@ class Sampler:
         :param random_seed: Seed for the random number generator. Default is None.
         :param random_instance: An instance of random.Random for generating random numbers. Default is None.
         """
+        logger.info("__init__()")
 
         validate_param(distribution, "distribution")
 
