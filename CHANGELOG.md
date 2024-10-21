@@ -6,7 +6,33 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 ## [0.11.9] TBD
-`randoms.py`
+### Added
+
+- **Sampler Class**: Introduced the `Sampler` class, a flexible utility for sampling from various statistical distributions.
+
+## Distribution Support
+
+- The class supports multiple distributions, including:
+  - **Log-normal (`lognormvariate`)**: Uses `math.log(self.scale)` for the mean of the underlying normal distribution.
+  - **Normal (`normalvariate`)**: Standard normal distribution with specified mean and standard deviation.
+  - **Exponential (`expovariate`)**: Uses `1 / self.scale` as the rate parameter (lambda).
+  - **Von Mises (`vonmisesvariate`)**: Circular distribution with specified mean and concentration.
+  - **Gamma (`gammavariate`)**: Two-parameter distribution with shape and scale.
+  - **Gaussian (`gauss`)**: Similar to normalvariate, with mean and standard deviation.
+  - **Beta (`betavariate`)**: Distribution defined on the interval [0, 1] with two shape parameters.
+  - **Pareto (`paretovariate`)**: Heavy-tailed distribution with a single shape parameter.
+  - **Weibull (`weibullvariate`)**: Distribution with shape and scale parameters.
+
+## Configurable Parameters
+
+- The class requires configuration of key parameters:
+  - `distribution`: Specifies the distribution to sample from (required).
+  - `shape`: Shape parameter for the distribution, controlling the spread and skewness. For log-normal, it represents sigma of the underlying normal distribution (required).
+  - `scale`: Scale parameter for the distribution, shifting the distribution and determining its median. For log-normal, it represents exp(mu) of the underlying normal distribution. For exponential, it is the inverse of the rate parameter (1/lambda) (required).
+  - `lower_bound`: Optional lower bound for the sampled value, defaulting to `None` (no lower bound).
+  - `upper_bound`: Optional upper bound for the sampled value, defaulting to `None` (no upper bound).
+  - `random_seed`: Optional seed for the random number generator, allowing for reproducibility.
+  - `random_instance`: Optional custom instance of `random.Random` for generating random numbers.
 
 
 ## [0.11.8] 01.08.2024
