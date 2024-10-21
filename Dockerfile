@@ -35,8 +35,8 @@ CMD tail -f /dev/null
 ##docker build --no-cache --squash . -t utils-i
 #docker build --progress=plain . -t utils-i
 #docker exec -it $(docker ps -q -n=1) bash
-#docker tag utils-i alexberkovich/alex_ber_utils:0.11.8
+#docker tag utils-i alexberkovich/alex_ber_utils:0.11.10
 #docker tag utils-i alexberkovich/alex_ber_utils:latest
-#docker push alexberkovich/alex_ber_utils:0.11.8
+#docker push alexberkovich/alex_ber_utils:0.11.10
 #docker push alexberkovich/alex_ber_utils:latest
 # EOF
