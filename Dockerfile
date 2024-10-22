@@ -26,7 +26,11 @@ RUN set -ex && \
 
 
 #CMD ["/bin/sh"]
-CMD tail -f /dev/null
+#https://docs.docker.com/reference/build-checks/json-args-recommended/
+#CMD tail -f /dev/null
+CMD ["tail", "-f", "/dev/null"]
+#SHELL tail -f /dev/null
+
 
 #docker system prune --all
 #
