@@ -5,8 +5,16 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+## [0.11.11] 22.10.2024
 
-## [0.11.10] 22.10.2024
+### Changed
+- **OptionalNumpyWarning**: Moved the definition of `OptionalNumpyWarning` to a separate module (`alexber.utils.warnings`) to allow for easier suppression of the warning without triggering it during import. 
+This change improves the flexibility and usability of the library for users who do not require NumPy.
+  
+- **Type Hints**: Fixed and improved type hints across the codebase to enhance code clarity and support for static type checking tools. 
+This ensures better integration with IDEs and type checkers, providing more accurate code suggestions and error detection.
+
+## [0.11.10] 22.10.2024 yanked
 
 ### Added
 - **USE_NUMPY**: Introduced a flag to determine whether NumPy is available and should be used for sampling operations. This allows for performance optimizations when NumPy is installed.

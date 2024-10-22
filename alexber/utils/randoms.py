@@ -1,10 +1,9 @@
-# Let's restore the documentation and move the `SamplingError` class to the correct place after the imports.
-
 import logging
 import random as _random
 import math
 import warnings
 from typing import Union, Optional
+from .warnings import OptionalNumpyWarning
 
 # Initialize a logger for this module
 logger = logging.getLogger(__name__)
@@ -46,9 +45,6 @@ class SamplingError(Exception):
         return (f"SamplingError(message={self.args[0]!r}, distribution={self.distribution!r}, "
                 f"retries={self.retries!r}, {bounds_info})")
 
-# Define a custom warning for optional NumPy support
-class OptionalNumpyWarning(Warning):
-    """Custom warning to indicate that NumPy is not available and a fallback to standard Python is used."""
 
 # Try to import NumPy
 try:
@@ -138,7 +134,7 @@ class BaseSampler:
         if seed is not None and instance is not None:
             raise ValueError("Specify only one of random_seed or random_state/random_instance")
 
-    def get_sample(self) -> Union[float, np.float32, np.float64]:
+    def get_sample(self) -> Union[float, 'np.float32', 'np.float64']:
         """
         Get a sample from the specified distribution.
 
@@ -169,7 +165,7 @@ if USE_NUMPY:
             else:
                 self.random_state = np.random.RandomState(random_seed)
 
-        def get_sample(self) -> Union[float, np.float32, np.float64]:
+        def get_sample(self) -> Union[float, 'np.float32', 'np.float64']:
             """
             Get a sample from the specified distribution using NumPy.
 
@@ -226,7 +222,7 @@ else:
             else:
                 self.random_instance = _random.Random(random_seed)
 
-        def get_sample(self) -> Union[float, np.float32, np.float64]:
+        def get_sample(self) -> Union[float, 'np.float32', 'np.float64']:
             """
             Get a sample from the specified distribution using the standard random module.
 
