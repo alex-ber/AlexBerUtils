@@ -6,13 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-## [0.11.10] TBD
-### Changed
+## [0.11.10] 22.10.2024
 
-- The `Sampler` class can optionally use NumPy for sampling if it is available. This allows for potentially faster and more efficient sampling operations.
-- If NumPy is not available, the class defaults to using Python's standard `random` module, ensuring compatibility across environments.
-- Note: The expovariate method has been adjusted to align with NumPy's exponential function, using the scale directly as the mean of the distribution.
-max_retries
+### Added
+- **USE_NUMPY**: Introduced a flag to determine whether NumPy is available and should be used for sampling operations. This allows for performance optimizations when NumPy is installed.
+- **SamplingError**: Added a custom exception class to handle errors when sampling fails after a maximum number of retries. It provides detailed error messages, including distribution type, retries, and bounds, aiding in debugging and error handling.
+- **OptionalNumpyWarning**: Introduced a custom warning to notify users when NumPy is not available, and the system falls back to standard Python operations. The primary purpose of this warning is to provide users with the ability to suppress it if desired.
+
+### Changed
+- **BaseSampler**: Refactored the base class for sampling to support various statistical distributions with configurable parameters. This includes validation for distribution types and bounds.
+- **Sampler**: The class can optionally use NumPy for sampling if it is available, allowing for potentially faster and more efficient sampling operations. If NumPy is not available, the class defaults to using Python's standard `random` module, ensuring compatibility across environments.
+  - Note: The `expovariate` method has been adjusted to align with NumPy's exponential function, using the scale directly as the mean of the distribution.
+- **max_retries**: Added a parameter to limit the number of attempts to sample a valid value, primarily to avoid infinite loops. This ensures that the sampling process terminates gracefully if a valid sample cannot be obtained within the specified number of retries.
 
 ## [0.11.9] 21.10.2024
 ### Added
