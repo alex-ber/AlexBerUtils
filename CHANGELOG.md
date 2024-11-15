@@ -5,6 +5,97 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+
+### Added
+- Introduced a `deprecated` decorator to mark functions as deprecated.
+  - The decorator allows specifying the version since which the function is deprecated, the reason for deprecation, and whether the function is marked for removal.
+  - It issues a customizable warning (defaulting to `DeprecationWarning`) when the decorated function is called.
+  - This addition helps developers communicate deprecation status and future removal plans for functions in the codebase.
+
+- **`exec_in_executor_threading_future()`** a thin wrapper around `exec_in_executor()`, which returns an 
+`asyncio.Future`. This function executes a function or coroutine within a specified executor and converts the 
+resulting `asyncio.Future` into a `threading.Future`. It preserves `ContextVars`, ensuring that context is 
+maintained across asynchronous boundaries. For more details, see description of `exec_in_executor()`.
+
+- **`exec_in_executor()`**: 
+  - Added the `exec_in_executor` function to execute a function or coroutine within a specified executor while preserving `ContextVars`.
+  - The function ensures context is maintained across asynchronous boundaries and resolves the executor in a prioritized manner:
+    1. Uses the provided executor if available.
+    2. Falls back to an executor set via `initConfig()`.
+    3. Defaults to the asyncio executor if none is set.
+  - Supports both coroutine and regular function execution.
+
+- **`ensure_thread_event_loop()`**: 
+  - Implemented the `ensure_thread_event_loop()` function to initialize an event loop for the current thread if it does not already exist.
+
+
+- **`handle_result()`**: Introduced a new `handle_result()` function that transfers the result or exception from one future to another. 
+This function is designed to be generic and can be used with any types of futures, ensuring that the outcome of task 
+execution is properly propagated between futures.
+  - **Usage**: To use this function, add it as a callback to the `source_future`:
+    ```python
+    # Add the chain_future_results function as a callback to the source_future
+    source_future.add_done_callback(lambda fut: handle_result(fut, target_future))
+    ```
+  - **Arguments**:
+    - `source_future`: The future from which to retrieve the result or exception.
+    - `target_future`: The future on which to set the result or exception.
+
+- **TaskQueue**: 
+- Introduced a new `TaskQueue` class for managing asynchronous task execution using a specified executor. This class provides:
+  - A context manager interface to start and stop a worker that processes tasks from the queue.
+  - Asynchronous task execution with graceful queue closure.
+  - Note: as a side fact, threads in the executor may have an event loop attached. This allows for the execution of asynchronous tasks within those threads.
+
+#### Attributes
+
+- `executor (Executor)`: The mandatory executor used to run tasks.
+- `queue (asyncio.Queue)`: The optional queue that holds tasks to be executed. If not provided, a new `asyncio.Queue` is created by default.
+
+#### Methods
+
+- `worker()`: Continuously processes tasks from the queue until the `aclose()` method is called.
+- `aadd_task(func, *args, **kwargs)`: Asynchronously adds a task to the queue for execution and returns a future.
+- `aclose()`: Asynchronously closes the queue and waits for the worker to finish processing.
+
+#### Initialization
+
+- The `TaskQueue` is initialized with a specified executor and an optional queue. The executor is required to run tasks, while a custom queue can be provided or the default `asyncio.Queue` will be used.
+
+#### Context Management
+
+- The `TaskQueue` can be used as a context manager. When entering the context, the worker is started, and when exiting, the queue is closed, and the worker is stopped.
+
+
+### Changed
+- **`initConfig()`**: 
+  - The `initConfig` function now also supports `exec_in_executor()` through the `executor` parameter.
+  - This function is designed to be called from the main thread.
+  - It accepts optional keyword arguments to configure a global executor that can be (optionally) used in `exec_in_executor()`.
+- [GitHub Issue #14](https://github.com/alex-ber/AlexBerUtils/issues/14): Enhanced the `lift_to_async` function 
+to handle `StopAsyncIteration` exceptions more gracefully. If a `StopAsyncIteration` exception is raised from `afunc`, 
+it is now converted to a `RuntimeError` with a descriptive message. This change prevents a `TypeError` from being 
+raised and ensures that the `Future` does not remain pending indefinitely.
+- Updated `initConfig()`:
+  - Initializes the configuration for `lift_to_async()` and `exec_in_executor()`.
+  - Ensures it is called from the main thread with a running event loop.
+  - Sets a global executor if provided via keyword arguments.
+	
+
+#### Example Usage
+```python
+# Example usage of the decorator
+@deprecated(version='1.0', reason="Use `new_function` instead.", for_removal=True)
+def old_function(x, y):
+    """Returns the sum of two numbers."""
+    return x + y
+
+# Call the deprecated function
+result = old_function(3, 4)
+```
+
+
+
 ## [0.11.11] 22.10.2024
 
 ### Changed

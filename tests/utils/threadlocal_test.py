@@ -1,14 +1,18 @@
 import logging
-import pytest
-import asyncio
 import threading
 import types
-from collections import deque
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import queue
+import pytest
+
+
 from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
     LockingIterableMixin, LockingIterator, LockingAsyncIterableMixin, LockingAsyncIterator, LockingAccessMixin, \
     LockingPedanticObjMixin, LockingDefaultLockMixin, _coerce_base_language_model, LockingBaseLanguageModelMixin, \
     _is_pydantic_obj
 from alexber.utils.thread_locals import threadlocal_var, get_threadlocal_var, del_threadlocal_var
+from alexber.utils.thread_locals import exec_in_executor, ensure_thread_event_loop
 
 logger = logging.getLogger(__name__)
 
@@ -676,6 +680,60 @@ def test_is_pydantic_obj_with_non_pydantic_object_mixin(request, mocker):
     obj = mocker.Mock()
     mixin = LockingPedanticObjMixin(obj=obj)
     assert mixin._is_pedantic_obj is False
+
+# Define a sample function
+def sample_function(x, y):
+    print("sample_function")
+    return x + y
+
+# Define a sample coroutine
+async def sample_coroutine(x, y):
+    print("sample_coroutine")
+    await asyncio.sleep(1)
+    return x * y
+
+@pytest.mark.asyncio
+async def test_exec_in_executor_with_function(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    # Run the sample function in an executor
+    result = await exec_in_executor(None, sample_function, 3, 4)
+    assert result == 7
+    logger.info(f"Result from sample_function: {result}")
+
+@pytest.mark.asyncio
+async def test_exec_in_executor_with_coroutine(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    # Run the sample coroutine in an executor
+    result = await exec_in_executor(None, sample_coroutine, 3, 4)
+    assert result == 12
+    logger.info(f"Result from sample_coroutine: {result}")
+
+def test_example_usage_sync(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    # Create a Queue to hold the result of the task
+    result_queue = queue.Queue(1)
+
+    def run_asyncio_task_in_thread():
+        ensure_thread_event_loop()
+
+        async def helper_example_usage():
+            # Run both tests in the same event loop
+            await test_exec_in_executor_with_function(request, mocker)
+            await test_exec_in_executor_with_coroutine(request, mocker)
+            # Put a placeholder result in the Queue
+            result_queue.put("Completed")
+
+        asyncio.get_event_loop().run_until_complete(helper_example_usage())
+
+    with ThreadPoolExecutor() as executor:
+        executor.submit(run_asyncio_task_in_thread)
+
+    # Wait for the result from the Queue
+    result = result_queue.get()
+    assert result == "Completed"
+    logger.info(result)
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
