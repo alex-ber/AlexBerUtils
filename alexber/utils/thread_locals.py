@@ -940,7 +940,7 @@ def chain_future_results(source_future, target_future):
     except Exception as e:
         target_future.set_exception(e)
 
-class TaskQueue(RootMixin):
+class AsyncExecutionQueue(RootMixin):
     """
     A class representing an asynchronous task queue that manages task execution using a specified executor.
 
@@ -1005,7 +1005,7 @@ class TaskQueue(RootMixin):
                 func, args, kwargs = task
                 # Use the helper function to execute the task and set the result in the task_future
                 result_future = exec_in_executor(self.executor, func, *args, **kwargs)
-                result_future.add_done_callback(lambda result_future: chain_future_results(result_future, task_future))
+                result_future.add_done_callback(lambda fut: chain_future_results(fut, task_future))
             finally:
                 # Mark the task as done, regardless of what the task was
                 self.queue.task_done()

@@ -41,8 +41,8 @@ execution is properly propagated between futures.
     - `source_future`: The future from which to retrieve the result or exception.
     - `target_future`: The future on which to set the result or exception.
 
-- **TaskQueue**: 
-- Introduced a new `TaskQueue` class for managing asynchronous task execution using a specified executor. This class provides:
+- **AsyncExecutionQueue**: 
+- Introduced a new `AsyncExecutionQueue` class for managing asynchronous task execution using a specified executor. This class provides:
   - A context manager interface to start and stop a worker that processes tasks from the queue.
   - Asynchronous task execution with graceful queue closure.
   - Note: as a side fact, threads in the executor may have an event loop attached. This allows for the execution of asynchronous tasks within those threads.
@@ -60,11 +60,11 @@ execution is properly propagated between futures.
 
 #### Initialization
 
-- The `TaskQueue` is initialized with a specified executor and an optional queue. The executor is required to run tasks, while a custom queue can be provided or the default `asyncio.Queue` will be used.
+- The `AsyncExecutionQueue` is initialized with a specified executor and an optional queue. The executor is required to run tasks, while a custom queue can be provided or the default `asyncio.Queue` will be used.
 
 #### Context Management
 
-- The `TaskQueue` can be used as a context manager. When entering the context, the worker is started, and when exiting, the queue is closed, and the worker is stopped.
+- The `AsyncExecutionQueue` can be used as a context manager. When entering the context, the worker is started, and when exiting, the queue is closed, and the worker is stopped.
 
 
 ### Changed
