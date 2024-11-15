@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+
+## [0.12.0] 16.11.2024
 ### Added
 - Introduced a `deprecated` decorator to mark functions as deprecated.
   - The decorator allows specifying the version since which the function is deprecated, the reason for deprecation, and whether the function is marked for removal.

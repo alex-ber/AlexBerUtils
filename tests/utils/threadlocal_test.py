@@ -737,3 +737,51 @@ def test_example_usage_sync(request, mocker):
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+    # async def example_usage():
+    #     # Define a sample function
+    #     def sample_function(x, y):
+    #         print("sample_function")
+    #         return x + y
+    #
+    #     # Define a sample coroutine
+    #     async def sample_coroutine(x, y):
+    #         print("sample_coroutine")
+    #         await asyncio.sleep(1)
+    #         return x * y
+    #
+    #     # Run the sample function in an executor
+    #     result = await exec_in_executor(None, sample_function, 3, 4)
+    #     print(f"Result from sample_function: {result}")
+    #
+    #     # Run the sample coroutine in an executor
+    #     result = await exec_in_executor(None, sample_coroutine, 3, 4)
+    #     print(f"Result from sample_coroutine: {result}")
+    #
+    #
+    # def example_usage_sync():
+    #     result_queue = queue.Queue(1)
+    #
+    #     def run_asyncio_task_in_thread():
+    #         ensure_thread_event_loop()
+    #
+    #         async def helper_example_usage():
+    #             await example_usage()
+    #             # Put a placeholder result in the Queue
+    #             result_queue.put("Completed")
+    #
+    #         asyncio.get_event_loop().run_until_complete(helper_example_usage())
+    #
+    #     with ThreadPoolExecutor() as executor:
+    #         executor.submit(run_asyncio_task_in_thread)
+    #
+    #     # Wait for the result from the Queue
+    #     result = result_queue.get()
+    #     print(result)
+    #
+    # async def main():
+    #     example_usage_sync()
+    #     await example_usage()
+    #
+    # asyncio.run(main())
