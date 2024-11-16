@@ -1025,7 +1025,7 @@ class AsyncExecutionQueue(RootMixin):
         Returns:
             asyncio.Future: A future representing the execution of the function or coroutine.
         """
-        future = asyncio.Future()
+        future = asyncio.get_running_loop().create_future()
         await self.queue.put(((func, args, kwargs), future))
         return future
 

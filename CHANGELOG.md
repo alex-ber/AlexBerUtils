@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+## [0.12.1] 16.11.2024
+
+### Changed
+- Updated the `aadd_task()` method in `AsyncExecutionQueue` to explicitly associate futures with the currently running 
+event loop. This change enhances the robustness and maintainability of the code by ensuring that futures are bound to 
+the correct event loop context, reducing the risk of potential issues related to event loop mismatches in future 
+modifications or extensions of the codebase. This update is backward compatible as it does not alter the external 
+behavior or interface of the aadd_task method. It only changes the internal implementation detail concerning how 
+futures are managed.	  
 
 
 ## [0.12.0] 16.11.2024
