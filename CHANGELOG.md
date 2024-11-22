@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+**BREAKING CHANGE** 
+### Removed 
+- Function `exec_in_executor_threading_future()` is dropped, it never worked anyway.
+
 
 ### Added
 - Introduced a new type alias `FutureType`. This type is designed to be compatible with both `asyncio.Future` 
@@ -20,6 +24,11 @@ parameter and returns the result once the future is resolved.
 - Updated the `chain_future_results()` function to include type hints. The parameters `source_future` and 
 `target_future` are now explicitly typed with `FutureType`, improving the function's readability and maintainability 
 by making the expected types clear. 
+
+### Changed
+
+- Now, in `exec_in_executor()` `ensure_thread_event_loop()` will be called in both async/sync function. Before this it
+was only for async functions.
 
 
 ## [0.12.1] 16.11.2024

@@ -846,32 +846,6 @@ def _run_coroutine_in_thread(coro):
     loop = _event_loops_thread_locals.loop
     return loop.run_until_complete(coro)
 
-def exec_in_executor_threading_future(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> Future:
-    """
-    Execute a function or coroutine within a given executor and return a threading.Future.
-
-    This function executes a function or coroutine while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries. It provides a threading.Future to handle the result or exception of the task execution.
-
-    The executor is resolved in the following order:
-    1. If the `executor` parameter is provided, it is used.
-    2. If an executor was passed via `initConfig()`, it is used.
-    3. If neither is set, `None` is used, which means the default asyncio executor will be used.
-
-    Args:
-        executor (Optional[Executor]): The executor to run the function or coroutine. If None, the default asyncio executor is used.
-        func (Callable[..., T]): The function or coroutine to execute.
-        *args: Positional arguments to pass to the function or coroutine.
-        **kwargs: Keyword arguments to pass to the function or coroutine.
-
-    Returns:
-        threading.Future: A future representing the execution of the function or coroutine.
-    """
-    ensure_thread_event_loop()
-    asyncio_future = exec_in_executor(executor, func, *args, **kwargs)
-    threading_future = Future()
-    asyncio_future.add_done_callback(lambda fut: chain_future_results(fut, threading_future))
-
-    return threading_future
 
 
 def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> asyncio.Future:
@@ -910,6 +884,7 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     loop = asyncio.get_running_loop()
 
     resolved_executor = executor if executor is not None else _GLOBAL_EXECUTOR
+    ensure_thread_event_loop()
 
     if asyncio.iscoroutinefunction(func):
         # Run the coroutine in the thread's event loop
