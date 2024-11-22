@@ -6,7 +6,7 @@ import functools
 import inspect
 from concurrent.futures import Executor, Future
 from contextvars import copy_context
-from typing import Callable, Optional, TypeVar, Any
+from typing import Callable, Optional, TypeVar, Awaitable, Union
 from threading import local
 import asyncio
 import threading
@@ -14,6 +14,9 @@ from collections import deque
 
 # Define type variables for the function signature
 T = TypeVar('T')
+
+# Define a type that can be awaited and will return T, compatible with both asyncio.Future and concurrent.futures.Future
+FutureType = Union[Awaitable[T], concurrent.futures.Future]
 
 logger = logging.getLogger(__name__)
 
@@ -917,7 +920,7 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
         return loop.run_in_executor(resolved_executor, wrapper)
 
 
-def chain_future_results(source_future, target_future):
+def chain_future_results(source_future: FutureType, target_future: FutureType):
     """
     Transfers the result or exception from one future to another.
 
@@ -942,7 +945,7 @@ def chain_future_results(source_future, target_future):
 
 
 
-async def check_result_periodically(future: asyncio.Future[T], delay: float = 0.1) -> T:
+async def check_result_periodically(future: FutureType, delay: float = 0.1) -> T:
     """
     Periodically checks if the result is available in the future. If not available, it yields control and retries after a specified delay.
 
