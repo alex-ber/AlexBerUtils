@@ -1,4 +1,5 @@
 #inspired by https://stackoverflow.com/questions/1408171/thread-local-storage-in-python
+import time
 import logging
 import concurrent.futures
 import contextvars
@@ -925,7 +926,7 @@ async def check_result_periodically(future: FutureType, delay: float = 0.1) -> T
     Periodically checks if the result is available in the future. If not available, it yields control and retries after a specified delay.
 
     Args:
-        future (asyncio.Future[T]): The future from which to retrieve the result of type T.
+        future: The future to wait for (asyncio.Future or concurrent.futures.Future).
         delay (float): The delay in seconds between checks. Default is 0.1 seconds.
 
     Returns:
@@ -934,6 +935,27 @@ async def check_result_periodically(future: FutureType, delay: float = 0.1) -> T
     while not future.done():
         await asyncio.sleep(delay)
     return future.result()
+
+def get_completed_result(future: FutureType[T], delay: float = 0.1) -> T:
+    """
+    TBD
+
+    Args:
+        future: The future to wait for (asyncio.Future or concurrent.futures.Future).
+        delay (float): The delay in seconds between checks to reduce CPU usage. Default is 0.1 seconds.
+
+    Returns:
+        T: The result of the completed future.
+    """
+    # Busy-wait loop to check if the future is done
+    while not future.done():
+        time.sleep(delay)  # Sleep to prevent high CPU usage
+
+    # Return the result of the future
+    ret = future.result()
+    return ret
+
+
 
 class AsyncExecutionQueue(RootMixin):
     """

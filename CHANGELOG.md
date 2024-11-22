@@ -25,6 +25,8 @@ parameter and returns the result once the future is resolved.
 `target_future` are now explicitly typed with `FutureType`, improving the function's readability and maintainability 
 by making the expected types clear. 
 
+- `get_completed_result()` TBD
+
 ### Changed
 
 - Now, in `exec_in_executor()` `ensure_thread_event_loop()` will be called in both async/sync function. Before this it
