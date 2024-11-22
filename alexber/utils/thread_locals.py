@@ -873,6 +873,7 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     func_or_coro_call = functools.partial(ctx.run, func, *args, **kwargs)
 
     def wrapper() -> T:
+        ensure_thread_event_loop()
         try:
             return func_or_coro_call()
         except StopIteration as exc:
@@ -884,7 +885,6 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     loop = asyncio.get_running_loop()
 
     resolved_executor = executor if executor is not None else _GLOBAL_EXECUTOR
-    ensure_thread_event_loop()
 
     if asyncio.iscoroutinefunction(func):
         # Run the coroutine in the thread's event loop

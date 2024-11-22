@@ -28,7 +28,8 @@ by making the expected types clear.
 ### Changed
 
 - Now, in `exec_in_executor()` `ensure_thread_event_loop()` will be called in both async/sync function. Before this it
-was only for async functions.
+was only for async functions. That is call to `ensure_thread_event_loop()` is now optional for the users of 
+`exec_in_executor()`.
 
 
 ## [0.12.1] 16.11.2024

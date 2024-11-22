@@ -3,7 +3,7 @@ import threading
 import types
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import queue
+import contextvars
 import pytest
 
 
@@ -12,7 +12,7 @@ from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
     LockingPedanticObjMixin, LockingDefaultLockMixin, _coerce_base_language_model, LockingBaseLanguageModelMixin, \
     _is_pydantic_obj
 from alexber.utils.thread_locals import threadlocal_var, get_threadlocal_var, del_threadlocal_var
-from alexber.utils.thread_locals import exec_in_executor, ensure_thread_event_loop
+from alexber.utils.thread_locals import exec_in_executor, ensure_thread_event_loop, check_result_periodically
 
 logger = logging.getLogger(__name__)
 
@@ -708,32 +708,37 @@ async def test_exec_in_executor_with_coroutine(request, mocker):
     assert result == 12
     logger.info(f"Result from sample_coroutine: {result}")
 
-def test_example_usage_sync(request, mocker):
+@pytest.mark.asyncio
+async def test_example_usage_sync(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
 
-    # Create a Queue to hold the result of the task
-    result_queue = queue.Queue(1)
-
-    def run_asyncio_task_in_thread():
-        ensure_thread_event_loop()
-
-        async def helper_example_usage():
-            # Run both tests in the same event loop
-            await test_exec_in_executor_with_function(request, mocker)
-            await test_exec_in_executor_with_coroutine(request, mocker)
-            # Put a placeholder result in the Queue
-            result_queue.put("Completed")
-
-        asyncio.get_event_loop().run_until_complete(helper_example_usage())
+    future_var = contextvars.ContextVar('future_var')
 
     with ThreadPoolExecutor() as executor:
-        executor.submit(run_asyncio_task_in_thread)
+        async def sample_coroutine(x: int, y: int) -> int:
+            await asyncio.sleep(1)
+            # time.sleep(10)
+            return x * y
 
-    # Wait for the result from the Queue
-    result = result_queue.get()
-    assert result == "Completed"
-    logger.info(result)
+        def some_3rd_party_callback() -> None:
+            #ensure_thread_event_loop()
+            # time.sleep(15)
+            future = future_var.get()
 
+            async def helper_example_usage() -> None:
+                # time.sleep(15)
+                result = await sample_coroutine(2, 3)  # Example values for x and y
+                future.set_result(result)
+
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(helper_example_usage())
+
+        # Create a Future object associated with the current event loop
+        future = asyncio.get_running_loop().create_future()
+        future_var.set(future)
+        await exec_in_executor(executor, some_3rd_party_callback)
+        result = await check_result_periodically(future)
+        assert 6==result
 
 if __name__ == "__main__":
     pytest.main([__file__])
