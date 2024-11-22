@@ -6,7 +6,7 @@ import functools
 import inspect
 from concurrent.futures import Executor, Future
 from contextvars import copy_context
-from typing import Callable, Optional, TypeVar
+from typing import Callable, Optional, TypeVar, Any
 from threading import local
 import asyncio
 import threading
@@ -939,6 +939,23 @@ def chain_future_results(source_future, target_future):
         target_future.set_result(result)
     except Exception as e:
         target_future.set_exception(e)
+
+
+
+async def check_result_periodically(future: asyncio.Future[T], delay: float = 0.1) -> T:
+    """
+    Periodically checks if the result is available in the future. If not available, it yields control and retries after a specified delay.
+
+    Args:
+        future (asyncio.Future[T]): The future from which to retrieve the result of type T.
+        delay (float): The delay in seconds between checks. Default is 0.1 seconds.
+
+    Returns:
+        T: The result of the future once it is done, of type T.
+    """
+    while not future.done():
+        await asyncio.sleep(delay)
+    return future.result()
 
 class AsyncExecutionQueue(RootMixin):
     """

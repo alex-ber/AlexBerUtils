@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+
+
+### Added
+- Introduced a new type alias `FutureType`. This type is designed to be compatible with both `asyncio.Future` 
+and `concurrent.futures.Future`, allowing for functions that can handle both asynchronous and concurrent futures. 
+
+- Introduced a new utility function `check_result_periodically()` that periodically check the availability of a result 
+in an `FutureType` object. If the result is not ready, the function yields control and retries after a specified 
+delay (0.1 seconds by default). This approach is particularly beneficial for asynchronous operations where immediate 
+result availability is not guaranteed, and non-blocking polling is preferred. The function accepts a `FutureType` 
+parameter and returns the result once the future is resolved.
+
+- Updated the `chain_future_results()` function to include type hints. The parameters `source_future` and 
+`target_future` are now explicitly typed with `FutureType`, improving the function's readability and maintainability 
+by making the expected types clear. 
+
+
 ## [0.12.1] 16.11.2024
 
 ### Changed
