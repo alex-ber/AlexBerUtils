@@ -5,6 +5,9 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import contextvars
 import pytest
+import pytest
+import asyncio
+#import time
 
 
 from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
@@ -12,7 +15,7 @@ from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
     LockingPedanticObjMixin, LockingDefaultLockMixin, _coerce_base_language_model, LockingBaseLanguageModelMixin, \
     _is_pydantic_obj
 from alexber.utils.thread_locals import threadlocal_var, get_threadlocal_var, del_threadlocal_var
-from alexber.utils.thread_locals import exec_in_executor, ensure_thread_event_loop, check_result_periodically
+from alexber.utils.thread_locals import exec_in_executor, exec_in_executor_threading_future
 
 logger = logging.getLogger(__name__)
 
@@ -688,7 +691,6 @@ def sample_function(x, y):
 
 # Define a sample coroutine
 async def sample_coroutine(x, y):
-    print("sample_coroutine")
     await asyncio.sleep(1)
     return x * y
 
@@ -708,85 +710,71 @@ async def test_exec_in_executor_with_coroutine(request, mocker):
     assert result == 12
     logger.info(f"Result from sample_coroutine: {result}")
 
+# Define the executor globally
+EXECUTOR = ThreadPoolExecutor()
+
+@pytest.fixture(scope="module")
+def executor():
+    yield EXECUTOR
+    EXECUTOR.shutdown(wait=True)
+
+def simplfified_blocking_io(x: int, y: int) -> int:
+    #time.sleep(5)  # mimicking blocking I/O call
+    return x + y
+
+
+def blocking_io():
+    #time.sleep(5)  # mimicking blocking I/O call
+
+    async def helper_example_usage():
+        #time.sleep(15)
+        result = await sample_coroutine(2, 3)  # Example values for x and y
+        return result
+
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(helper_example_usage())
+
+
 @pytest.mark.asyncio
-async def test_example_usage_sync(request, mocker):
+async def test_blocking_io(executor, request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
+    # Test the simplfified_blocking_io function to ensure it returns the correct result
+    result = await exec_in_executor(executor, simplfified_blocking_io, 2, 3)
+    assert result == 5, "The simplfified_blocking_io() function should return the sum of the inputs"
 
-    future_var = contextvars.ContextVar('future_var')
+def some_legacy_function():
+    fut = exec_in_executor_threading_future(EXECUTOR, blocking_io)
+    result = fut.result()
+    return result
 
-    with ThreadPoolExecutor() as executor:
-        async def sample_coroutine(x: int, y: int) -> int:
-            await asyncio.sleep(1)
-            # time.sleep(10)
-            return x * y
+@pytest.mark.asyncio
+async def test_blocking_io_in_sync_context(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    result = some_legacy_function()
+    assert result == 6, "The blocking_io() function should return the product of the inputs"
 
-        def some_3rd_party_callback() -> None:
-            #ensure_thread_event_loop()
-            # time.sleep(15)
-            future = future_var.get()
+@pytest.mark.asyncio
+async def test_blocking_io_in_async_context(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    result = await exec_in_executor(EXECUTOR, blocking_io)
+    assert result == 6, "The blocking_io() function should return the product of the inputs"
 
-            async def helper_example_usage() -> None:
-                # time.sleep(15)
-                result = await sample_coroutine(2, 3)  # Example values for x and y
-                future.set_result(result)
+@pytest.mark.asyncio
+async def test_coroutine_in_async_context(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    result = await exec_in_executor(EXECUTOR, sample_coroutine, 2, 3)
+    assert result == 6, "The sample_coroutine() function should return the sum of the inputs"
 
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(helper_example_usage())
-
-        # Create a Future object associated with the current event loop
-        future = asyncio.get_running_loop().create_future()
-        future_var.set(future)
-        await exec_in_executor(executor, some_3rd_party_callback)
-        result = await check_result_periodically(future)
-        assert 6==result
+def another_legacy_function():
+    fut = exec_in_executor_threading_future(EXECUTOR, sample_coroutine, 2, 3)
+    result = fut.result()
+    return result
+@pytest.mark.asyncio
+async def test_coroutine_in_sync_context(request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+    result = another_legacy_function()
+    assert result == 6, "The sample_coroutine() function should return the sum of the inputs"
 
 if __name__ == "__main__":
     pytest.main([__file__])
 
-
-    # async def example_usage():
-    #     # Define a sample function
-    #     def sample_function(x, y):
-    #         print("sample_function")
-    #         return x + y
-    #
-    #     # Define a sample coroutine
-    #     async def sample_coroutine(x, y):
-    #         print("sample_coroutine")
-    #         await asyncio.sleep(1)
-    #         return x * y
-    #
-    #     # Run the sample function in an executor
-    #     result = await exec_in_executor(None, sample_function, 3, 4)
-    #     print(f"Result from sample_function: {result}")
-    #
-    #     # Run the sample coroutine in an executor
-    #     result = await exec_in_executor(None, sample_coroutine, 3, 4)
-    #     print(f"Result from sample_coroutine: {result}")
-    #
-    #
-    # def example_usage_sync():
-    #     result_queue = queue.Queue(1)
-    #
-    #     def run_asyncio_task_in_thread():
-    #         ensure_thread_event_loop()
-    #
-    #         async def helper_example_usage():
-    #             await example_usage()
-    #             # Put a placeholder result in the Queue
-    #             result_queue.put("Completed")
-    #
-    #         asyncio.get_event_loop().run_until_complete(helper_example_usage())
-    #
-    #     with ThreadPoolExecutor() as executor:
-    #         executor.submit(run_asyncio_task_in_thread)
-    #
-    #     # Wait for the result from the Queue
-    #     result = result_queue.get()
-    #     print(result)
-    #
-    # async def main():
-    #     example_usage_sync()
-    #     await example_usage()
-    #
-    # asyncio.run(main())

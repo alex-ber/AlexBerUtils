@@ -6,32 +6,26 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.12.2] 23.11.2024
+
 **BREAKING CHANGE** 
 ### Removed 
-- Function `exec_in_executor_threading_future()` is dropped, it never worked anyway.
+- All new function that was in 0.12.1 beta-version.
 
 
 ### Added
 - Introduced a new type alias `FutureType`. This type is designed to be compatible with both `asyncio.Future` 
 and `concurrent.futures.Future`, allowing for functions that can handle both asynchronous and concurrent futures. 
 
-- Introduced a new utility function `check_result_periodically()` that periodically check the availability of a result 
-in an `FutureType` object. If the result is not ready, the function yields control and retries after a specified 
-delay (0.1 seconds by default). This approach is particularly beneficial for asynchronous operations where immediate 
-result availability is not guaranteed, and non-blocking polling is preferred. The function accepts a `FutureType` 
-parameter and returns the result once the future is resolved.
-
-- Updated the `chain_future_results()` function to include type hints. The parameters `source_future` and 
-`target_future` are now explicitly typed with `FutureType`, improving the function's readability and maintainability 
-by making the expected types clear. 
-
-- `get_completed_result()` TBD
+- New unit tests for `exec_in_executor()` and `exec_in_executor_threading_future()`.
 
 ### Changed
 
 - Now, in `exec_in_executor()` `ensure_thread_event_loop()` will be called in both async/sync function. Before this it
 was only for async functions. That is call to `ensure_thread_event_loop()` is now optional for the users of 
 `exec_in_executor()`.
+
+- Inner implementation of `exec_in_executor_threading_future()`. Now, it actually works.
 
 
 ## [0.12.1] 16.11.2024

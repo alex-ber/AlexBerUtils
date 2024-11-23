@@ -895,65 +895,42 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
         # If func is a regular function, run it in an executor guarded against StopIteration
         return loop.run_in_executor(resolved_executor, wrapper)
 
-
-def chain_future_results(source_future: FutureType, target_future: FutureType):
+def exec_in_executor_threading_future(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> Future:
     """
-    Transfers the result or exception from one future to another.
+    Execute a function or coroutine within a given executor and return a threading.Future.
 
-    This function is called when the source_future is completed. It retrieves the result or exception
-    from the source_future and sets it on the target_future, ensuring that the outcome of the task execution
-    is properly propagated. This function is generic and can be used with any types of futures.
+    This function executes a function or coroutine while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries. It provides a threading.Future to handle the result or exception of the task execution.
 
-    To use this function, add it as a callback to the source_future:
-
-    # Add the chain_future_resultshandle_result function as a callback to the source_future
-    source_future.add_done_callback(lambda fut: chain_future_resultshandle_result(fut, target_future))
+    The executor is resolved in the following order:
+    1. If the `executor` parameter is provided, it is used.
+    2. If an executor was passed via `initConfig()`, it is used.
+    3. If neither is set, `None` is used, which means the default asyncio executor will be used.
 
     Args:
-        source_future: The future from which to retrieve the result or exception.
-        target_future: The future on which to set the result or exception.
-    """
-    try:
-        result = source_future.result()
-        target_future.set_result(result)
-    except Exception as e:
-        target_future.set_exception(e)
-
-
-
-async def check_result_periodically(future: FutureType, delay: float = 0.1) -> T:
-    """
-    Periodically checks if the result is available in the future. If not available, it yields control and retries after a specified delay.
-
-    Args:
-        future: The future to wait for (asyncio.Future or concurrent.futures.Future).
-        delay (float): The delay in seconds between checks. Default is 0.1 seconds.
+        executor (Optional[Executor]): The executor to run the function or coroutine. If None, the default asyncio executor is used.
+        func (Callable[..., T]): The function or coroutine to execute.
+        *args: Positional arguments to pass to the function or coroutine.
+        **kwargs: Keyword arguments to pass to the function or coroutine.
 
     Returns:
-        T: The result of the future once it is done, of type T.
+        threading.Future: A future representing the execution of the function or coroutine.
     """
-    while not future.done():
-        await asyncio.sleep(delay)
-    return future.result()
 
-def get_completed_result(future: FutureType[T], delay: float = 0.1) -> T:
-    """
-    TBD
+    future = concurrent.futures.Future()
 
-    Args:
-        future: The future to wait for (asyncio.Future or concurrent.futures.Future).
-        delay (float): The delay in seconds between checks to reduce CPU usage. Default is 0.1 seconds.
+    if asyncio.iscoroutinefunction(func):
+        async def wrapper(future):
+            coro = func(*args, **kwargs)
+            result = await coro
+            future.set_result(result)
+    else:
+        def wrapper(future):
+            result = func(*args, **kwargs)
+            future.set_result(result)
 
-    Returns:
-        T: The result of the completed future.
-    """
-    # Busy-wait loop to check if the future is done
-    while not future.done():
-        time.sleep(delay)  # Sleep to prevent high CPU usage
+    exec_in_executor(executor, wrapper, future)
+    return future
 
-    # Return the result of the future
-    ret = future.result()
-    return ret
 
 
 
