@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+
+## [0.12.4] 23.11.2024
+
+### Added
+
+- **`AsyncExecutionQueue.add_task()` method**
+  - Added a new method `add_task()` to the `AsyncExecutionQueue`, which allows for asynchronous task execution using an executor. This method supports both synchronous and asynchronous functions.
+  - The executor resolution follows a specific order: directly provided executor, executor from `initConfig()`, or the default asyncio executor if none is provided.
+  - The method ensures that `ContextVars` are preserved, maintaining context across asynchronous boundaries.
+  - The function returns a `threading.Future` object, representing the future result of the task execution.
+
+
+- **`chain_future_results()` function**:
+  - Introduced a new utility function `chain_future_results()` to facilitate the transfer of results or exceptions between two futures. It supports both type of Futures, `threading.Future` and `asyncio.Future`.
+  - This function is designed to be used as a callback for a `source_future` to propagate its result or exception to a `target_future`.
+  - It ensures that the outcome of asynchronous operations is correctly handled and transferred, making it a versatile tool for managing future results in concurrent programming.
+
+
+
 ## [0.12.3] 23.11.2024
 
 ### Changed

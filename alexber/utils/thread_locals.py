@@ -941,7 +941,28 @@ def exec_in_executor_threading_future(executor: Optional[Executor], func: Callab
     return future
 
 
+def chain_future_results(source_future: FutureType, target_future: FutureType):
+    """
+    Transfers the result or exception from one future to another.
 
+    This function is called when the source_future is completed. It retrieves the result or exception
+    from the source_future and sets it on the target_future, ensuring that the outcome of the task execution
+    is properly propagated. This function is generic and can be used with any types of futures.
+
+    To use this function, add it as a callback to the source_future:
+
+    # Add the chain_future_resultshandle_result function as a callback to the source_future
+    source_future.add_done_callback(lambda fut: chain_future_resultshandle_result(fut, target_future))
+
+    Args:
+        source_future: The future from which to retrieve the result or exception.
+        target_future: The future on which to set the result or exception.
+    """
+    try:
+        result = source_future.result()
+        target_future.set_result(result)
+    except Exception as e:
+        target_future.set_exception(e)
 
 class AsyncExecutionQueue(RootMixin):
     """
@@ -1031,6 +1052,34 @@ class AsyncExecutionQueue(RootMixin):
         future = asyncio.get_running_loop().create_future()
         await self.queue.put(((func, args, kwargs), future))
         return future
+
+    def add_task(self, executor, func, /, *args, **kwargs):
+        """
+        Adds a task to the queue for asynchronous execution and returns a future.
+
+        The executor is resolved in the following order:
+        1. If the `executor` parameter is provided, it is used.
+        2. If an executor was passed via `initConfig()`, it is used.
+        3. If neither is set, `None` is used, which means the default asyncio executor will be used.
+
+
+        Args:
+            executor (Executor): The executor to run the asynchronous task.
+            func (Callable[..., Any]): The function to be executed, which can be synchronous or asynchronous.
+            *args (Any): Positional arguments to pass to the function.
+            **kwargs (Any): Keyword arguments to pass to the function.
+
+        Execute a function or coroutine within a given executor while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries.
+
+        Returns:
+            threading.Future: A future representing the execution of the function or coroutine.
+        """
+        fut = exec_in_executor_threading_future(executor, self.aadd_task, func, *args, **kwargs)
+        return fut
+
+
+
+
 
     async def aclose(self):
         """
