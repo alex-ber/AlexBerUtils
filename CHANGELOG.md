@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+## [0.12.3] 23.11.2024
+
+### Changed
+
+- Now, in `exec_in_executor()` and `exec_in_executor_threading_future()` will preserve the metadata of `func`. 
 
 ## [0.12.2] 23.11.2024
 

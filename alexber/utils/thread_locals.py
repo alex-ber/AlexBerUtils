@@ -1,5 +1,5 @@
 #inspired by https://stackoverflow.com/questions/1408171/thread-local-storage-in-python
-import time
+import functools
 import logging
 import concurrent.futures
 import contextvars
@@ -873,6 +873,7 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     # Wrap the function or coroutine call with the context
     func_or_coro_call = functools.partial(ctx.run, func, *args, **kwargs)
 
+    @functools.wraps(func)
     def wrapper() -> T:
         ensure_thread_event_loop()
         try:
@@ -889,7 +890,13 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
 
     if asyncio.iscoroutinefunction(func):
         # Run the coroutine in the thread's event loop
-        coro = func(*args, **kwargs)
+
+        # Wrap the coroutine function to preserve metadata
+        @functools.wraps(func)
+        async def wrapped_coro(*args, **kwargs):
+            return await func(*args, **kwargs)
+
+        coro = wrapped_coro(*args, **kwargs)
         return loop.run_in_executor(resolved_executor, _run_coroutine_in_thread, coro)
     else:
         # If func is a regular function, run it in an executor guarded against StopIteration
@@ -919,11 +926,13 @@ def exec_in_executor_threading_future(executor: Optional[Executor], func: Callab
     future = concurrent.futures.Future()
 
     if asyncio.iscoroutinefunction(func):
+        @functools.wraps(func)
         async def wrapper(future):
             coro = func(*args, **kwargs)
             result = await coro
             future.set_result(result)
     else:
+        @functools.wraps(func)
         def wrapper(future):
             result = func(*args, **kwargs)
             future.set_result(result)
