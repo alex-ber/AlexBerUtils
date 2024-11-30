@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+## [0.12.5] 01.12.2024
+
+### Changed
+
+- Now, in `AsyncExecutionQueue.__init__()` method executor can be None, not passed at all, or passed None 
+explicitly. The executor resolution follows a specific order: directly provided executor, executor 
+from `initConfig()`, or the default asyncio executor if None is provided. This change is backward compatible.
+- **BREAKING CHANGE** Module `warnings.py` was renamed to `warning.py` to avoid shadowing of built-in `warnings.py`.  
+- **BREAKING CHANGE** In `AsyncExecutionQueue` `worker_task` was renamed to `_worker_task`.
+- Dosctrings of `AsyncExecutionQueue` executor role description is added. No functionality change.
+- Dosctrings of `exec_in_executor()`, `exec_in_executor_threading_future()` side fact that
+threads in the executor may have an event loop attached was added for clarity. This is also side effect.
+- Nonfunctional change in `exec_in_executor_threading_future()`, avoiding variables scope hidden by renaming.
+- `AsyncExecutionQueue.aclose()` guard check (`if self._worker_task`) was added. If somehow, between
+`AsyncExecutionQueue.__init__()` and `AsyncExecutionQueue.__aenter__()` exception was raised,
+this avoids `await None`.
+- Fixing typo in docstring of `chain_future_results()`.
+
+### Added
+
+- `run_coroutine_threadsafe()`.  Sync/regular function,    wrapper around `asyncio.run_coroutine_threadsafe()`. 
+Internally it uses `_EVENT_LOOP` that is initialized with MainThread's event loop via `initConfig()`.
+It exposes `threading.Future` to the caller. Implementation is pretty **straightforwards**.
+- `arun_coroutine_threadsafe()`. Async function/coroutine, wrapper around `asyncio.run_coroutine_threadsafe()`.
+Internally it uses `_EVENT_LOOP` that is initialized with MainThread's event loop via `initConfig()`.
+It exposes `threading.Future` to the caller. Implementation is **complex**. As intermediate step 
+`asyncio_future=asyncio.wrap_future(base_future)` where `base_future` is a result of
+`asyncio.run_coroutine_threadsafe()` call is used. `asyncio.wrap_future()` internally, uses private asyncio API.
+It chains `base_future` and newly created `asyncio_future` so that when one completes, so does the other.
+They progress together towards the completion, so **no "application freeze" occur**.
+
+- **Documentation for**
+- My `exec_in_executor()` API https://alex-ber.medium.com/my-exec-in-executor-api-72797e232f99
+- My `AsyncExecutionQueue` https://alex-ber.medium.com/my-asyncexecutionqueue-4001ac168675
 
 ## [0.12.4] 23.11.2024
 

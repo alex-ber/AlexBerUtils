@@ -15,7 +15,8 @@ from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
     LockingPedanticObjMixin, LockingDefaultLockMixin, _coerce_base_language_model, LockingBaseLanguageModelMixin, \
     _is_pydantic_obj
 from alexber.utils.thread_locals import threadlocal_var, get_threadlocal_var, del_threadlocal_var
-from alexber.utils.thread_locals import exec_in_executor, exec_in_executor_threading_future
+from alexber.utils.thread_locals import exec_in_executor, exec_in_executor_threading_future, \
+                                         run_coroutine_threadsafe, arun_coroutine_threadsafe
 
 logger = logging.getLogger(__name__)
 
@@ -774,6 +775,89 @@ async def test_coroutine_in_sync_context(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')
     result = another_legacy_function()
     assert result == 6, "The sample_coroutine() function should return the sum of the inputs"
+
+def worker_thread():
+    print(f"Worker thread: {threading.current_thread().name} started.")
+    # Execute task on the main thread's event loop
+    future = run_coroutine_threadsafe(sample_coroutine, 2, 3)  # Pass arguments to the coroutine
+    # Wait for the result of the future
+    result = future.result()
+    print(f"Worker thread got result: {result}")
+    return result
+
+
+def worker_thread_switch_to_async():
+    #time.sleep(5)  # mimicking blocking I/O call
+
+    async def helper_example_usage():
+        #time.sleep(15)
+        future = run_coroutine_threadsafe(sample_coroutine, 2, 3)  # Pass arguments to the coroutine
+        result = future.result()
+        return result
+
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(helper_example_usage())
+
+# Fixture to manage the event loop for the test
+@pytest.fixture
+def setup_event_loop():
+    import alexber.utils.thread_locals as _thread_locals
+
+    # Store the previous event loop
+    prev_event_loop = _thread_locals._EVENT_LOOP
+
+    with ThreadPoolExecutor(1) as executor:
+        # Yield control to the test
+        yield executor
+
+    # Restore the previous event loop after the test
+    _thread_locals._EVENT_LOOP = prev_event_loop
+
+@pytest.mark.asyncio
+async def test_run_coroutine_threadsafe_in_sync_context(executor, request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    # Set up the event loop in thread locals after the event loop is running
+    import alexber.utils.thread_locals as _thread_locals
+    _thread_locals._EVENT_LOOP = asyncio.get_running_loop()
+
+    result = await exec_in_executor(executor, worker_thread)
+    assert result == 6
+
+@pytest.mark.asyncio
+async def test_run_coroutine_threadsafe_switch_to_async_in_sync_context(executor, request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    # Set up the event loop in thread locals after the event loop is running
+    import alexber.utils.thread_locals as _thread_locals
+    _thread_locals._EVENT_LOOP = asyncio.get_running_loop()
+
+    result = await exec_in_executor(executor, worker_thread_switch_to_async)
+    assert result == 6
+
+
+def worker_athread_switch_to_async():
+    #time.sleep(5)  # mimicking blocking I/O call
+
+    async def helper_example_usage():
+        #time.sleep(15)
+        result = await arun_coroutine_threadsafe( sample_coroutine, 2, 3)  # Pass arguments to the coroutine
+        return result
+
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(helper_example_usage())
+@pytest.mark.asyncio
+async def test_arun_coroutine_threadsafe_switch_to_async_in_sync_context(executor, request, mocker):
+    logger.info(f'{request._pyfuncitem.name}()')
+
+    # Set up the event loop in thread locals after the event loop is running
+    import alexber.utils.thread_locals as _thread_locals
+    _thread_locals._EVENT_LOOP = asyncio.get_running_loop()
+
+    result = await exec_in_executor(executor, worker_athread_switch_to_async)
+    logger.info('4')
+    assert result == 6
+
 
 if __name__ == "__main__":
     pytest.main([__file__])

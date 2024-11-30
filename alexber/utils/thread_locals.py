@@ -1,4 +1,3 @@
-#inspired by https://stackoverflow.com/questions/1408171/thread-local-storage-in-python
 import functools
 import logging
 import concurrent.futures
@@ -848,7 +847,6 @@ def _run_coroutine_in_thread(coro):
     return loop.run_until_complete(coro)
 
 
-
 def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> asyncio.Future:
     """
     Execute a function or coroutine within a given executor while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries.
@@ -858,6 +856,8 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     1. If the `executor` parameter is provided, it is used.
     2. If an executor was passed via `initConfig()`, it is used.
     3. If neither is set, `None` is used, which means the default asyncio executor will be used.
+
+    Note: as a side fact, threads in the executor may have an event loop attached. This allows for the execution of asynchronous tasks within those threads.
 
     Args:
         executor (Optional[Executor]): The executor to run the function or coroutine. If None, the default asyncio executor is used.
@@ -913,6 +913,8 @@ def exec_in_executor_threading_future(executor: Optional[Executor], func: Callab
     2. If an executor was passed via `initConfig()`, it is used.
     3. If neither is set, `None` is used, which means the default asyncio executor will be used.
 
+    Note: as a side fact, threads in the executor may have an event loop attached. This allows for the execution of asynchronous tasks within those threads.
+
     Args:
         executor (Optional[Executor]): The executor to run the function or coroutine. If None, the default asyncio executor is used.
         func (Callable[..., T]): The function or coroutine to execute.
@@ -927,15 +929,15 @@ def exec_in_executor_threading_future(executor: Optional[Executor], func: Callab
 
     if asyncio.iscoroutinefunction(func):
         @functools.wraps(func)
-        async def wrapper(future):
+        async def wrapper(fut):
             coro = func(*args, **kwargs)
             result = await coro
-            future.set_result(result)
+            fut.set_result(result)
     else:
         @functools.wraps(func)
-        def wrapper(future):
+        def wrapper(fut):
             result = func(*args, **kwargs)
-            future.set_result(result)
+            fut.set_result(result)
 
     exec_in_executor(executor, wrapper, future)
     return future
@@ -951,8 +953,8 @@ def chain_future_results(source_future: FutureType, target_future: FutureType):
 
     To use this function, add it as a callback to the source_future:
 
-    # Add the chain_future_resultshandle_result function as a callback to the source_future
-    source_future.add_done_callback(lambda fut: chain_future_resultshandle_result(fut, target_future))
+    # Add the chain_future_results function as a callback to the source_future
+    source_future.add_done_callback(lambda fut: chain_future_results(fut, target_future))
 
     Args:
         source_future: The future from which to retrieve the result or exception.
@@ -964,6 +966,56 @@ def chain_future_results(source_future: FutureType, target_future: FutureType):
     except Exception as e:
         target_future.set_exception(e)
 
+
+def run_coroutine_threadsafe(coro, *args, **kwargs):
+    """
+    Schedules a coroutine with arguments to be run on the MainThread's event loop
+    and returns an asyncio.Future that can be awaited.
+    Args:
+        coro: The coroutine to be executed.
+        *args: Positional arguments to pass to the coroutine.
+        **kwargs: Keyword arguments to pass to the coroutine.
+    Returns:
+        threading.future that will hold the result of the coroutine execution eventually.
+    """
+    loop = _EVENT_LOOP
+    # Schedule the coroutine and return the threading.Future
+    base_future = asyncio.run_coroutine_threadsafe(coro(*args, **kwargs), loop)
+    threading_future = threading.Future()
+    base_future.add_done_callback(lambda fut: chain_future_results(fut, threading_future))
+
+    return threading_future
+
+
+async def arun_coroutine_threadsafe(coro, *args, **kwargs):
+    """
+    Schedules a coroutine with arguments to be run on the MainThread's event loop
+    and returns an asyncio.Future that can be awaited.
+    Args:
+        coro: The coroutine to be executed.
+        *args: Positional arguments to pass to the coroutine.
+        **kwargs: Keyword arguments to pass to the coroutine.
+    Returns:
+        result of the coroutine execution.
+    """
+
+    loop = _EVENT_LOOP
+
+    @functools.wraps(coro)
+    async def wrap_coro():
+        return await coro(*args, **kwargs)
+
+    base_future = asyncio.run_coroutine_threadsafe(wrap_coro(), loop)
+    #private asyncio API is invoked here.
+    #It chains base_future and newly created asyncio_future so that when one completes, so does the other.
+    #They progress together towards the completion, so no "application freeze" occur.
+    asyncio_future = asyncio.wrap_future(base_future)
+    result = await asyncio_future
+    return result
+
+
+
+
 class AsyncExecutionQueue(RootMixin):
     """
     A class representing an asynchronous task queue that manages task execution using a specified executor.
@@ -971,7 +1023,13 @@ class AsyncExecutionQueue(RootMixin):
     This class provides a context manager interface to start and stop a worker that processes tasks from the queue.
     Tasks are executed asynchronously, and the queue can be closed gracefully.
 
+    The executor is resolved in the following order:
+    1. If the `executor` parameter is provided, it is used.
+    2. If an executor was passed via `initConfig()`, it is used.
+    3. If neither is set, `None` is used, which means the default asyncio executor will be used.
+
     Note: as a side fact, threads in the executor may have an event loop attached. This allows for the execution of asynchronous tasks within those threads.
+
 
     Attributes:
         queue (asyncio.Queue): The queue that holds tasks to be executed.
@@ -997,15 +1055,16 @@ class AsyncExecutionQueue(RootMixin):
         self.queue = kwargs.pop("queue", None)
         if not self.queue:
             self.queue = asyncio.Queue()
+        #if None, default asyncio ThreadPoolExecutor will be used.
         self.executor = kwargs.pop("executor", None)
-        validate_param(self.executor, "executor")
+        self._worker_task = None
         super().__init__(**kwargs)
 
     async def __aenter__(self):
         """
         Starts the worker when entering the context.
         """
-        self.worker_task = asyncio.create_task(self.worker())
+        self._worker_task = asyncio.create_task(self.worker())
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -1027,7 +1086,6 @@ class AsyncExecutionQueue(RootMixin):
                 if task is _CLOSE_SENTINEL:
                     return  # Exit the worker loop
                 func, args, kwargs = task
-                # Use the helper function to execute the task and set the result in the task_future
                 result_future = exec_in_executor(self.executor, func, *args, **kwargs)
                 result_future.add_done_callback(lambda fut: chain_future_results(fut, task_future))
             finally:
@@ -1078,9 +1136,6 @@ class AsyncExecutionQueue(RootMixin):
         return fut
 
 
-
-
-
     async def aclose(self):
         """
         Asynchronously closes the queue and waits for the worker to finish processing.
@@ -1088,11 +1143,15 @@ class AsyncExecutionQueue(RootMixin):
         This method signals the worker to stop processing tasks and waits for the worker task to complete.
         """
         await self.queue.put((_CLOSE_SENTINEL, None))
-        await self.worker_task
+        if self._worker_task:
+            await self._worker_task
+
+
+
 
 def initConfig(**kwargs):
     """
-    Initializes the configuration required for using the lift_to_async() and exec_in_executor() methods.
+    Initializes the configuration required for using the lift_to_async(), exec_in_executor() and get_event_loop() methods.
 
     This function is intended to be called from the MainThread.
     It can be called with empty parameters.
