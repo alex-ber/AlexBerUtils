@@ -3,7 +3,7 @@ import random as _random
 import math
 import warnings
 from typing import Union, Optional
-from .warnings import OptionalNumpyWarning
+from .warning import OptionalNumpyWarning
 
 # Initialize a logger for this module
 logger = logging.getLogger(__name__)

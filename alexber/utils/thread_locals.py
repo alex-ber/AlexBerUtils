@@ -981,7 +981,7 @@ def run_coroutine_threadsafe(coro, *args, **kwargs):
     loop = _EVENT_LOOP
     # Schedule the coroutine and return the threading.Future
     base_future = asyncio.run_coroutine_threadsafe(coro(*args, **kwargs), loop)
-    threading_future = threading.Future()
+    threading_future = Future()
     base_future.add_done_callback(lambda fut: chain_future_results(fut, threading_future))
 
     return threading_future
