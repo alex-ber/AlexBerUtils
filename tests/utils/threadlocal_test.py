@@ -870,18 +870,3 @@ async def test_arun_coroutine_threadsafe_switch_to_async_in_sync_context(executo
 
 if __name__ == "__main__":
     pytest.main([__file__])
-#
-# from asyncio import isfuture
-#
-# def _set_state(future, other):
-#     if isfuture(future):
-#         print("_copy_future_state(other, future)")
-#     else:
-#         print("_set_concurrent_future_state(future, other)")
-#
-# async def main():
-#     future = concurrent.futures.Future()
-#     asyncio_future = asyncio.get_running_loop().create_future()
-#     _set_state(asyncio_future, future)
-#
-# asyncio.run(main())
