@@ -966,55 +966,15 @@ def chain_future_results(source_future: FutureType, target_future: FutureType):
     except Exception as e:
         target_future.set_exception(e)
 
-
-def run_coroutine_threadsafe(coro, *args, **kwargs):
+def get_main_event_loop():
     """
-    Schedules a coroutine with arguments to be run on the MainThread's event loop
-    and returns an asyncio.Future that can be awaited.
-    Args:
-        coro: The coroutine to be executed.
-        *args: Positional arguments to pass to the coroutine.
-        **kwargs: Keyword arguments to pass to the coroutine.
+    Returns the event loop that was set via initConf(). This function should be called from the MainThread
+    during the application startup. If such a call was not made, None will be returned.
+
     Returns:
-        threading.future that will hold the result of the coroutine execution eventually.
+        asyncio.AbstractEventLoop or None: The main event loop if set, otherwise None.
     """
-    loop = _EVENT_LOOP
-    # Schedule the coroutine and return the threading.Future
-    base_future = asyncio.run_coroutine_threadsafe(coro(*args, **kwargs), loop)
-    threading_future = Future()
-    base_future.add_done_callback(lambda fut: chain_future_results(fut, threading_future))
-
-    return threading_future
-
-
-async def arun_coroutine_threadsafe(coro, *args, **kwargs):
-    """
-    Schedules a coroutine with arguments to be run on the MainThread's event loop
-    and returns an asyncio.Future that can be awaited.
-    Args:
-        coro: The coroutine to be executed.
-        *args: Positional arguments to pass to the coroutine.
-        **kwargs: Keyword arguments to pass to the coroutine.
-    Returns:
-        result of the coroutine execution.
-    """
-
-    loop = _EVENT_LOOP
-
-    @functools.wraps(coro)
-    async def wrap_coro():
-        return await coro(*args, **kwargs)
-
-    base_future = asyncio.run_coroutine_threadsafe(wrap_coro(), loop)
-    #private asyncio API is invoked here.
-    #It chains base_future and newly created asyncio_future so that when one completes, so does the other.
-    #They progress together towards the completion, so no "application freeze" occur.
-    asyncio_future = asyncio.wrap_future(base_future)
-    result = await asyncio_future
-    return result
-
-
-
+    return _EVENT_LOOP
 
 class AsyncExecutionQueue(RootMixin):
     """

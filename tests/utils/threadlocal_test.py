@@ -1,3 +1,5 @@
+import concurrent.futures
+
 import logging
 import threading
 import types
@@ -16,7 +18,8 @@ from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
     _is_pydantic_obj
 from alexber.utils.thread_locals import threadlocal_var, get_threadlocal_var, del_threadlocal_var
 from alexber.utils.thread_locals import exec_in_executor, exec_in_executor_threading_future, \
-                                         run_coroutine_threadsafe, arun_coroutine_threadsafe
+                                        get_main_event_loop
+
 
 logger = logging.getLogger(__name__)
 
@@ -779,7 +782,8 @@ async def test_coroutine_in_sync_context(request, mocker):
 def worker_thread():
     print(f"Worker thread: {threading.current_thread().name} started.")
     # Execute task on the main thread's event loop
-    future = run_coroutine_threadsafe(sample_coroutine, 2, 3)  # Pass arguments to the coroutine
+    loop = get_main_event_loop()
+    future = asyncio.run_coroutine_threadsafe( sample_coroutine(2, 3),  loop=loop)  # Pass arguments to the coroutine
     # Wait for the result of the future
     result = future.result()
     print(f"Worker thread got result: {result}")
@@ -791,8 +795,10 @@ def worker_thread_switch_to_async():
 
     async def helper_example_usage():
         #time.sleep(15)
-        future = run_coroutine_threadsafe(sample_coroutine, 2, 3)  # Pass arguments to the coroutine
-        result = future.result()
+        loop = get_main_event_loop()
+        threading_future = asyncio.run_coroutine_threadsafe( sample_coroutine(2, 3),  loop=loop)  # Pass arguments to the coroutine
+        asyncio_future = asyncio.wrap_future(threading_future)
+        result = await asyncio_future
         return result
 
     loop = asyncio.get_event_loop()
@@ -841,7 +847,10 @@ def worker_athread_switch_to_async():
 
     async def helper_example_usage():
         #time.sleep(15)
-        result = await arun_coroutine_threadsafe( sample_coroutine, 2, 3)  # Pass arguments to the coroutine
+        loop = get_main_event_loop()
+        threading_future = asyncio.run_coroutine_threadsafe( sample_coroutine(2, 3),  loop=loop)  # Pass arguments to the coroutine
+        asyncio_future = asyncio.wrap_future(threading_future)
+        result = await asyncio_future
         return result
 
     loop = asyncio.get_event_loop()
@@ -861,4 +870,18 @@ async def test_arun_coroutine_threadsafe_switch_to_async_in_sync_context(executo
 
 if __name__ == "__main__":
     pytest.main([__file__])
-
+#
+# from asyncio import isfuture
+#
+# def _set_state(future, other):
+#     if isfuture(future):
+#         print("_copy_future_state(other, future)")
+#     else:
+#         print("_set_concurrent_future_state(future, other)")
+#
+# async def main():
+#     future = concurrent.futures.Future()
+#     asyncio_future = asyncio.get_running_loop().create_future()
+#     _set_state(asyncio_future, future)
+#
+# asyncio.run(main())

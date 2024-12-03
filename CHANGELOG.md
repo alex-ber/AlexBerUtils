@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 
 
 ## Unreleased
+
+## [0.12.6] 03.12.2024
+
+### Added
+- `get_main_event_loop()` allows retrieving the main event loop that was set during the application configuration
+via `initConf()`. `initConf()` is intended to be called from the `MainThread` during the application startup. 
+If the event loop has not been set, the function will return `None`. 
+
+
+### Changed
+
+- **BREAKING CHANGE** `run_coroutine_threadsafe` and `arun_coroutine_threadsafe()` was dropped. You can achieve the same result 
+by using `run_coroutine_threadsafe()` (it just scheduled coroutine to run; it's fast), obtaining
+`threading.Future` and doing the following 
+```asyncio_future = asyncio.wrap_future(threading_future, loop=loop)```. Then if you want to get the 
+result you can simply ```await asyncio_future```.
+
+
+- **Documentation for**
+- `asyncio.run_coroutine_threadsafe()` API https://alex-ber.medium.com/asyncio-run-coroutine-threadsafe-api-d24cc56a5255 
+
+
 ## [0.12.5] 01.12.2024
 
 ### Changed
