@@ -1,4 +1,3 @@
-import functools
 import logging
 import concurrent.futures
 import contextvars
@@ -394,6 +393,98 @@ class LockingPedanticObjMixin(RootMixin):
         validate_param(self._obj, 'obj')
         self._is_pedantic_obj = _is_pydantic_obj(self._obj)
 
+class LockingGetItemMixin(RootMixin):
+    """Mixin to provide thread-safe access and modification for collection-like objects.
+
+    This mixin ensures that the `__getitem__` and `__setitem__` methods are thread-safe by using a lock.
+    It is intended to be used with objects that support item access and modification, such as lists or dictionaries.
+
+    Attributes:
+        _obj: The object being proxied, which supports item access and modification.
+        _lock: A threading lock to ensure thread-safe operations.
+    """
+
+    def __init__(self, **kwargs):
+        """
+        Initializes the mixin with the object and lock.
+
+        Parameters:
+        **kwargs: Arbitrary keyword arguments, including 'obj' for the object
+                  and 'lock' for the lock.
+        """
+        super().__init__(**kwargs)
+
+    def __getitem__(self, key):
+        """Retrieve an item from the collection in a thread-safe manner.
+
+        Parameters:
+            key: The key or index of the item to retrieve.
+
+        Returns:
+            The item associated with the given key.
+        """
+        @functools.wraps(self._obj.__getitem__)
+        def call(key):
+            with self._lock:
+                return self._obj[key]
+        return call(key)
+
+    def __setitem__(self, key, value):
+        """Set an item in the collection in a thread-safe manner.
+
+        Parameters:
+            key: The key or index of the item to set.
+            value: The value to associate with the given key.
+
+        Returns:
+            The value that was set.
+        """
+        @functools.wraps(self._obj.__setitem__)
+        def call(key, value):
+            with self._lock:
+                self._obj[key] = value
+            return value
+        return call(key, value)
+
+
+class LockingSetItemMixin(RootMixin):
+    """Mixin to provide thread-safe modification of items in a collection.
+
+    This mixin ensures that the `__setitem__` method is thread-safe by using a lock.
+    It is intended to be used with objects that support item modification, such as lists or dictionaries.
+
+    Attributes:
+        _obj: The object being proxied, which supports item modification.
+        _lock: A threading lock to ensure thread-safe modification.
+    """
+
+    def __init__(self, **kwargs):
+        """
+        Initializes the mixin with the object and lock.
+
+        Parameters:
+        **kwargs: Arbitrary keyword arguments, including 'obj' for the object
+                  and 'lock' for the lock.
+        """
+        super().__init__(**kwargs)
+
+    def __setitem__(self, key, value):
+        """Set an item in the collection in a thread-safe manner.
+
+        Parameters:
+            key: The key or index of the item to set.
+            value: The value to associate with the given key.
+
+        Returns:
+            The value that was set.
+        """
+        @functools.wraps(self._obj.__setitem__)
+        def call(key, value):
+            with self._lock:
+                self._obj[key] = value
+            return value
+        return call(key, value)
+
 class LockingAccessMixin(LockingPedanticObjMixin):
     """
     A mixin class that provides locking for attribute access.
@@ -676,13 +767,21 @@ def _is_pydantic_obj(obj):
     ret = _is_pydantic_v1_obj(obj) or _is_pydantic_v2_obj(obj)
     return ret
 
-class LockingProxy(LockingDefaultAndBaseLanguageModelMixin, LockingIterableMixin, LockingAsyncIterableMixin, LockingAccessMixin, LockingCallableMixin):
+class LockingProxy(
+    LockingDefaultAndBaseLanguageModelMixin,
+    LockingIterableMixin,
+    LockingAsyncIterableMixin,
+    LockingAccessMixin,
+    LockingCallableMixin,
+    LockingGetItemMixin,
+    LockingSetItemMixin
+):
     """
     A proxy class that combines multiple locking mixins.
 
     The `LockingProxy` class ensures that access to the wrapped object is thread-safe
     by using a provided lock. It supports iterable, async iterable, attribute access,
-    and callable objects.
+    and callable objects, and thread-safe item access and modification.
 
     See https://alex-ber.medium.com/7a7a14021427 for more details.
 
@@ -1130,3 +1229,4 @@ def initConfig(**kwargs):
     global _GLOBAL_EXECUTOR
     # Set the global executor if provided
     _GLOBAL_EXECUTOR = kwargs.get('executor', None)
+

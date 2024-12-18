@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.12.7] 18.12.2024
+
+### Added
+- Introduced `LockingGetItemMixin` to provide thread-safe access to items in a collection.
+- Introduced `LockingSetItemMixin` to provide thread-safe modification of items in a collection.
+
+### Changed
+- Updated `LockingProxy` class to include `LockingGetItemMixin` and `LockingSetItemMixin` for handling thread-safe item access and modification.
+- Updated the docstring of `LockingProxy` to reflect the inclusion of the new mixins.
+
+
 ## [0.12.6] 03.12.2024
 
 ### Added
