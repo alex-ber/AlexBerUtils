@@ -485,6 +485,49 @@ class LockingSetItemMixin(RootMixin):
             return value
         return call(key, value)
 
+class SyncContextManagerMixin:
+    """
+    Mixin to add synchronous context management to a class.
+    """
+
+    def __init__(self, **kwargs):
+        """
+        Initializes the mixin with the object and lock.
+
+        Parameters:
+        **kwargs: Arbitrary keyword arguments, including 'obj' for the object
+                  and 'lock' for the lock.
+        """
+        super().__init__(**kwargs)
+    def __enter__(self):
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._lock.release()
+
+class AsyncContextManagerMixin:
+    """
+    Mixin to add asynchronous context management to a class.
+    """
+
+    def __init__(self, **kwargs):
+        """
+        Initializes the mixin with the object and lock.
+
+        Parameters:
+        **kwargs: Arbitrary keyword arguments, including 'obj' for the object
+                  and 'lock' for the lock.
+        """
+        super().__init__(**kwargs)
+
+    async def __aenter__(self):
+        await self._lock.acquire()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self._lock.release()
+
 class LockingAccessMixin(LockingPedanticObjMixin):
     """
     A mixin class that provides locking for attribute access.
@@ -767,21 +810,22 @@ def _is_pydantic_obj(obj):
     ret = _is_pydantic_v1_obj(obj) or _is_pydantic_v2_obj(obj)
     return ret
 
-class LockingProxy(
-    LockingDefaultAndBaseLanguageModelMixin,
-    LockingIterableMixin,
-    LockingAsyncIterableMixin,
-    LockingAccessMixin,
-    LockingCallableMixin,
-    LockingGetItemMixin,
-    LockingSetItemMixin
-):
+class LockingProxy(LockingDefaultAndBaseLanguageModelMixin,
+                   LockingIterableMixin,
+                   LockingAsyncIterableMixin,
+                   LockingAccessMixin,
+                   LockingCallableMixin,
+                   LockingGetItemMixin,
+                   LockingSetItemMixin,
+                   SyncContextManagerMixin,
+                   AsyncContextManagerMixin):
     """
     A proxy class that combines multiple locking mixins.
 
     The `LockingProxy` class ensures that access to the wrapped object is thread-safe
     by using a provided lock. It supports iterable, async iterable, attribute access,
-    and callable objects, and thread-safe item access and modification.
+    and callable objects, and thread-safe item access and modification
+    and context management, async context management.
 
     See https://alex-ber.medium.com/7a7a14021427 for more details.
 
