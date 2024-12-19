@@ -522,11 +522,11 @@ class AsyncContextManagerMixin:
         super().__init__(**kwargs)
 
     async def __aenter__(self):
-        await self._lock.acquire()
+        await self._lock.async_acquire()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        self._lock.release()
+        self._lock.async_release()
 
 class LockingAccessMixin(LockingPedanticObjMixin):
     """

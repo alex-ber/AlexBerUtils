@@ -8,18 +8,25 @@ All notable changes to this project will be documented in this file.
 
 ## Changelog
 
+
+## [0.12.9] 19.12.2024
+
+### Changed
+- **AsyncContextManagerMixin**: bug fix. Now, it calls `async_acquire()` and `async_release()`.
+
+
 ## [0.12.8] 19.12.2024
 
 
 ### Added
 - **SyncContextManagerMixin**: A new mixin to provide synchronous context management 
-capabilities to classes. This mixin includes `__enter__` and `__exit__` methods to manage 
+capabilities to classes. This mixin includes `__enter__()` and `__exit__()` methods to manage 
 acquiring and releasing locks.
 - **AsyncContextManagerMixin**: A new mixin to provide asynchronous context management
-capabilities to classes. This mixin includes `__aenter__` and `__aexit__` methods to manage 
+capabilities to classes. This mixin includes `__aenter__()` and `__aexit__()` methods to manage 
 acquiring and releasing locks asynchronously.
 
-### Updated
+### Changed
 - **LockingProxy**: Enhanced to include synchronous and asynchronous context management 
 through the integration of `SyncContextManagerMixin` and `AsyncContextManagerMixin`. 
 This update allows `LockingProxy` to be used with both `with` and `async with` statements 
