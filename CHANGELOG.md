@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## Changelog
-## [0.12.10b] 30.01.2024
+## [0.12.10] 30.01.2024
 ### Fixed
 - **Context Preservation for Coroutines**: Ensured that coroutine functions are executed 
 within a copied context when run in an executor. This fix addresses a bug where coroutine 
