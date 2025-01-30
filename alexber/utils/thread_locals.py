@@ -1011,37 +1011,39 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     Returns:
         asyncio.Future: A future representing the execution of the function or coroutine.
     """
-    # Copy the current context
-    ctx = copy_context()
-    # Wrap the function or coroutine call with the context
-    func_or_coro_call = functools.partial(ctx.run, func, *args, **kwargs)
-
-    @functools.wraps(func)
-    def wrapper() -> T:
-        ensure_thread_event_loop()
-        try:
-            return func_or_coro_call()
-        except StopIteration as exc:
-            # StopIteration can't be set on an asyncio.Future
-            # it raises a TypeError and leaves the Future pending forever
-            # so we need to convert it to a RuntimeError
-            raise RuntimeError from exc
-
     loop = asyncio.get_running_loop()
-
     resolved_executor = executor if executor is not None else _GLOBAL_EXECUTOR
 
+
+
     if asyncio.iscoroutinefunction(func):
-        # Run the coroutine in the thread's event loop
 
         # Wrap the coroutine function to preserve metadata
         @functools.wraps(func)
         async def wrapped_coro(*args, **kwargs):
-            return await func(*args, **kwargs)
+            # Run the coroutine in the thread's event loop
+            return await ctx.run(func, *args, **kwargs)
 
         coro = wrapped_coro(*args, **kwargs)
         return loop.run_in_executor(resolved_executor, _run_coroutine_in_thread, coro)
     else:
+        # Copy the current context
+        ctx = copy_context()
+
+        # Wrap the function or coroutine call with the context
+        func_or_coro_call = functools.partial(ctx.run, func, *args, **kwargs)
+
+        @functools.wraps(func)
+        def wrapper() -> T:
+            ensure_thread_event_loop()
+            try:
+                return func_or_coro_call()
+            except StopIteration as exc:
+                # StopIteration can't be set on an asyncio.Future
+                # it raises a TypeError and leaves the Future pending forever
+                # so we need to convert it to a RuntimeError
+                raise RuntimeError from exc
+
         # If func is a regular function, run it in an executor guarded against StopIteration
         return loop.run_in_executor(resolved_executor, wrapper)
 

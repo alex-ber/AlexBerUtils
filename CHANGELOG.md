@@ -7,7 +7,17 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## Changelog
+## [0.12.10b] 30.01.2024
+### Fixed
+- **Context Preservation for Coroutines**: Ensured that coroutine functions are executed 
+within a copied context when run in an executor. This fix addresses a bug where coroutine 
+functions bypassed `copy_context()`, potentially leading to issues with `ContextVars` 
+not being maintained across asynchronous boundaries.
 
+### Changed
+- **Optimization for Regular Function Execution Path**: Refactored the creation of 
+`func_or_coro_call` and the `wrapper` function to only occur within the branch handling 
+regular functions. 
 
 ## [0.12.9] 19.12.2024
 
