@@ -971,7 +971,7 @@ def ensure_thread_event_loop():
         # Store the event loop in thread-local storage
         _event_loops_thread_locals.loop = loop
 
-def _run_coroutine_in_thread(coro):
+def _run_coroutine_in_thread(ctx, coro):
     """
     Runs a coroutine in the event loop of the current thread.
 
@@ -979,6 +979,7 @@ def _run_coroutine_in_thread(coro):
     until it is complete using the thread's event loop.
 
     Args:
+        ctx: The context copied from the original thread.
         coro: The coroutine to be executed.
 
     Returns:
@@ -987,7 +988,7 @@ def _run_coroutine_in_thread(coro):
     # Ensure the thread has an event loop
     ensure_thread_event_loop()
     loop = _event_loops_thread_locals.loop
-    return loop.run_until_complete(coro)
+    return ctx.run(loop.run_until_complete, coro)
 
 
 def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> asyncio.Future:
@@ -1014,30 +1015,26 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     loop = asyncio.get_running_loop()
     resolved_executor = executor if executor is not None else _GLOBAL_EXECUTOR
 
-
+    # Copy the current context
+    ctx = copy_context()
 
     if asyncio.iscoroutinefunction(func):
-
         # Wrap the coroutine function to preserve metadata
-        @functools.wraps(func)
-        async def wrapped_coro(*args, **kwargs):
-            # Run the coroutine in the thread's event loop
-            return await ctx.run(func, *args, **kwargs)
 
-        coro = wrapped_coro(*args, **kwargs)
-        return loop.run_in_executor(resolved_executor, _run_coroutine_in_thread, coro)
+        # Create the coroutine in the original context
+        coro = func(*args, **kwargs)
+        # Pass both the context and coroutine to the executor
+        return loop.run_in_executor(resolved_executor, _run_coroutine_in_thread, ctx, coro)
+
     else:
-        # Copy the current context
-        ctx = copy_context()
-
         # Wrap the function or coroutine call with the context
-        func_or_coro_call = functools.partial(ctx.run, func, *args, **kwargs)
+        func_call = functools.partial(ctx.run, func, *args, **kwargs)
 
         @functools.wraps(func)
         def wrapper() -> T:
             ensure_thread_event_loop()
             try:
-                return func_or_coro_call()
+                return func_call()
             except StopIteration as exc:
                 # StopIteration can't be set on an asyncio.Future
                 # it raises a TypeError and leaves the Future pending forever

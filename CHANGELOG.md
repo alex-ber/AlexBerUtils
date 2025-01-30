@@ -16,8 +16,12 @@ not being maintained across asynchronous boundaries.
 
 ### Changed
 - **Optimization for Regular Function Execution Path**: Refactored the creation of 
-`func_or_coro_call` and the `wrapper` function to only occur within the branch handling 
-regular functions. 
+`func_call` and the `wrapper` function to only occur within the branch handling 
+regular functions.
+
+- **BREAKING CHANGE**: Singature of `_run_coroutine_in_thread()` was changed (this is internal
+function, so you shouldn't use it anyway), 
+`ctx` was added as first parameter. 
 
 ## [0.12.9] 19.12.2024
 
