@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## Changelog
-## [0.13.0b] 01.02.2024
+## [0.13.0] 01.02.2024
 
 ### Fixed
 - **Context Preservation for Coroutines in Threads:**
