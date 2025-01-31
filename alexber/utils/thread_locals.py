@@ -10,6 +10,8 @@ from threading import local
 import asyncio
 import threading
 from collections import deque
+from contextvars import ContextVar
+from typing import Callable, Any, List, Dict
 
 # Define type variables for the function signature
 T = TypeVar('T')
@@ -971,7 +973,7 @@ def ensure_thread_event_loop():
         # Store the event loop in thread-local storage
         _event_loops_thread_locals.loop = loop
 
-def _run_coroutine_in_thread(ctx, coro):
+def _run_coroutine_in_thread(coro):
     """
     Runs a coroutine in the event loop of the current thread.
 
@@ -979,7 +981,6 @@ def _run_coroutine_in_thread(ctx, coro):
     until it is complete using the thread's event loop.
 
     Args:
-        ctx: The context copied from the original thread.
         coro: The coroutine to be executed.
 
     Returns:
@@ -988,7 +989,7 @@ def _run_coroutine_in_thread(ctx, coro):
     # Ensure the thread has an event loop
     ensure_thread_event_loop()
     loop = _event_loops_thread_locals.loop
-    return ctx.run(loop.run_until_complete, coro)
+    return loop.run_until_complete(coro)
 
 
 def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> asyncio.Future:
@@ -1019,30 +1020,33 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     ctx = copy_context()
 
     if asyncio.iscoroutinefunction(func):
-        # Wrap the coroutine function to preserve metadata
+        # Wrap the coroutine function to handle StopIteration
+        async def _coro_wrapper():
+            try:
+                return await func(*args, **kwargs)
+            except StopIteration as exc:
+                raise RuntimeError from exc
 
         # Create the coroutine in the original context
-        coro = func(*args, **kwargs)
-        # Pass both the context and coroutine to the executor
-        return loop.run_in_executor(resolved_executor, _run_coroutine_in_thread, ctx, coro)
-
+        coro = _coro_wrapper()
+        # run it in the same context in an executor guarded against StopIteration
+        return loop.run_in_executor(resolved_executor,
+                                    lambda: ctx.run(_run_coroutine_in_thread, coro))
     else:
-        # Wrap the function or coroutine call with the context
-        func_call = functools.partial(ctx.run, func, *args, **kwargs)
 
         @functools.wraps(func)
         def wrapper() -> T:
             ensure_thread_event_loop()
             try:
-                return func_call()
+                return func(*args, **kwargs)
             except StopIteration as exc:
                 # StopIteration can't be set on an asyncio.Future
                 # it raises a TypeError and leaves the Future pending forever
                 # so we need to convert it to a RuntimeError
                 raise RuntimeError from exc
 
-        # If func is a regular function, run it in an executor guarded against StopIteration
-        return loop.run_in_executor(resolved_executor, wrapper)
+        # run it in the same context in an executor guarded against StopIteration
+        return loop.run_in_executor(resolved_executor, lambda: ctx.run(wrapper))
 
 def exec_in_executor_threading_future(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> Future:
     """
@@ -1249,6 +1253,84 @@ class AsyncExecutionQueue(RootMixin):
             await self._worker_task
 
 
+
+
+
+def get_context_vars(*modules, factory_method_creator = None) -> List:
+    """Collects top-level ContextVar instances from modules and associates them with factory methods.
+
+    Args:
+        *modules: Modules to search for ContextVar instances.
+        factory_method_creator: Optional function to resolve the factory callable for a ContextVar.
+            Signature: `(var: ContextVar, module: ModuleType) -> Callable`.
+            Default: Looks for a function named `<var.name>_DEFAULT` in the same module as the ContextVar.
+
+    Returns:
+        List of entities containing:
+        - 'var': The ContextVar instance
+        - 'factory': Callable factory method to produce the default value
+
+    Example:
+        # Default usage
+        entities = get_context_vars(my_module)
+
+        # Custom factory resolver (e.g., factory in another module)
+        def custom_creator(var, module):
+            from other_module import factories
+            return getattr(factories, f"{var.name}_default")
+
+        entities = get_context_vars(my_module, factory_method_creator=custom_creator)
+    """
+    if not modules:
+        return []
+
+    # Set default factory resolver if none provided
+    if not factory_method_creator:
+        factory_method_creator = lambda var, module: getattr(module, f"{var.name}_DEFAULT")
+
+    all_entities = []
+    for module in modules:
+        # List all attributes of the module
+        attributes = dir(module)
+
+        # Find all ContextVars in the module
+        ctx_vars = [getattr(module, attr) for attr in attributes
+                    if isinstance(getattr(module, attr), ContextVar)]
+
+        # Build entities with resolved factory methods
+        entities = [
+            {
+                "var": var,
+                "factory": factory_method_creator(var, module),
+            }
+            for var in ctx_vars
+        ]
+        all_entities.extend(entities)
+
+    reset_context_vars(*all_entities)
+    return all_entities
+
+
+def reset_context_vars(*entities) -> None:
+    """Resets ContextVars to their default values using associated factory methods.
+
+    Args:
+        *entities: Entities produced by `get_context_vars`, each containing:
+            - 'var': ContextVar to reset
+            - 'factory': Factory method to generate its default value
+
+    Raises:
+        ValueError: If the factory is not callable.
+    """
+    for entity in entities:
+        var = entity["var"]
+        factory = entity["factory"]
+
+        if not callable(factory):
+            raise ValueError(f"Factory for ContextVar {var.name} is not callable: {factory}")
+
+        default_value = factory()
+        var.set(default_value)
 
 
 def initConfig(**kwargs):

@@ -7,6 +7,80 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## Changelog
+## [0.13.0b] 01.02.2024
+
+### Fixed
+- **Context Preservation for Coroutines in Threads:**
+  - Fixed an issue where `copy_context()` in `_run_coroutine_in_thread` was redundantly capturing the context, which could lead to inconsistencies. The context is now correctly propagated from the main thread to the executor thread using `ctx.run()` in `exec_in_executor`.
+  - Ensured that the original context is preserved when running coroutines in threads, preventing the loss of `ContextVar` values across asynchronous boundaries.
+
+- **StopIteration Handling for Coroutines:**
+  - Added a `_coro_wrapper` to handle `StopIteration` exceptions in coroutines, converting them into `RuntimeError`. This prevents `asyncio.Future` from hanging indefinitely when `StopIteration` is raised in a coroutine running in a separate thread.
+
+
+### Added
+- **Explicit Exception Handling:**
+  - Introduced `_coro_wrapper()` to ensure consistent handling of `StopIteration` for coroutines, aligning with the
+  behavior of synchronous functions.
+
+- **New Function: `get_context_vars()`**  
+  A utility to collect and manage `ContextVar` instances from modules, along with their factory methods for default values.  
+  **Features**:
+  - Detects top-level `ContextVar` instances in specified modules.
+  - Supports custom factory method resolution via the `factory_method_creator()` parameter.
+  - Returns a list of entities containing `ContextVar` and its resolved factory method.
+  - Works seamlessly with `reset_context_vars()` to reset `ContextVar` instances to their default values.
+
+  **Usage**:
+  ```python
+  # Default usage (factory method in same module as ContextVar)
+  entities = get_context_vars(my_module)
+
+  # Custom factory resolver (factory in another module/class)
+  def custom_factory_creator(var, module):
+      from other_module import factories
+      return getattr(factories, f"create_{var.name}_default")
+
+  entities = get_context_vars(my_module, factory_method_creator=custom_factory_creator)
+  reset_context_vars(*entities)
+
+- **New Function: `reset_context_vars()`**  
+  A utility to reset `ContextVar` instances to their default values using pre-resolved 
+factory methods.  
+  **Features**:
+  - Accepts entities produced by `get_context_vars()` (containing `ContextVar` and its factory 
+method).
+  - Sets the default value for each `ContextVar` using its associated factory method.
+
+- Introduced the `Auto` class, a callable counter designed to generate sequential integers 
+starting from a configurable initial value.It is intended for use with Python's `Enum` to 
+automatically assign sequential integer values to enum members. 
+
+- Introduced the `create_auto()` factory function to create new instances of the `Auto` class. 
+It provides a convenient way to generate `Auto` instances with a specified starting value, 
+defaulting to 0.
+
+- Introduced the `check_not_empty()` function to validate that a given value is not empty. It 
+raises a `ValueError` with a descriptive message if the value is empty, using the `field_name` 
+attribute from the provided field object.
+
+- Introduced the `parse_json()` function to parse JSON strings. It is useful for ensuring that 
+input data is correctly formatted as a list, either directly or via a JSON string.  
+
+- Introduced the `validate_same_length()` function to ensure that multiple iterables 
+have the same length. It raises a `ValueError` if the iterables do not have the same length 
+or if `field_names` is not provided.
+
+
+### Changed
+
+- **BREAKING CHANGE**: Singature of `_run_coroutine_in_thread()` was reverted back
+to 0.12.9 (this is internal function, so you shouldn't use it anyway). 
+- **BREAKING CHANGE**: Updated `_run_coroutine_in_thread()` to remove the redundant 
+`copy_context()` call, as the context is already captured and applied in `exec_in_executor`.
+The behaviour is the same as in 0.12.9.
+
+
 ## [0.12.10] 30.01.2024
 ### Fixed
 - **Context Preservation for Coroutines**: Ensured that coroutine functions are executed 
