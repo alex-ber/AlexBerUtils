@@ -18,9 +18,6 @@ ensuring better clarity when multiple callbacks are involved.
 - **Exception Propagation in `exec_in_executor()`:**  
   - Fixed an issue where exceptions raised by coroutine functions passed to 
   `exec_in_executor()` were not properly propagated.  
-  - Exceptions are now logged with traceback information for debugging and re-raised to 
-  ensure proper propagation.  
-  - This ensures that errors in coroutines are visible and debuggable.
 
 ## [0.13.0] 01.02.2024
 

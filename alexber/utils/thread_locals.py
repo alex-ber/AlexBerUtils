@@ -1024,8 +1024,11 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
         async def _coro_wrapper():
             try:
                 return await func(*args, **kwargs)
+            except StopIteration as exc:
+                # StopIteration can't be set on an asyncio.Future
+                # It raises a TypeError and leaves the Future pending forever
+                raise RuntimeError from exc
             except Exception as exc:
-                logging.error(f"Exception occurred in coroutine | Error: {str(exc)}", exc_info=True)
                 # Re-raise the exception to propagate it
                 raise exc
 
