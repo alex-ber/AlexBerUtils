@@ -952,6 +952,69 @@ def lift_to_async(afunc, /, *args, **kwargs):
     return result
 
 
+class FutureWrapper:
+    """
+    A proxy for an asyncio.Future that intercepts consumption.
+    """
+    def __init__(self, fut: asyncio.Future):
+        self._fut = fut
+        self._consumed = False  # Set to True if the user awaits or calls result()/exception()
+
+    def __await__(self):
+        self._consumed = True
+        return self._fut.__await__()
+
+    def result(self):
+        self._consumed = True
+        return self._fut.result()
+
+    def exception(self):
+        self._consumed = True
+        return self._fut.exception()
+
+    def add_done_callback(self, callback):
+        self._fut.add_done_callback(callback)
+
+    def done(self):
+        return self._fut.done()
+
+    # Proxy any other attribute access to the underlying future.
+    def __getattr__(self, name):
+        return getattr(self._fut, name)
+
+    # Optionally, you might implement __repr__ for debugging.
+    def __repr__(self):
+        return f"<FutureWrapper consumed={self._consumed} wrapping: {self._fut!r}>"
+
+
+def _check_and_log_exception(wrapper: FutureWrapper):
+    """
+    Check if the user never consumed the result. If so, and if an exception occurred,
+    log it.
+    """
+    # Note: we check the underlying future directly so that we don’t
+    # accidentally mark it as consumed.
+    if not wrapper._consumed and wrapper._fut.done():
+        try:
+            exc = wrapper._fut.exception()
+        except Exception as e:
+            logger.warning("Unexpected failure in retrieving exception from future: %s", e, exc_info=True)
+            return
+        if exc is not None:
+            logger.exception("Unhandled exception in fire-and-forget task", exc_info=exc)
+
+
+
+def _handle_future_exception(wrapper: FutureWrapper, delay: float = 0):
+    """
+    Schedule a callback to check if the wrapper was consumed.
+    The delay (in seconds) allows a small window for an awaiting consumer.
+    """
+    loop = asyncio.get_running_loop()
+    loop.call_later(delay, _check_and_log_exception, wrapper)
+
+
+
 def ensure_thread_event_loop():
     """
     Initializes an event loop for the current thread if it does not already exist.
@@ -964,7 +1027,7 @@ def ensure_thread_event_loop():
     if not hasattr(_event_loops_thread_locals, 'loop'):
         try:
             # Try to get the current event loop
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
         except RuntimeError:
             # If no event loop is present, create a new one
             loop = asyncio.new_event_loop()
@@ -1004,6 +1067,10 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
 
     Note: as a side fact, threads in the executor may have an event loop attached. This allows for the execution of asynchronous tasks within those threads.
 
+    Additionally, the returned future is wrapped in a proxy that monitors
+    whether the consumer explicitly awaits or retrieves the result. In the fire-and-forget case
+    (when the result is not consumed), any exception is logged automatically.
+
     Args:
         executor (Optional[Executor]): The executor to run the function or coroutine. If None, the default asyncio executor is used.
         func (Callable[..., T]): The function or coroutine to execute.
@@ -1011,7 +1078,8 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
         **kwargs: Keyword arguments to pass to the function or coroutine.
 
     Returns:
-        asyncio.Future: A future representing the execution of the function or coroutine.
+        asyncio.Future: A future representing the execution of the function or coroutine, which
+        is wrapped to log exceptions in fire-and-forget scenarios.
     """
     loop = asyncio.get_running_loop()
     resolved_executor = executor if executor is not None else _GLOBAL_EXECUTOR
@@ -1035,7 +1103,7 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
         # Create the coroutine in the original context
         coro = _coro_wrapper()
         # run it in the same context in an executor guarded against StopIteration
-        return loop.run_in_executor(resolved_executor,
+        base_future =  loop.run_in_executor(resolved_executor,
                                     lambda: ctx.run(_run_coroutine_in_thread, coro))
     else:
 
@@ -1054,7 +1122,13 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
                 raise
 
         # run it in the same context in an executor guarded against StopIteration
-        return loop.run_in_executor(resolved_executor, lambda: ctx.run(wrapper))
+        base_future = loop.run_in_executor(resolved_executor, lambda: ctx.run(wrapper))
+    # Wrap the raw future in our proxy.
+    wrapped_future = FutureWrapper(base_future)
+    # Attach a done callback that will, after a short delay, log the exception
+    # if the user never consumed the result.
+    wrapped_future.add_done_callback(lambda wf: _handle_future_exception(wf, delay=0.1))
+    return wrapped_future
 
 def exec_in_executor_threading_future(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> Future:
     """
@@ -1116,17 +1190,16 @@ def chain_future_results(source_future: FutureType, target_future: FutureType):
         target_future: The future on which to set the result or exception.
     """
 
-    def chain_future_results(source_future: FutureType, target_future: FutureType):
-        if target_future.done():
-            return  # Already resolved by another callback
+    if target_future.done():
+        return  # Already resolved by another callback
 
-        try:
-            result = source_future.result()
-            if not target_future.done():
-                target_future.set_result(result)
-        except Exception as e:
-            if not target_future.done():
-                target_future.set_exception(e)
+    try:
+        result = source_future.result()
+        if not target_future.done():
+            target_future.set_result(result)
+    except Exception as e:
+        if not target_future.done():
+            target_future.set_exception(e)
 
 def get_main_event_loop():
     """

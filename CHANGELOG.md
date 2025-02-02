@@ -7,6 +7,40 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## Changelog
+
+
+# Changelog
+
+## [Unreleased]
+
+## [0.13.3] 02.02.2024
+
+### Added
+- Introduced a new `FutureWrapper` class to wrap an `asyncio.Future`.
+  - The `FutureWrapper` intercepts when the user awaits or calls `result()`/`exception()`
+    by setting a `_consumed` flag.
+- Implemented `_check_and_log_exception(wrapper: FutureWrapper)`:
+  - Checks if the underlying future has an exception and whether the result was never consumed.
+  - Logs an exception for fire-and-forget tasks if the exception remains unhandled.
+- Added `_handle_future_exception(wrapper: FutureWrapper, delay: float)`:
+  - Schedules the `_check_and_log_exception` function with a slight delay to allow
+    the consumer to handle the future if desired.
+- Modified `exec_in_executor()` to:
+  - Wrap the underlying future in `FutureWrapper`.
+  - Attach a done callback that logs exceptions (after a delay) if the result is not consumed.
+  - Update the docstring to explain the behavior and how the executor is resolved.
+
+### Changed
+- Updated the `exec_in_executor` docstring to reflect:
+  - The context preservation behavior using `ContextVars`.
+  - The resolution order for selecting the executor.
+  - That the returned future is wrapped to support both fire-and-forget (with logging)
+    and explicit awaiting (without logging).
+
+### Fixed
+- Ensured that if an exception occurs while retrieving the exception from the future,
+  a warning is logged instead of failing silently.
+
 ## [0.13.2] 02.02.2024
 
 ### Fixed
