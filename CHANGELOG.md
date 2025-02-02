@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## Changelog
+## [0.13.1b] 02.02.2024
+
+### Fixed
+- Updated the `chain_future_results()` function to include a guard against setting the  
+result on an already-resolved future.
+- Enhanced the docstring to clearly explain the function's behavior and usage, 
+ensuring better clarity when multiple callbacks are involved.
+
+
 ## [0.13.0] 01.02.2024
 
 ### Fixed

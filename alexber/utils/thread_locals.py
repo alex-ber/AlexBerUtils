@@ -1091,7 +1091,7 @@ def exec_in_executor_threading_future(executor: Optional[Executor], func: Callab
 
 def chain_future_results(source_future: FutureType, target_future: FutureType):
     """
-    Transfers the result or exception from one future to another.
+    Safely propagates the outcome from a source future to a target future.
 
     This function is called when the source_future is completed. It retrieves the result or exception
     from the source_future and sets it on the target_future, ensuring that the outcome of the task execution
@@ -1099,18 +1099,26 @@ def chain_future_results(source_future: FutureType, target_future: FutureType):
 
     To use this function, add it as a callback to the source_future:
 
-    # Add the chain_future_results function as a callback to the source_future
-    source_future.add_done_callback(lambda fut: chain_future_results(fut, target_future))
+    Typically, this function is added as a callback to `source_future`:
+
+        source_future.add_done_callback(lambda fut: chain_future_results(fut, target_future))
 
     Args:
         source_future: The future from which to retrieve the result or exception.
         target_future: The future on which to set the result or exception.
     """
-    try:
-        result = source_future.result()
-        target_future.set_result(result)
-    except Exception as e:
-        target_future.set_exception(e)
+
+    def chain_future_results(source_future: FutureType, target_future: FutureType):
+        if target_future.done():
+            return  # Already resolved by another callback
+
+        try:
+            result = source_future.result()
+            if not target_future.done():
+                target_future.set_result(result)
+        except Exception as e:
+            if not target_future.done():
+                target_future.set_exception(e)
 
 def get_main_event_loop():
     """
