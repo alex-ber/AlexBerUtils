@@ -1028,9 +1028,9 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
                 # StopIteration can't be set on an asyncio.Future
                 # It raises a TypeError and leaves the Future pending forever
                 raise RuntimeError from exc
-            except Exception as exc:
-                # Re-raise the exception to propagate it
-                raise exc
+            except Exception:
+                # Re-raise any other exceptions to propagate them properly
+                raise
 
         # Create the coroutine in the original context
         coro = _coro_wrapper()
@@ -1049,6 +1049,9 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
                 # it raises a TypeError and leaves the Future pending forever
                 # so we need to convert it to a RuntimeError
                 raise RuntimeError from exc
+            except Exception:
+                # Re-raise any other exceptions to propagate them properly
+                raise
 
         # run it in the same context in an executor guarded against StopIteration
         return loop.run_in_executor(resolved_executor, lambda: ctx.run(wrapper))

@@ -7,7 +7,13 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## Changelog
-## [0.13.1] 02.02.2024
+## [0.13.2] 02.02.2024
+
+### Fixed
+- **Exception Propagation in `exec_in_executor()`:**  
+  - Fixed an issue where exceptions raised by coroutine functions passed to 
+  `exec_in_executor()` were not properly propagated.  
+
 
 ### Fixed
 - Updated the `chain_future_results()` function to include a guard against setting the  
