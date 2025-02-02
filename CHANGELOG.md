@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ## Changelog
-## [0.13.1b] 02.02.2024
+## [0.13.1] 02.02.2024
 
 ### Fixed
 - Updated the `chain_future_results()` function to include a guard against setting the  
@@ -15,6 +15,12 @@ result on an already-resolved future.
 - Enhanced the docstring to clearly explain the function's behavior and usage, 
 ensuring better clarity when multiple callbacks are involved.
 
+- **Exception Propagation in `exec_in_executor()`:**  
+  - Fixed an issue where exceptions raised by coroutine functions passed to 
+  `exec_in_executor()` were not properly propagated.  
+  - Exceptions are now logged with traceback information for debugging and re-raised to 
+  ensure proper propagation.  
+  - This ensures that errors in coroutines are visible and debuggable.
 
 ## [0.13.0] 01.02.2024
 

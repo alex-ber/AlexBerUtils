@@ -1020,12 +1020,14 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     ctx = copy_context()
 
     if asyncio.iscoroutinefunction(func):
-        # Wrap the coroutine function to handle StopIteration
+        # Wrap the coroutine function to handle exceptions, including StopIteration
         async def _coro_wrapper():
             try:
                 return await func(*args, **kwargs)
-            except StopIteration as exc:
-                raise RuntimeError from exc
+            except Exception as exc:
+                logging.error(f"Exception occurred in coroutine | Error: {str(exc)}", exc_info=True)
+                # Re-raise the exception to propagate it
+                raise exc
 
         # Create the coroutine in the original context
         coro = _coro_wrapper()
