@@ -1127,7 +1127,8 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
     wrapped_future = FutureWrapper(base_future)
     # Attach a done callback that will, after a short delay, log the exception
     # if the user never consumed the result.
-    wrapped_future.add_done_callback(lambda wf: _handle_future_exception(wf, delay=0.1))
+    # In lambda we're recieving base_future, so we're ignoring it and use our wrapped_future.
+    wrapped_future.add_done_callback(lambda _: _handle_future_exception(wrapped_future, delay=0.1))
     return wrapped_future
 
 def exec_in_executor_threading_future(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> Future:

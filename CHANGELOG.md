@@ -12,6 +12,13 @@ All notable changes to this project will be documented in this file.
 # Changelog
 
 ## [Unreleased]
+## [0.13.4] 02.02.2024
+
+### Fixed
+- In `exec_in_executor()` changed
+`wrapped_future.add_done_callback(lambda wf: _handle_future_exception(wf, delay=0.1))`
+to
+`wrapped_future.add_done_callback(lambda _: _handle_future_exception(wrapped_future, delay=0.1))`
 
 ## [0.13.3] 02.02.2024
 
