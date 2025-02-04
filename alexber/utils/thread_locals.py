@@ -987,13 +987,20 @@ class FutureWrapper:
         return f"<FutureWrapper consumed={self._consumed} wrapping: {self._fut!r}>"
 
 
-def _check_and_log_exception(wrapper: FutureWrapper):
+def check_and_log_exception(wrapper: FutureWrapper):
     """
-    Check if the user never consumed the result. If so, and if an exception occurred,
-    log it.
+    Check a wrapped future for unconsumed exceptions and log them if present.
+
+    This function inspects the underlying future (accessed via the `wrapper`) without marking
+    it as consumed. If the future is complete but its result has not been retrieved (i.e., not
+    consumed), the function attempts to obtain any exception that may have occurred. If an
+    exception is found, it is logged to help identify errors in tasks whose results were never
+    explicitly handled.
+
+    Args:
+        wrapper: An instance of FutureWrapper that encapsulates an asyncio Future.
     """
-    # Note: we check the underlying future directly so that we don’t
-    # accidentally mark it as consumed.
+    # Note: We check the underlying future directly to avoid accidentally marking it as consumed.
     if not wrapper._consumed and wrapper._fut.done():
         try:
             exc = wrapper._fut.exception()
@@ -1005,13 +1012,22 @@ def _check_and_log_exception(wrapper: FutureWrapper):
 
 
 
-def _handle_future_exception(wrapper: FutureWrapper, delay: float = 0):
+def handle_future_exception(future, delay: float = 0):
     """
-    Schedule a callback to check if the wrapper was consumed.
-    The delay (in seconds) allows a small window for an awaiting consumer.
+    Schedule a callback to log any unconsumed exception from a future.
+
+    This function schedules a callback,
+    after a specified delay (in seconds), to check whether the result of the future has been
+    consumed. If the future completed with an exception that was never retrieved, the exception
+    will be logged. This is particularly useful for detecting errors in fire-and-forget tasks.
+
+    Args:
+        future: The asyncio Future to be monitored.
+        delay: The delay in seconds before performing the check.
     """
     loop = asyncio.get_running_loop()
-    loop.call_later(delay, _check_and_log_exception, wrapper)
+    wrapper = FutureWrapper(future)
+    loop.call_later(delay, check_and_log_exception, wrapper)
 
 
 
@@ -1123,13 +1139,13 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
 
         # run it in the same context in an executor guarded against StopIteration
         base_future = loop.run_in_executor(resolved_executor, lambda: ctx.run(wrapper))
-    # Wrap the raw future in our proxy.
-    wrapped_future = FutureWrapper(base_future)
+
     # Attach a done callback that will, after a short delay, log the exception
     # if the user never consumed the result.
-    # In lambda we're recieving base_future, so we're ignoring it and use our wrapped_future.
-    wrapped_future.add_done_callback(lambda _: _handle_future_exception(wrapped_future, delay=0.1))
-    return wrapped_future
+
+    base_future.add_done_callback(lambda fut: handle_future_exception(fut, delay=0.1))
+    return base_future
+
 
 def exec_in_executor_threading_future(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> Future:
     """
@@ -1212,6 +1228,27 @@ def get_main_event_loop():
     """
     return _EVENT_LOOP
 
+
+
+def _execute_task(task, task_future, executor):
+    """
+    Executes the given task in the executor and propagates the result or exception
+    to task_future using a safe pattern. It also wraps the underlying future using
+    FutureWrapper to log any unconsumed exceptions.
+    """
+    func, args, kwargs = task
+    loop = asyncio.get_running_loop()
+
+    base_future = loop.run_in_executor(executor, func, *args, **kwargs)
+
+    # Attach a done callback that will, after a short delay, log the exception
+    # if the user never consumed the result.
+    base_future.add_done_callback(lambda fut: handle_future_exception(fut, delay=0.1))
+    # Use the chain_future_results helper function to transfer the outcome
+    base_future.add_done_callback(lambda fut: chain_future_results(fut, task_future))
+    return base_future
+
+
 class AsyncExecutionQueue(RootMixin):
     """
     A class representing an asynchronous task queue that manages task execution using a specified executor.
@@ -1282,10 +1319,9 @@ class AsyncExecutionQueue(RootMixin):
                 if task is _CLOSE_SENTINEL:
                     return  # Exit the worker loop
 
-                ctx.run(_execute_task, task, task_future, self.executor)
-                # func, args, kwargs = task
-                # result_future = exec_in_executor(self.executor, func, *args, **kwargs)
-                # result_future.add_done_callback(lambda fut: chain_future_results(fut, task_future))
+                # Execute the task within the stored context.
+                ctx.run(self._execute_task, task, task_future)
+
             finally:
                 # Mark the task as done, regardless of what the task was
                 self.queue.task_done()
@@ -1334,17 +1370,24 @@ class AsyncExecutionQueue(RootMixin):
         fut = exec_in_executor_threading_future(executor, self.aadd_task, func, *args, **kwargs)
         return fut
 
-
     async def aclose(self):
         """
         Asynchronously closes the queue and waits for the worker to finish processing.
 
         This method signals the worker to stop processing tasks and waits for the worker task to complete.
         """
-        await self.queue.put((_CLOSE_SENTINEL, None))
+
+        # Cancel all tasks waiting in the queue.
+        while not self.queue.empty():
+            _, task_future, _ = self.queue.get_nowait()
+            if task_future and not task_future.done():
+                task_future.cancel()  # Mark the future as cancelled.
+            self.queue.task_done()  # Manually mark as done.
+
+        # Now, signal the worker to exit.
+        await self.queue.put((_CLOSE_SENTINEL, None, copy_context()))
         if self._worker_task:
             await self._worker_task
-
 
 
 

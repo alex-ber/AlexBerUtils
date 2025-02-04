@@ -12,12 +12,33 @@ All notable changes to this project will be documented in this file.
 # Changelog
 
 ## [Unreleased]
-## [0.13.5] 04.02.2024
+## [0.13.6] 04.02.2024
 
 ### Fixed
+
+- **_execute_task Enhancements:** 'AsyncExecutionQueue'
+  - Added a callback to check and log unconsumed exceptions by calling `handle_future_exception()` with a 0.1-second delay.
+  - Integrated the `chain_future_results()` helper function as a callback to propagate the result or exception to the target `task_future`.
+
+- **Worker Exception Handling:**
+  - Enhanced the `worker()` method to include exception handling around task execution, ensuring that any issues during task processing are properly caught and handled.
+
+- **Graceful Shutdown Improvements:**
+  - Updated the `aclose()` method to cancel all tasks waiting in the queue before signaling the worker to exit, ensuring that no pending tasks remain unprocessed during shutdown.
+
+
+### Added
+
+- **New Future Exception Handling Function:**
+  - Added the `handle_future_exception()` function, which schedules a callback to check if the future was consumed after a given delay. This function wraps the provided future in a `FutureWrapper` and uses `_check_and_log_exception` to log any unconsumed exceptions.
+
+
+## [0.13.5] 04.02.2024  
+
+### Fixed
+
 - Resolved issue with `copy_context()` loss when passing messages via the 
 `AsyncExecutionQueue`.
-
 
 
 ## [0.13.4] 02.02.2024
