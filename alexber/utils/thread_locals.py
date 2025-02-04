@@ -1320,7 +1320,7 @@ class AsyncExecutionQueue(RootMixin):
                     return  # Exit the worker loop
 
                 # Execute the task within the stored context.
-                ctx.run(_execute_task, task, task_future)
+                ctx.run(_execute_task, task, task_future, self.executor)
 
             finally:
                 # Mark the task as done, regardless of what the task was
