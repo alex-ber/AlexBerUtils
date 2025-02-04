@@ -1239,7 +1239,7 @@ def _execute_task(task, task_future, executor):
     func, args, kwargs = task
     loop = asyncio.get_running_loop()
 
-    base_future = loop.run_in_executor(executor, func, *args, **kwargs)
+    base_future = exec_in_executor(executor, func, *args, **kwargs)
 
     # Attach a done callback that will, after a short delay, log the exception
     # if the user never consumed the result.
