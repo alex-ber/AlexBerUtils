@@ -12,6 +12,14 @@ All notable changes to this project will be documented in this file.
 # Changelog
 
 ## [Unreleased]
+## [0.13.5] 04.02.2024
+
+### Fixed
+- Resolved issue with `copy_context()` loss when passing messages via the 
+`AsyncExecutionQueue`.
+
+
+
 ## [0.13.4] 02.02.2024
 
 ### Fixed
@@ -74,7 +82,7 @@ ensuring better clarity when multiple callbacks are involved.
   - Ensured that the original context is preserved when running coroutines in threads, preventing the loss of `ContextVar` values across asynchronous boundaries.
 
 - **StopIteration Handling for Coroutines:**
-  - Added a `_coro_wrapper` to handle `StopIteration` exceptions in coroutines, converting them into `RuntimeError`. This prevents `asyncio.Future` from hanging indefinitely when `StopIteration` is raised in a coroutine running in a separate thread.
+  - Added a `_coro_wrapper` to +handle `StopIteration` exceptions in coroutines, converting them into `RuntimeError`. This prevents `asyncio.Future` from hanging indefinitely when `StopIteration` is raised in a coroutine running in a separate thread.
 
 
 ### Added

@@ -1277,13 +1277,15 @@ class AsyncExecutionQueue(RootMixin):
         Execute a function or coroutine within a given executor while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries.
         """
         while True:
-            task, task_future = await self.queue.get()
+            task, task_future, ctx = await self.queue.get()
             try:
                 if task is _CLOSE_SENTINEL:
                     return  # Exit the worker loop
-                func, args, kwargs = task
-                result_future = exec_in_executor(self.executor, func, *args, **kwargs)
-                result_future.add_done_callback(lambda fut: chain_future_results(fut, task_future))
+
+                ctx.run(_execute_task, task, task_future, self.executor)
+                # func, args, kwargs = task
+                # result_future = exec_in_executor(self.executor, func, *args, **kwargs)
+                # result_future.add_done_callback(lambda fut: chain_future_results(fut, task_future))
             finally:
                 # Mark the task as done, regardless of what the task was
                 self.queue.task_done()
@@ -1303,8 +1305,9 @@ class AsyncExecutionQueue(RootMixin):
         Returns:
             asyncio.Future: A future representing the execution of the function or coroutine.
         """
+        ctx = copy_context()  # Copy context at submission
         future = asyncio.get_running_loop().create_future()
-        await self.queue.put(((func, args, kwargs), future))
+        await self.queue.put(((func, args, kwargs), future, ctx))
         return future
 
     def add_task(self, executor, func, /, *args, **kwargs):
