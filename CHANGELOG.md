@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 # Changelog
 
 ## [Unreleased]
-## [0.13.6] 04.02.2024
+## [0.13.7] 04.02.2024
 
 ### Fixed
 
