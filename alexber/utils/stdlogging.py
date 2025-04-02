@@ -10,6 +10,21 @@ from .thread_locals import validate_param
 # https://stackoverflow.com/questions/47325506/making-python-loggers-log-all-stdout-and-stderr-messages 
 # Quote: "But be careful to capture stdout because it's very fragile"
 
+def _coerse_log_level(log_level):
+    if log_level is None:
+        raise ValueError("logger_level can't be None")
+
+    ret = log_level
+    if isinstance(log_level, str):
+        level_name = log_level.upper()
+        ret = logging.getLevelName(level_name)
+        if not isinstance(ret, int):
+            raise ValueError(f"Invalid logging level string provided: '{log_level}'")
+    elif not isinstance(log_level, int):
+        raise TypeError(f"log_level must be an integer or a string, not {type(log_level).__name__}")
+
+    return ret
+
 
 class StreamToLogger:
     """
@@ -26,7 +41,7 @@ class StreamToLogger:
 
         self.logger = kwargs.pop('logger')
         validate_param(self.logger, "logger")
-        self.log_level = kwargs.pop('log_level', kwargs.pop('logger_level', logging.DEBUG))
+        self.log_level = _coerse_log_level(kwargs.pop('log_level', kwargs.pop('logger_level', logging.DEBUG)))
         self.stream = kwargs.pop('stream')
         validate_param(self.stream, "stream")
 
@@ -73,5 +88,6 @@ def initStream(logger=None, logger_level=logging.ERROR, stream_getter=None, stre
     elif isinstance(adapter_cls, str):
         adapter_cls = importer(adapter_cls)
 
+    logger_level = _coerse_log_level(logger_level)
     sl = adapter_cls(logger=logger, stream=stream, logger_level=logger_level)
     stream_setter(sl)

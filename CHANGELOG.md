@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.13.11] 02.04.2024
+
+### Changed
+
+- Accept String Log Levels in `initStream`, `StreamToLogger`. Now, they accepts `logger_level`
+  specified as case-insensitive strings (e.g., `"INFO"`, `"DEBUG"`) in addition to
+  standard integer constants (e.g., `logging.INFO`).
+
 ## [0.13.10] 02.04.2024
 
 ### Changed

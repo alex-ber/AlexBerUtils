@@ -4,7 +4,7 @@ import setuptools
 from setuptools import setup
 
 # VERSION should be defined before importing UploadCommand
-VERSION = '0.13.10'
+VERSION = '0.13.11'
 from alexber.utils import UploadCommand
 
 NAME = 'alex_ber_utils'
