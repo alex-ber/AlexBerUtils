@@ -1,6 +1,8 @@
 import logging
 import sys
-from . importer import importer
+from .importer import importer
+from .thread_locals import validate_param
+
 
 # This modules is based upon https://github.com/fx-kirin/py-stdlogging/blob/master/stdlogging.py
 # See also https://github.com/fx-kirin/py-stdlogging/pull/1.
@@ -8,9 +10,6 @@ from . importer import importer
 # https://stackoverflow.com/questions/47325506/making-python-loggers-log-all-stdout-and-stderr-messages 
 # Quote: "But be careful to capture stdout because it's very fragile"
 
-def _validate_param(d, param_name):
-    if d is None:
-        raise ValueError(f"Expected '{param_name} param not found")
 
 class StreamToLogger:
     """
@@ -25,24 +24,21 @@ class StreamToLogger:
         :param log_level: Optional. If not supplied, logging.DEBUG will be used.
         """
 
-        _validate_param(kwargs, 'logger')
-        _validate_param(kwargs, 'log_level')
-        _validate_param(kwargs, 'stream')
-
         self.logger = kwargs.pop('logger')
-        self.log_level = kwargs.pop('log_level', logging.DEBUG)
+        validate_param(self.logger, "logger")
+        self.log_level = kwargs.pop('log_level', kwargs.pop('logger_level', logging.DEBUG))
         self.stream = kwargs.pop('stream')
+        validate_param(self.stream, "stream")
 
     def write(self, lines):
         if lines:
-            lines = lines+'\n'
+            lines = lines + '\n'
             for line in lines.split('\n'):
                 if line:
                     self.logger.log(self.log_level, line.rstrip())
 
     def flush(self):
         self.stream.flush()
-
 
 
 def initStream(logger=None, logger_level=logging.ERROR, stream_getter=None, stream_setter=None, adapter_cls=None):

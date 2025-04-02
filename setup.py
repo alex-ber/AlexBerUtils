@@ -3,40 +3,39 @@ import os
 import setuptools
 from setuptools import setup
 
-
-#VERSION should be defined before importing UploadCommand
-VERSION = '0.13.9'
+# VERSION should be defined before importing UploadCommand
+VERSION = '0.13.10'
 from alexber.utils import UploadCommand
+
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
 VCS_URL = 'https://github.com/alex-ber/AlexBerUtils'
 DESCRIPTION = 'AlexBerUtils is collection of the small utilities'
 AUTHOR = 'Alexander Berkovich'
 
-
 base_dir = os.path.dirname(os.path.realpath(__file__))
+
 
 def get_content(filename):
     with open(os.path.join(base_dir, filename)) as f:
         content = f.read().splitlines()
     return content
 
+
 install_requires = get_content('requirements.txt')
 tests_require = get_content('requirements-tests.txt')
 
 extras = {
-    'fabric' : get_content('req-fabric.txt'),
-    'yaml' : get_content('req-yml.txt'),
-    'yml' : get_content('req-yml.txt'),
-    'env' : get_content('req-env.txt'),
-    'np' : get_content('req-np.txt'),
+    'fabric': get_content('req-fabric.txt'),
+    'yaml': get_content('req-yml.txt'),
+    'yml': get_content('req-yml.txt'),
+    'env': get_content('req-env.txt'),
+    'np': get_content('req-np.txt'),
     'tests': tests_require,
-    'piptools' : get_content('req-piptools.txt')
+    'piptools': get_content('req-piptools.txt')
 }
 
 lnk_data = os.path.join('alexber', SHORT_NAME, 'data')
-
-
 
 try:
     try:
