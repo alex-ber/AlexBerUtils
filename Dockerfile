@@ -12,6 +12,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     UV_PYTHON_INSTALL_DIR=/opt/python
 
 
+
+
 WORKDIR /app
 
 
@@ -28,17 +30,22 @@ RUN set -ex && \
 RUN set -ex && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        nano && \
+        nano \
+        gcc \
+        g++ \
+        python3-dev && \
     rm -rf /var/lib/apt/lists/* && \
     echo 'set syntax "none"' >> /nanorc && \
     # Have uv fetch Python 3.10.20 and create a blank virtual environment \
     uv venv --python 3.10.20 /app/.venv
 
 
+
+
 RUN set -ex && \
      # latest pip,setuptools,wheel
-     # #uv run python -m piptools compile --no-strip-extras requirements.in \
-     uv pip install --no-cache-dir pip==26.2.1 setuptools==80.9.0 pip-tools==7.6.1 && \
+     # uv run python -m piptools compile --no-strip-extras --output-file=requirements.all requirements.in \
+     uv pip install --no-cache-dir pip==26.2.1 setuptools==80.9.0 pip-tools==7.6.1 wheel==0.48.0 click==8.4.2 tomli==2.4.1 && \
      uv pip install --no-cache-dir \
         -r requirements.txt \
         -r requirements-env.txt \
@@ -94,8 +101,8 @@ CMD ["sleep", "infinity"]
 
 
 #docker exec -it $(docker ps -q -n=1) bash
-#docker tag utils-i alexberkovich/alex_ber_utils:0.14.0a2
+#docker tag utils-i alexberkovich/alex_ber_utils:0.14.0
 #docker tag utils-i alexberkovich/alex_ber_utils:latest
-#docker push alexberkovich/alex_ber_utils:0.14.0a2
+#docker push alexberkovich/alex_ber_utils:0.14.0
 #docker push alexberkovich/alex_ber_utils:latest
 # EOF

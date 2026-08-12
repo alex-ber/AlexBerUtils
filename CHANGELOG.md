@@ -7,28 +7,25 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 
-## [0.14.0a2] 12.08.2025
+## [0.14.0] 12.08.2025
+
+### Removed
+
+- **BREAKING CHANGE** `UploadCommand` and `CleanCommand` where removed because it breaks modern built system. 
 
 ### Changed
 
-- **BREAKING CHANGE**. setup.py is changed, it uses `setuptools.find_namespace_packages()` 
+- **BREAKING CHANGE**. `setup.py` is changed, it uses `setuptools.find_namespace_packages()` 
 instead of `setuptools.find_packages()`
 - `alexber` is defined as implicit namespace_packages aka PEP 420 namespace, no `pkg_resources` 
 is used anymore.
 - **BREAKING CHANGE** `UploadCommand` are no longer top-level export, it is internat for this project only
 and was moved into `setup_commands.py` alongise `setup.py`. 
 - **BREAKING CHANGE** `pip`, `pip-tools` and `setuptools` version was bumped up. 
-
-### Removed
-
-- **BREAKING CHANGE** `UploadCommand` and `CleanCommand` where removed because it breaks modern built system. 
-
-## [0.14.0a] 12.08.2025
-
-### Changed
-
-- **BREAKING CHANGE**. Dockerfile is rewritten, because base image was removed.
+- **BREAKING CHANGE**. `Dockerfile` is rewritten, because base image was removed.
 - **BREAKING CHANGE**. Official support Python 3.10-Python 3.14.
+- `pyproject.toml` is enhanced.
+- - **BREAKING CHANGE** `randoms.py` no uses latest numpy 2.5.2. The API itself didn't changed.
 
 ### Added
 - `literar_converter.py` - it is totally decoupled, enhanced and rewritten `AppConfParser::mask_value()`

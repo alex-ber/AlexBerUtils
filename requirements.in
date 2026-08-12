@@ -1,16 +1,23 @@
+pyyaml==6.0.1
 python-dotenv>=1.0.0
+cffi>=2.0.0
 fabric>=2.5.0
 pyOpenSSL >= 23.3.0
 cryptography >= 41.0.7
-multidispatch>=0.2
-pip-tools>=7.3.0
-PyYAML==6.0.1
+numpy==2.2.6 ; python_version >= '3.10' and python_version < '3.12'
+numpy==2.5.2 ; python_version >= '3.12'
+pip-tools>=7.6.1
+packaging>=26.3
+build>=1.5.0
+wheel>=0.48.0
+tomli>=2.4.1
+click>=8.4.2
+structlog>=26.1.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-assume==2.3.3
 pytest-mock==3.12.0
+packaging>=26.3
+six>=1.16.0
 HiYaPyCo>=0.4.16
 Jinja2>1
-packaging==23.2
-numpy>=1.24.4
-structlog>=26.1.0

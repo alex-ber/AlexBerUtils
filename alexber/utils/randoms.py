@@ -160,10 +160,12 @@ if USE_NUMPY:
 
             super().__init__(**kwargs)
 
+            # Modern standard API: replaces legacy `np.random.RandomState()`
+            # with faster/safer `np.random.default_rng()` in NumPy 2.x natively
             if random_state is not None:
                 self.random_state = random_state
             else:
-                self.random_state = np.random.RandomState(random_seed)
+                self.random_state = np.random.default_rng(random_seed)
 
         def get_sample(self) -> Union[float, 'np.float32', 'np.float64']:
             """
@@ -173,6 +175,8 @@ if USE_NUMPY:
             """
             logger.info("get_sample()")
 
+            # Method signature parameters dynamically map to both a passed-in Generator
+            # and a backward-compatible legacy RandomState equally well without changes.
             distribution_methods = {
                 'lognormvariate': lambda: self.random_state.lognormal(math.log(self.scale), self.shape),
                 'normalvariate': lambda: self.random_state.normal(self.scale, self.shape),

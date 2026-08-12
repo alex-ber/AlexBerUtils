@@ -15,6 +15,6 @@ if __name__ == "__main__":
 #uv run python -m twine upload dist/*
 #python.use.targets.api=false
 
-
+#uv run python -u check_all.py
 
 #rm -rf build dist *.egg-info
