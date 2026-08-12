@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+
+## [0.14.0a2] 12.08.2025
+
+### Changed
+
+- **BREAKING CHANGE**. setup.py is changed, it uses `setuptools.find_namespace_packages()` 
+instead of `setuptools.find_packages()`
+- `alexber` is defined as implicit namespace_packages aka PEP 420 namespace, no `pkg_resources` 
+is used anymore.
+- **BREAKING CHANGE** `UploadCommand` are no longer top-level export, it is internat for this project only
+and was moved into `setup_commands.py` alongise `setup.py`. 
+- **BREAKING CHANGE** `pip`, `pip-tools` and `setuptools` version was bumped up. 
+
+### Removed
+
+- **BREAKING CHANGE** `UploadCommand` and `CleanCommand` where removed because it breaks modern built system. 
+
 ## [0.14.0a] 12.08.2025
 
 ### Changed

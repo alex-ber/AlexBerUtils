@@ -3,9 +3,8 @@ import os
 import setuptools
 from setuptools import setup
 
-# VERSION should be defined before importing UploadCommand
-VERSION = '0.14.0a'
-from alexber.utils import UploadCommand
+VERSION = '0.14.0a2'
+
 
 NAME = 'alex_ber_utils'
 SHORT_NAME = 'utils'
@@ -36,17 +35,7 @@ extras = {
     'structlog': get_content('req-structlog.txt')
 }
 
-lnk_data = os.path.join('alexber', SHORT_NAME, 'data')
-
-try:
-    try:
-        os.unlink(lnk_data)
-    except OSError:
-        pass
-
-    os.symlink(os.path.join('..', '..', 'data'), lnk_data)
-
-    setup(
+setup(
         name=NAME,
         version=VERSION,
         url=VCS_URL,
@@ -57,7 +46,7 @@ try:
             open(os.path.join(base_dir, "CHANGELOG.md"), "r").read()
         ]),
         long_description_content_type="text/markdown",
-        packages=setuptools.find_packages(exclude=('tests', 'tests.*', 'data')),
+        packages=setuptools.find_namespace_packages(exclude=('tests', 'tests.*', 'data')),
         # see https://stackoverflow.com/a/26533921
         # see also https://stackoverflow.com/questions/24347450/how-do-you-add-additional-files-to-a-wheel
         # data_files=[(f'Lib/site-packages/alexber/{SHORT_NAME}', ['data/config.yml', 'data/requirements-src.txt',
@@ -66,25 +55,21 @@ try:
         #             ],
         # package_data={'alexber.{SHORT_NAME}': ['data/*', 'data/config.yml',
         #                                   'data/requirements-stc.txt', 'data/requirements-dest.txt']},
-        package_data={f'alexber.{SHORT_NAME}': ['data/*'
-                                                ]},
-        include_package_data=True,
         install_requires=install_requires,
         # entry_points={"console_scripts": [
         #     f"python-{SHORT_NAME}-tool=alexber.{SHORT_NAME}.data.__main__:main"
         # ]},
         # $ setup.py publish support.
         # python3 setup.py upload
-        cmdclass={
-            'upload': UploadCommand,
-        },
+        # cmdclass={
+        #     'upload': UploadCommand,
+        # },
         extras_require=extras,
         test_suite="tests",
         tests_require=tests_require,
         setup_requires=['pytest-runner'],
-        namespace_packages=('alexber',),
         license='Apache 2.0',
-        keywords='tools tool utils enum enums threadlocal UploadCommand upload uuid1mc uuid UUID UUID1 UUID4 UU1DMC ' \
+        keywords='tools tool utils enum enums threadlocal  uuid1mc uuid UUID UUID1 UUID4 UU1DMC ' \
                  'issetdescriptor ismethod ' \
                  'importer new_instance safe_eval is_empty parse_boolean Properties java.util.Properties',
         classifiers=[
@@ -119,9 +104,3 @@ try:
         zip_safe=False,
 
     )
-
-finally:
-    try:
-        os.unlink(lnk_data)
-    except OSError:
-        pass
