@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.14.0a] 12.08.2025
+
+### Changed
+
+- **BREAKING CHANGE**. Dockerfile is rewritten, because base image was removed.
+- **BREAKING CHANGE**. Official support Python 3.10-Python 3.14.
+
+### Added
+- `literar_converter.py` - it is totally decoupled, enhanced and rewritten `AppConfParser::mask_value()`
+in `init_app_conf.py` or `safe_eval()` in `parsers.py`. These are very old modules, that read configuration
+from `yml` files. Nowadays, `dotenv` and/or `os.environ` directly is used to fetch the configuration.  
+It is better be used as `parse_str(os.environ.get('MAX_RETRY_ATTEMPTS', 5))` (or `convert_scalar()` if
+you're sure this is not list or another complex data-structure, but I recommend to always use `parse_str()`
+for readability) - both methods from new `literar_converter.py` module. 
+
+
 ## [0.13.11] 02.04.2024
 
 ### Changed

@@ -13,3 +13,4 @@ HiYaPyCo>=0.4.16
 Jinja2>1
 packaging==23.2
 numpy>=1.24.4
+structlog>=26.1.0

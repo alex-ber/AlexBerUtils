@@ -4,7 +4,7 @@ import setuptools
 from setuptools import setup
 
 # VERSION should be defined before importing UploadCommand
-VERSION = '0.13.11'
+VERSION = '0.14.0a'
 from alexber.utils import UploadCommand
 
 NAME = 'alex_ber_utils'
@@ -32,7 +32,8 @@ extras = {
     'env': get_content('req-env.txt'),
     'np': get_content('req-np.txt'),
     'tests': tests_require,
-    'piptools': get_content('req-piptools.txt')
+    'piptools': get_content('req-piptools.txt'),
+    'structlog': get_content('req-structlog.txt')
 }
 
 lnk_data = os.path.join('alexber', SHORT_NAME, 'data')
@@ -98,11 +99,11 @@ try:
             # https://en.wikipedia.org/wiki/CPython#Version_history
             'Programming Language :: Python',
             'Programming Language :: Python :: 3 :: Only',
-            'Programming Language :: Python :: 3.8',
-            'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
             'Programming Language :: Python :: 3.11',
             'Programming Language :: Python :: 3.12',
+            'Programming Language :: Python :: 3.13',
+            'Programming Language :: Python :: 3.14',
             'Programming Language :: Python :: Implementation :: CPython',
             "Topic :: Utilities",
             'Topic :: Software Development :: Libraries :: Python Modules',
@@ -114,7 +115,7 @@ try:
             'Operating System :: Unix',
             'Natural Language :: English',
         ],
-        python_requires='>=3.8',
+        python_requires='>=3.10',
         zip_safe=False,
 
     )
