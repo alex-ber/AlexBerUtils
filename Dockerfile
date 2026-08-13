@@ -101,8 +101,8 @@ CMD ["sleep", "infinity"]
 
 
 #docker exec -it $(docker ps -q -n=1) bash
-#docker tag utils-i alexberkovich/alex_ber_utils:0.14.0
+#docker tag utils-i alexberkovich/alex_ber_utils:0.15.1
 #docker tag utils-i alexberkovich/alex_ber_utils:latest
-#docker push alexberkovich/alex_ber_utils:0.14.0
+#docker push alexberkovich/alex_ber_utils:0.15.1
 #docker push alexberkovich/alex_ber_utils:latest
 # EOF

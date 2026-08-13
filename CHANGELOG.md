@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.15.1] 13.08.2025
+
+### Fixed
+
+- `randoms.py` - TypeError: unsupported operand type(s) for |: 'type' and 'str' - bug with Type hints 
+introduced in previouse release. To support `float | 'np.float32'` we should add 
+`from __future__ import annotations` at the top level of the file. Weired corner case.
+
+## [0.15.0] 13.08.2025
+
+### Changed
+
+- `in_memory_similarity_search.py` - no API or logic change. Changes in type hints for forward compatibility.
+- `randoms.py` - no API change. Changes in type hints for forward compatibility.
+- **BREAKING CHANGE** `randoms.py` - fixing mathematical inconsistencies in the standard `random` fallback implementation.
+  * **`expovariate` distribution:** Fixed a bug where the fallback standard library implementation produced incorrect distribution means. NumPy's `exponential(scale)` treats the `scale` parameter as the **mean**, whereas the standard `random.expovariate(lambd)` function expects `lambd` to be **`1.0 / mean`**. Previously, the `scale` parameter was passed directly (e.g., passing `scale=2.0` resulted in a mean of `0.5`). This has been corrected to `1.0 / scale` to strictly align with NumPy's mathematical behavior.
+  * **`weibullvariate` distribution:** Fixed swapped arguments in the fallback implementation. The standard library's `random.weibullvariate(alpha, beta)` expects `alpha` to be the **scale** and `beta` to be the **shape**. The previous implementation erroneously passed them in the reverse order (`shape, scale`). It has now been corrected to `random.weibullvariate(scale, shape)`, bringing it in line with the intended logic and NumPy's equivalent (`weibull(shape) * scale`).
 
 ## [0.14.0] 12.08.2025
 

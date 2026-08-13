@@ -3,7 +3,7 @@ import os
 import setuptools
 from setuptools import setup
 
-VERSION = '0.14.0'
+VERSION = '0.15.1'
 
 
 NAME = 'alex_ber_utils'

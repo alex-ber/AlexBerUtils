@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import logging
 import random as _random
 import math
 import warnings
-from typing import Union, Optional
 from .warning import OptionalNumpyWarning
 
 # Initialize a logger for this module
@@ -14,8 +15,8 @@ class SamplingError(Exception):
     Attributes:
         distribution (str): The distribution from which sampling was attempted.
         retries (int): The number of retries attempted before failure.
-        lower_bound (Optional[float]): The lower bound for the sampled value.
-        upper_bound (Optional[float]): The upper bound for the sampled value.
+        lower_bound (float | None): The lower bound for the sampled value.
+        upper_bound (float | None): The upper bound for the sampled value.
     """
     def __init__(self, message, distribution, retries, lower_bound, upper_bound):
         """
@@ -76,13 +77,13 @@ class BaseSampler:
 
     Attributes:
         distribution (str): The distribution to sample from.
-        shape (Union[float, np.float32, np.float64]): Shape parameter for the distribution, controlling the spread and skewness.
+        shape (float | np.float32 | np.float64): Shape parameter for the distribution, controlling the spread and skewness.
                        For log-normal, it represents sigma of the underlying normal distribution.
-        scale (Union[float, np.float32, np.float64]): Scale parameter for the distribution, shifting the distribution and determining its median.
+        scale (float | np.float32 | np.float64): Scale parameter for the distribution, shifting the distribution and determining its median.
                        For log-normal, it represents exp(mu) of the underlying normal distribution.
                        For exponential, it is used directly as the mean of the distribution.
-        lower_bound (Optional[Union[float, np.float32, np.float64]]): Lower bound for the sampled value. Default is None (interpreted as unbounded).
-        upper_bound (Optional[Union[float, np.float32, np.float64]]): Upper bound for the sampled value. Default is None (interpreted as unbounded).
+        lower_bound (float | np.float32 | np.float64 | None): Lower bound for the sampled value. Default is None (interpreted as unbounded).
+        upper_bound (float | np.float32 | np.float64 | None): Upper bound for the sampled value. Default is None (interpreted as unbounded).
         max_retries (int): Maximum number of attempts to sample a valid value. Default is 1000.
     """
 
@@ -134,7 +135,7 @@ class BaseSampler:
         if seed is not None and instance is not None:
             raise ValueError("Specify only one of random_seed or random_state/random_instance")
 
-    def get_sample(self) -> Union[float, 'np.float32', 'np.float64']:
+    def get_sample(self) -> float | 'np.float32' | 'np.float64':
         """
         Get a sample from the specified distribution.
 
@@ -167,7 +168,7 @@ if USE_NUMPY:
             else:
                 self.random_state = np.random.default_rng(random_seed)
 
-        def get_sample(self) -> Union[float, 'np.float32', 'np.float64']:
+        def get_sample(self) -> float | 'np.float32' | 'np.float64':
             """
             Get a sample from the specified distribution using NumPy.
 
@@ -226,7 +227,7 @@ else:
             else:
                 self.random_instance = _random.Random(random_seed)
 
-        def get_sample(self) -> Union[float, 'np.float32', 'np.float64']:
+        def get_sample(self) -> float | 'np.float32' | 'np.float64':
             """
             Get a sample from the specified distribution using the standard random module.
 
@@ -237,13 +238,13 @@ else:
             distribution_methods = {
                 'lognormvariate': lambda: self.random_instance.lognormvariate(math.log(self.scale), self.shape),
                 'normalvariate': lambda: self.random_instance.normalvariate(self.scale, self.shape),
-                'expovariate': lambda: self.random_instance.expovariate(self.scale),
+                'expovariate': lambda: self.random_instance.expovariate(1.0 / self.scale),
                 'vonmisesvariate': lambda: self.random_instance.vonmisesvariate(self.scale, self.shape),
                 'gammavariate': lambda: self.random_instance.gammavariate(self.shape, self.scale),
                 'gauss': lambda: self.random_instance.gauss(self.scale, self.shape),
                 'betavariate': lambda: self.random_instance.betavariate(self.shape, self.scale),
                 'paretovariate': lambda: self.random_instance.paretovariate(self.shape),
-                'weibullvariate': lambda: self.random_instance.weibullvariate(self.shape, self.scale)
+                'weibullvariate': lambda: self.random_instance.weibullvariate(self.scale, self.shape)
             }
 
             for _ in range(self.max_retries):

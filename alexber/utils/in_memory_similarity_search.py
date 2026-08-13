@@ -15,10 +15,9 @@ It is provided mainly for educational purposes and for tests. It is not intended
 """
 
 import logging
-from typing import List, Tuple, Dict, Protocol
-
 logger = logging.getLogger(__name__)
 
+from typing import Protocol
 
 # For example
 # from langchain_openai import OpenAIEmbeddings
@@ -28,15 +27,15 @@ class Embeddings(Protocol):
     Protocol for embedding classes.
     """
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """
         Embed a list of documents (texts) into a list of vectors.
 
         Args:
-            texts (List[str]): List of documents to embed.
+            texts (list[str]): list of documents to embed.
 
         Returns:
-            List[List[float]]: List of embedding vectors.
+            list[list[float]]: list of embedding vectors.
         """
         ...
 
@@ -55,15 +54,15 @@ class SimpleEmbeddings:
         """
         self.dims = dims
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """
         Embed a list of documents (texts) into a list of vectors.
 
         Args:
-            texts (List[str]): List of documents to embed.
+            texts (list[str]): list of documents to embed.
 
         Returns:
-            List[List[float]]: List of embedding vectors.
+            list[list[float]]: list of embedding vectors.
         """
         embeddings = []
         for text in texts:
@@ -108,20 +107,20 @@ def find_most_similar_with_scores(
         embeddings: Embeddings,
         input_text: str,
         /,
-        *args: List[str],
+        *args: str,
         verbose=True
-) -> List[Tuple[Tuple[int, str], float]]:
+) -> list[tuple[tuple[int, str], float]]:
     """
     Find the most similar texts to the input text with their similarity scores.
 
     Args:
         embeddings (Embeddings): Embedding class instance.
         input_text (str): Input text to compare.
-        *args (List[str]): List of texts to compare against.
+        *args (str): list of texts to compare against.
         verbose (bool): If True, logs additional information. Default is True.
 
     Returns:
-        List[Tuple[Tuple[int, str], float]]: A list of tuples where each tuple contains:
+        list[tuple[tuple[int, str], float]]: A list of tuples where each tuple contains:
             - A sub-tuple (index, text): index is the position of the text in the input list,
               and text is the corresponding text.
             - A float representing the similarity score.
@@ -131,12 +130,12 @@ def find_most_similar_with_scores(
     """
     logger.info("find_most_similar_with_scores()")
     if not args:
-        # List[Tuple[Tuple[int, str], float]]
+        # list[tuple[tuple[int, str], float]]
         # (i, example), score (-1, input_text), 0.0
         return [((-1, input_text), 0.0)]
 
     input_v: np.ndarray = _calc_embedding_as_matrix(embeddings, input_text)
-    example_embeddings_d: Dict[Tuple[int, str], np.ndarray] = {
+    example_embeddings_d: dict[tuple[int, str], np.ndarray] = {
         (i, example): _calc_embedding_as_matrix(embeddings, example)
         for i, example in enumerate(args)
     }
@@ -155,8 +154,8 @@ def find_most_similar_with_scores(
     similarities_matrix[np.isnan(similarities_matrix) | np.isinf(similarities_matrix)] = 0.0
 
     # Extract scores and sort
-    similarities_d: Dict[Tuple[int, str], float] = {key: similarities_matrix[0, idx] for idx, key in enumerate(example_embeddings_d.keys())}
-    sorted_similarities_l: List[Tuple[Tuple[int, str], float]] = sorted(similarities_d.items(), key=lambda item: item[1], reverse=True)
+    similarities_d: dict[tuple[int, str], float] = {key: similarities_matrix[0, idx] for idx, key in enumerate(example_embeddings_d.keys())}
+    sorted_similarities_l: list[tuple[tuple[int, str], float]] = sorted(similarities_d.items(), key=lambda item: item[1], reverse=True)
 
     if verbose:
         logger.info(f'Target is {input_text}')
@@ -170,24 +169,24 @@ def find_most_similar(
         embeddings: Embeddings,
         input_text: str,
         /,
-        *args: List[str],
+        *args: str,
         verbose=True
-) -> Tuple[int, str]:
+) -> tuple[int, str]:
     """
     Find the most similar text to the input text.
 
     Args:
         embeddings (Embeddings): Embedding class instance.
         input_text (str): Input text to compare.
-        *args (List[str]): List of texts to compare against.
+        *args (str): list of texts to compare against.
         verbose (bool): If True, logs additional information. Default is True.
 
     Returns:
-        Tuple[int, str]: A tuple containing the index and the most similar text.
+        tuple[int, str]: A tuple containing the index and the most similar text.
 
     If no comparison texts are provided (*args is empty), the function returns (some negative index, input_text).
     """
     logger.info("find_most_similar()")
-    sorted_similarities_l: List[Tuple[Tuple[int, str], float]] = \
+    sorted_similarities_l: list[tuple[tuple[int, str], float]] = \
         find_most_similar_with_scores(embeddings, input_text,*args, verbose=verbose)
     return sorted_similarities_l[0][0]
