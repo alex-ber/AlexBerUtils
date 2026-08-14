@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import logging
 import random as _random
 import math
 import warnings
 from .warning import OptionalNumpyWarning
 
-# Initialize a logger for this module
-logger = logging.getLogger(__name__)
 
 class SamplingError(Exception):
     """Custom exception raised when sampling fails after maximum retries.
@@ -47,7 +44,7 @@ class SamplingError(Exception):
                 f"retries={self.retries!r}, {bounds_info})")
 
 
-# Try to import NumPy
+# Try to import NumPy for performance boost
 try:
     import numpy as np
     USE_NUMPY = True
@@ -74,23 +71,25 @@ class BaseSampler:
         - 'betavariate': Beta distribution.
         - 'paretovariate': Pareto distribution.
         - 'weibullvariate': Weibull distribution.
+        - 'uniform': Uniform distribution.
 
     Attributes:
         distribution (str): The distribution to sample from.
-        shape (float | np.float32 | np.float64): Shape parameter for the distribution, controlling the spread and skewness.
+        shape (float | np.float32 | np.float64): Shape parameter for the distribution.
                        For log-normal, it represents sigma of the underlying normal distribution.
-        scale (float | np.float32 | np.float64): Scale parameter for the distribution, shifting the distribution and determining its median.
+        scale (float | np.float32 | np.float64): Scale parameter for the distribution.
                        For log-normal, it represents exp(mu) of the underlying normal distribution.
                        For exponential, it is used directly as the mean of the distribution.
-        lower_bound (float | np.float32 | np.float64 | None): Lower bound for the sampled value. Default is None (interpreted as unbounded).
-        upper_bound (float | np.float32 | np.float64 | None): Upper bound for the sampled value. Default is None (interpreted as unbounded).
+        lower_bound (float | np.float32 | np.float64 | None): Lower bound for the sampled value. Default is -inf.
+        upper_bound (float | np.float32 | np.float64 | None): Upper bound for the sampled value. Default is inf.
         max_retries (int): Maximum number of attempts to sample a valid value. Default is 1000.
     """
 
     # Class-level attribute for supported distributions
     supported_distributions = {
         'lognormvariate', 'normalvariate', 'expovariate', 'vonmisesvariate',
-        'gammavariate', 'gauss', 'betavariate', 'paretovariate', 'weibullvariate'
+        'gammavariate', 'gauss', 'betavariate', 'paretovariate', 'weibullvariate',
+        'uniform'
     }
 
     def __init__(self, **kwargs):
@@ -99,8 +98,6 @@ class BaseSampler:
 
         :param kwargs: Keyword arguments for initialization.
         """
-        logger.info("__init__()")
-
         self.distribution = kwargs.get('distribution', None)
         self.shape = kwargs.get('shape', None)
         self.scale = kwargs.get('scale', None)
@@ -111,19 +108,23 @@ class BaseSampler:
         self.validate_distribution()
         self.validate_bounds()
 
+        # This attribute will be configured in the subclass
+        self._sampling_func = None
+
     def validate_distribution(self):
-        """
-        Validate that the specified distribution is supported.
-        """
+        """Validate that the specified distribution is supported."""
         if self.distribution not in self.supported_distributions:
             raise ValueError(f"Unsupported distribution: {self.distribution}")
 
     def validate_bounds(self):
         """
         Validate that the lower bound is less than the upper bound.
+        In adition for 'uniform' distribution, lower_bound and upper_bound must be finite.
         """
         if not (self.lower_bound < self.upper_bound):
             raise ValueError("lower_bound must be less than upper_bound")
+        if self.distribution == 'uniform' and (math.isinf(self.lower_bound) or math.isinf(self.upper_bound)):
+            raise ValueError("For 'uniform' distribution, bounds must be finite.")
 
     def validate_random_parameters(self, seed, instance):
         """
@@ -137,17 +138,24 @@ class BaseSampler:
 
     def get_sample(self) -> float | 'np.float32' | 'np.float64':
         """
-        Get a sample from the specified distribution.
+        Get a sample from the specified distribution using common retry logic.
 
         :return: A sample from the specified distribution within the specified bounds.
         """
-        raise NotImplementedError("This method should be implemented by subclasses.")
+        for _ in range(self.max_retries):
+            sampled_value = self._sampling_func()
+            if self.lower_bound <= sampled_value <= self.upper_bound:
+                return sampled_value
+
+        raise SamplingError(
+            "Failed to sample a valid value within the specified bounds after max retries.",
+            self.distribution, self.max_retries, self.lower_bound, self.upper_bound
+        )
+
 
 if USE_NUMPY:
     class Sampler(BaseSampler):
-        """
-        A class to sample from various statistical distributions using NumPy.
-        """
+        """A class to sample from various statistical distributions using NumPy."""
 
         def __init__(self, **kwargs):
             """
@@ -160,47 +168,26 @@ if USE_NUMPY:
             self.validate_random_parameters(random_seed, random_state)
 
             super().__init__(**kwargs)
-
             # Modern standard API: replaces legacy `np.random.RandomState()`
             # with faster/safer `np.random.default_rng()` in NumPy 2.x natively
-            if random_state is not None:
-                self.random_state = random_state
-            else:
-                self.random_state = np.random.default_rng(random_seed)
+            self.random_state = random_state or np.random.default_rng(random_seed)
 
-        def get_sample(self) -> float | 'np.float32' | 'np.float64':
-            """
-            Get a sample from the specified distribution using NumPy.
-
-            :return: A sample from the specified distribution within the specified bounds.
-            """
-            logger.info("get_sample()")
-
-            # Method signature parameters dynamically map to both a passed-in Generator
-            # and a backward-compatible legacy RandomState equally well without changes.
-            distribution_methods = {
-                'lognormvariate': lambda: self.random_state.lognormal(math.log(self.scale), self.shape),
-                'normalvariate': lambda: self.random_state.normal(self.scale, self.shape),
-                'expovariate': lambda: self.random_state.exponential(self.scale),
-                'vonmisesvariate': lambda: self.random_state.vonmises(self.scale, self.shape),
-                'gammavariate': lambda: self.random_state.gamma(self.shape, self.scale),
-                'gauss': lambda: self.random_state.normal(self.scale, self.shape),
-                'betavariate': lambda: self.random_state.beta(self.shape, self.scale),
-                'paretovariate': lambda: self.random_state.pareto(self.shape),
-                'weibullvariate': lambda: self.random_state.weibull(self.shape) * self.scale
+            # Pre-configure the function mapping to improve performance
+            rs = self.random_state
+            dist_map = {
+                'lognormvariate': lambda: rs.lognormal(math.log(self.scale), self.shape),
+                'normalvariate': lambda: rs.normal(self.scale, self.shape),
+                'expovariate': lambda: rs.exponential(self.scale),
+                'vonmisesvariate': lambda: rs.vonmises(self.scale, self.shape),
+                'gammavariate': lambda: rs.gamma(self.shape, self.scale),
+                'gauss': lambda: rs.normal(self.scale, self.shape),
+                'betavariate': lambda: rs.beta(self.shape, self.scale),
+                'paretovariate': lambda: rs.pareto(self.shape),
+                'weibullvariate': lambda: rs.weibull(self.shape) * self.scale,
+                'uniform': lambda: rs.uniform(self.lower_bound, self.upper_bound)
             }
+            self._sampling_func = dist_map[self.distribution]
 
-            for _ in range(self.max_retries):
-                sampled_value = distribution_methods[self.distribution]()
-                if self.lower_bound <= sampled_value <= self.upper_bound:
-                    return sampled_value
-            raise SamplingError(
-                "Failed to sample a valid value within the specified bounds after max retries.",
-                self.distribution,
-                self.max_retries,
-                self.lower_bound,
-                self.upper_bound
-            )
 else:
     class Sampler(BaseSampler):
         """
@@ -221,40 +208,19 @@ else:
             self.validate_random_parameters(random_seed, random_instance)
 
             super().__init__(**kwargs)
+            self.random_instance = random_instance or _random.Random(random_seed)
 
-            if random_instance is not None:
-                self.random_instance = random_instance
-            else:
-                self.random_instance = _random.Random(random_seed)
-
-        def get_sample(self) -> float | 'np.float32' | 'np.float64':
-            """
-            Get a sample from the specified distribution using the standard random module.
-
-            :return: A sample from the specified distribution within the specified bounds.
-            """
-            logger.info("get_sample()")
-
-            distribution_methods = {
-                'lognormvariate': lambda: self.random_instance.lognormvariate(math.log(self.scale), self.shape),
-                'normalvariate': lambda: self.random_instance.normalvariate(self.scale, self.shape),
-                'expovariate': lambda: self.random_instance.expovariate(1.0 / self.scale),
-                'vonmisesvariate': lambda: self.random_instance.vonmisesvariate(self.scale, self.shape),
-                'gammavariate': lambda: self.random_instance.gammavariate(self.shape, self.scale),
-                'gauss': lambda: self.random_instance.gauss(self.scale, self.shape),
-                'betavariate': lambda: self.random_instance.betavariate(self.shape, self.scale),
-                'paretovariate': lambda: self.random_instance.paretovariate(self.shape),
-                'weibullvariate': lambda: self.random_instance.weibullvariate(self.scale, self.shape)
+            ri = self.random_instance
+            dist_map = {
+                'lognormvariate': lambda: ri.lognormvariate(math.log(self.scale), self.shape),
+                'normalvariate': lambda: ri.normalvariate(self.scale, self.shape),
+                'expovariate': lambda: ri.expovariate(1.0 / self.scale),
+                'vonmisesvariate': lambda: ri.vonmisesvariate(self.scale, self.shape),
+                'gammavariate': lambda: ri.gammavariate(self.shape, self.scale),
+                'gauss': lambda: ri.gauss(self.scale, self.shape),
+                'betavariate': lambda: ri.betavariate(self.shape, self.scale),
+                'paretovariate': lambda: ri.paretovariate(self.shape),
+                'weibullvariate': lambda: ri.weibullvariate(self.scale, self.shape),
+                'uniform': lambda: ri.uniform(self.lower_bound, self.upper_bound)
             }
-
-            for _ in range(self.max_retries):
-                sampled_value = distribution_methods[self.distribution]()
-                if self.lower_bound <= sampled_value <= self.upper_bound:
-                    return sampled_value
-            raise SamplingError(
-                "Failed to sample a valid value within the specified bounds after max retries.",
-                self.distribution,
-                self.max_retries,
-                self.lower_bound,
-                self.upper_bound
-            )
+            self._sampling_func = dist_map[self.distribution]

@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.15.2] 14.08.2025
+
+### Added
+
+- `randoms.py` - `uniform` distribution was added. Validation that bounds are finite for it was added too 
+
+### Removed
+
+- `randoms.py` - **BREAKING CHANGE** logging was removed for performance reasons.
+
+### Changed
+
+- `randoms.py` - refactoring was done. API remains the same, but some logic was moved to `BaseSampler`.
+The main reason was some performance boost and DRY principle.
+
 ## [0.15.1] 13.08.2025
 
 ### Fixed
