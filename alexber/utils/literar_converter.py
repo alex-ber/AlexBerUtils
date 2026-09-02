@@ -63,28 +63,74 @@ def _is_mapping(value: Any) -> bool:
 
 def _traverse_and_convert(obj: Any, is_raise_on_failure: bool, *enum_classes: type[Enum] | None) -> Any:
     """
-    Recursively traverse iterables and apply conversions.
-    Delegates all scalar types (including strings, bytes, time, etc.) to convert_scalar.
+    Traverses iterables and applies conversions in a single pass using an iterative DFS.
+
+    Eliminates recursion to prevent RecursionError on deeply nested structures
+    and strictly avoids the overhead of Python stack frame allocation per node.
     """
-    # 1. Handle dictionaries specifically to preserve key-value mappings
-    if _is_mapping(obj):
-        ret = {k: _traverse_and_convert(v, is_raise_on_failure, *enum_classes) for k, v in obj.items()}
-        return ret
 
-    # 2. If it's not iterable (which includes str, bytes, None, and custom scalars like Decimal/time),
-    # delegate to convert_scalar for type processing or fallback.
-    if not _is_iterable(obj):
-        ret = convert_scalar(obj, is_raise_on_failure, *enum_classes)
-        return ret
+    # 1. DUMMY ROOT TRICK
+    # A 1-element list acts as the root parent. This avoids edge cases
+    # for the top-level object and unifies the assignment logic below.
+    result_container: list[Any] = [None]
 
-    # 3. Process generic iterables using pythonic iteration
-    ret = []
-    for v in obj:
-        # Apply recursive conversion to all internal elements
-        converted_value = _traverse_and_convert(v, is_raise_on_failure, *enum_classes)
-        ret.append(converted_value)
+    # 2. STACK INITIALIZATION
+    # Stack format: (parent_collection, key_or_index, current_object)
+    # parent is typed as list | dict since we only attach to these types.
+    stack: list[tuple[list | dict, Any, Any]] = [(result_container, 0, obj)]
 
-    return ret
+    while stack:
+        parent, key, current = stack.pop()
+
+        if _is_mapping(current):
+            # --- MAPPINGS (Dicts) ---
+            new_dict = {}
+            # Eagerly attach the empty dict to the parent
+            parent[key] = new_dict
+            reversed_items = None
+
+            # FAST PATH: C-level pointer comparison for exact dicts (95% of cases).
+            # Bypasses the try/except overhead.
+            if type(current) is dict:
+                # Python 3.8+ supports reversed() directly on dict views.
+                reversed_items = reversed(current.items())
+            else:
+                # SAFE PATH: For subclasses and custom Mappings lacking __reversed__.
+                try:
+                    reversed_items = reversed(current.items())
+                except TypeError:
+                    reversed_items = reversed(list(current.items()))
+
+            for k, v in reversed_items:
+                stack.append((new_dict, k, v))
+
+        elif _is_iterable(current):
+            # --- ITERABLES (Lists, Tuples, Sets, Generators, etc.) ---
+            # Avoid shallow copying if 'current' is already a sequence (list or tuple).
+            # Cast to list only if it's a generator, set, or other unknown iterable.
+            if isinstance(current, (list, tuple)):
+                items = current
+            else:
+                items = list(current)
+
+            items_len = 0 if not items else len(items)
+
+            # Pre-allocate the list. This avoids dynamic array resizing overhead
+            # (amortized O(1) becomes strict O(1) per assignment).
+            new_list = [None] * items_len
+            parent[key] = new_list
+
+            # Push in reverse order so the left-most elements are popped first.
+            # Using range backwards is extremely fast and avoids tuple allocations.
+            for i in range(items_len - 1, -1, -1):
+                stack.append((new_list, i, items[i]))
+        else:
+            # --- SCALARS (Leaf nodes) ---
+            # Delegate to convert_scalar and attach the result directly to the parent
+            parent[key] = convert_scalar(current, is_raise_on_failure, *enum_classes)
+
+    # The dummy root's 0-th element now contains the fully reconstructed, converted tree
+    return result_container[0]
 
 def convert_scalar(value: Any, is_raise_on_failure: bool = True, *enum_classes: type[Enum] | None) -> Any:
     """

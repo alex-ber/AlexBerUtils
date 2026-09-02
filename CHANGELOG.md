@@ -6,7 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.15.2] 14.08.2025
+## [0.15.3] 02.09.2026
+
+### Changed
+
+- **BREAKING CHANGE** rename `literar_converter.py` to `literar_converter.py`.
+-  Refactored `_traverse_and_convert()` in `literar_converter.py` to use an iterative Depth-First Search 
+(DFS) instead of recursion. Eliminated the risk of `RecursionError` on deeply nested payloads 
+(e.g., highly nested JSON or complex API responses). 
+
+## [0.15.2] 14.08.2026
 
 ### Added
 
@@ -21,7 +30,7 @@ All notable changes to this project will be documented in this file.
 - `randoms.py` - refactoring was done. API remains the same, but some logic was moved to `BaseSampler`.
 The main reason was some performance boost and DRY principle.
 
-## [0.15.1] 13.08.2025
+## [0.15.1] 13.08.2026
 
 ### Fixed
 
@@ -29,7 +38,7 @@ The main reason was some performance boost and DRY principle.
 introduced in previouse release. To support `float | 'np.float32'` we should add 
 `from __future__ import annotations` at the top level of the file. Weired corner case.
 
-## [0.15.0] 13.08.2025
+## [0.15.0] 13.08.2026
 
 ### Changed
 
@@ -39,7 +48,7 @@ introduced in previouse release. To support `float | 'np.float32'` we should add
   * **`expovariate` distribution:** Fixed a bug where the fallback standard library implementation produced incorrect distribution means. NumPy's `exponential(scale)` treats the `scale` parameter as the **mean**, whereas the standard `random.expovariate(lambd)` function expects `lambd` to be **`1.0 / mean`**. Previously, the `scale` parameter was passed directly (e.g., passing `scale=2.0` resulted in a mean of `0.5`). This has been corrected to `1.0 / scale` to strictly align with NumPy's mathematical behavior.
   * **`weibullvariate` distribution:** Fixed swapped arguments in the fallback implementation. The standard library's `random.weibullvariate(alpha, beta)` expects `alpha` to be the **scale** and `beta` to be the **shape**. The previous implementation erroneously passed them in the reverse order (`shape, scale`). It has now been corrected to `random.weibullvariate(scale, shape)`, bringing it in line with the intended logic and NumPy's equivalent (`weibull(shape) * scale`).
 
-## [0.14.0] 12.08.2025
+## [0.14.0] 12.08.2026
 
 ### Removed
 

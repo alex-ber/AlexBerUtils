@@ -17,7 +17,7 @@ except ImportError:
     raise
 
 
-from .literar_coonverter import parse_str
+from .literar_converter import parse_str
 
 
 class StreamToLogger:
