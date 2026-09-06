@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.15.4] 06.09.2026
+
+### Changed
+
+- **uuids**: Fixed entropy generation in the `uuid1mc` function (`alexber.utils.uuids`). 
+Previously, it mistakenly requested 8 bits of entropy instead of 48 (`_system_random.getrandbits(8)`). 
+This caused the pseudo-MAC address to vary only in the last byte (generating addresses like 
+`01:00:00:00:00:xx` and providing only 256 possible variants). 
+Now it correctly requests 48 bits, restoring full collision resistance. Fixed a false-positive test 
+`test_uuid1mc` in `tests/utils/uuids_test.py`. Previously, the mock for `random._urandom` ignored the 
+requested size and always returned 6 bytes. Due to the bitwise shift implementation inside 
+`random.getrandbits`, this compensated for the 8-bit bug in the main code, 
+resulting in a passing test. The mock was updated to strictly respect the requested 
+byte size (`lambda size: rnd[:size]`).
+
+
 ## [0.15.3] 02.09.2026
 
 ### Changed

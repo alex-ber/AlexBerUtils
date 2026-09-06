@@ -18,7 +18,7 @@ def test_uuid1mc(request, mocker):
     # logger.debug(urandom(6))
     rnd = b'W\x91\x8e\xb3!\x08'
 
-    mocker.patch("random._urandom",  side_effect=lambda _: rnd, create=True)
+    mocker.patch("random._urandom",  side_effect=lambda size: rnd[:size], create=True)
     mocker.patch('.'.join([__name__, 'urandom']),  side_effect=lambda _: rnd, create=True)
     mocker.patch('.'.join([__name__, 'uuid1']), side_effect=lambda p:p, autospec=True, spec_set=True)
     mocker.patch('.'.join(['alexber.utils.uuids', '_uuid1']), side_effect=lambda p: p, autospec=True, spec_set=True)

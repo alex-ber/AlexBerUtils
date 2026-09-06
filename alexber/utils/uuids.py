@@ -33,7 +33,7 @@ def uuid1mc():
 
     '''
     #return uuid1(_int_from_bytes(urandom(6), "big") | 0x010000000000)
-    node = _system_random.getrandbits(8) #6 and not 8, because this function round up to bits / 8 and rounded up
+    node = _system_random.getrandbits(48) #6 bytes and not 8 bytes, because this function round up to bits / 8 and rounded up
     # NOTE: The constant here is required by the UUIDv1 spec...
     return  _uuid1(node | 0x010000000000)
 
