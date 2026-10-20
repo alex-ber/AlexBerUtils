@@ -4,8 +4,26 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
-## [Unreleased]
+## ## [0.16.0] [Unreleased]
 
+### Added
+- **`@deprecated` decorator enhancements:**
+  - Added `stacklevel` parameter (defaulting to `1`) to allow callers to adjust warning stack frames.
+  - Added `__deprecated__` attribute on wrapped functions for runtime introspection (per PEP 702 convention).
+  - Support for bare `@deprecated` usage without parentheses and 
+  - direct invocation `deprecated(fn, version="1.0")`, in addition to the `@deprecated(...)` factory syntax.
+  - Full support for coroutine functions (`async def`), generator functions (`yield`), and async generator functions (`async def ... yield`), preserving `inspect.iscoroutinefunction()`, `inspect.isgeneratorfunction()`, and `inspect.isasyncgenfunction()` introspection across Python 3.10+ as well as full generator delegation protocols (`send`/`throw`/`close` and `asend`/`athrow`/`aclose`).
+  - Added `@overload` static type annotations preserving the decorated callable's signature.
+  - Added strict runtime validation for decorator parameters (`version`, `reason`, `for_removal`, `warning_class`, `stacklevel`) and decorated targets (raising a descriptive `TypeError` if applied to classes, callable instances, or on top of `@classmethod`, `@staticmethod`, or `@property`).
+
+### Changed
+- **`@deprecated` behavior and message formatting:**
+  - Configuration parameters (`version`, `reason`, `for_removal`, `warning_class`, `stacklevel`) are now keyword-only.
+  - When `for_removal=True` and `warning_class` is not explicitly specified, the emitted warning now defaults to `FutureWarning` instead of `DeprecationWarning` so that upcoming removals are visible by default in user code.
+  - Coroutines and generators now emit the deprecation warning when execution begins (when awaited or iterated) rather than when the coroutine/generator object is created.
+  - Improved warning message formatting: uses `__qualname__` (falling back to `__name__` and `repr()`), strips surrounding whitespace from `version` and `reason`, places `"and is marked for removal"` before `: <reason>`, omits redundant `"and will be removed in a future version"` text when `for_removal=False`, and avoids duplicate trailing punctuation.
+
+  
 ## [0.15.4] 06.09.2026
 
 ### Changed
