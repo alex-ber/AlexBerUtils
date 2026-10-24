@@ -3,7 +3,7 @@ import os
 import setuptools
 from setuptools import setup
 
-VERSION = '0.15.4'
+VERSION = '1.0.0'
 
 
 NAME = 'alex_ber_utils'
@@ -65,9 +65,9 @@ setup(
         #     'upload': UploadCommand,
         # },
         extras_require=extras,
-        test_suite="tests",
-        tests_require=tests_require,
-        setup_requires=['pytest-runner'],
+        #test_suite="tests",
+        #tests_require=tests_require,
+        #setup_requires=['pytest-runner'],
         license='Apache 2.0',
         keywords='tools tool utils enum enums threadlocal  uuid1mc uuid UUID UUID1 UUID4 UU1DMC ' \
                  'issetdescriptor ismethod ' \
@@ -78,7 +78,6 @@ setup(
             'Environment :: Console',
             'Intended Audience :: Developers',
             'Intended Audience :: Education',
-            'License :: OSI Approved :: BSD License',
 
             # List of python versions and their support status:
             # https://en.wikipedia.org/wiki/CPython#Version_history

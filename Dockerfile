@@ -1,4 +1,4 @@
-FROM alexberkovich/ubuntu2404-snapshot:2026-10-05
+FROM alexberkovich/ubuntu2404-snapshot:2026-10-06
 
 #[HARDWARE_CONFIG]: Deterministic execution and compilation flags
 # Consolidated environment variables to reduce layer allocation overhead.
@@ -82,8 +82,22 @@ CMD ["sleep", "infinity"]
 
 #docker system prune --all
 #
-#docker rmi -f utils-i
-#docker rm -f utils
+#
+# Delete all build cache
+# docker builder prune --all
+# Verify builder cache deleted
+# docker builder du
+
+# https://gallery.ecr.aws/lambda/python/
+# docker volume ls
+# docker volume ls -q > volumes-to-delete.txt
+# Review volumes-to-delete.txt and delete only anonymous or never be used one.
+# xargs -r docker volume rm < volumes-to-delete.txt
+## docker system prune --all
+# docker rmi -f utils-i
+# docker rm -f utils
+
+
 ##docker build --no-cache --squash . -t utils-i
 #docker build --no-cache --progress=plain . -t utils-i
 
@@ -101,8 +115,8 @@ CMD ["sleep", "infinity"]
 
 
 #docker exec -it $(docker ps -q -n=1) bash
-#docker tag utils-i alexberkovich/alex_ber_utils:0.15.4
+#docker tag utils-i alexberkovich/alex_ber_utils:1.0.0
 #docker tag utils-i alexberkovich/alex_ber_utils:latest
-#docker push alexberkovich/alex_ber_utils:0.15.4
+#docker push alexberkovich/alex_ber_utils:1.0.0
 #docker push alexberkovich/alex_ber_utils:latest
 # EOF

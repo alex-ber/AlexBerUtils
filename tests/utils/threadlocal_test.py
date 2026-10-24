@@ -1,15 +1,9 @@
-import concurrent.futures
-
 import logging
 import threading
 import types
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import contextvars
-import pytest
 import pytest
 import asyncio
-#import time
 
 
 from alexber.utils.thread_locals import RLock, LockingCallableMixin, \
@@ -403,6 +397,8 @@ def test_property_locking_access_mixin(request, mocker):
 
     obj = TestClass()
     lock = mocker.Mock()
+    lock.__enter__ = mocker.Mock(return_value=None)
+    lock.__exit__ = mocker.Mock(return_value=None)
     mixin = LockingAccessMixin(obj=obj, lock=lock)
     assert mixin.prop == "value"
 
@@ -422,8 +418,8 @@ def test_locking_access_sync_method(request, mocker):
     wrapped_method = mixin.sync_method
     result = wrapped_method()
     assert result == "result"
-    lock.__enter__.assert_called_once()
-    lock.__exit__.assert_called_once()
+    assert lock.__enter__.call_count == 2
+    assert lock.__exit__.call_count == 2
 
 @pytest.mark.asyncio
 async def test_locking_access_async_method(request, mocker):
@@ -478,8 +474,8 @@ def test_locking_access_special_case_for_pydantic(request, mocker):
     wrapped_method = mixin._copy_and_set_values
     result = wrapped_method()
     assert result == mixin
-    lock.__enter__.assert_called_once()
-    lock.__exit__.assert_called_once()
+    assert lock.__enter__.call_count == 2
+    assert lock.__exit__.call_count == 2
 
 def test_locking_default_lock_initialization_with_provided_lock(request, mocker):
     logger.info(f'{request._pyfuncitem.name}()')

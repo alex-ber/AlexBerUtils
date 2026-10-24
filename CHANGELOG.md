@@ -4,26 +4,63 @@ All notable changes to this project will be documented in this file.
 
 \#https://pypi.org/manage/project/alex-ber-utils/releases/
 
-## ## [0.16.0] [Unreleased]
+## Unreleased
+
+TODO:
+1. Update `pip >= 26.2.2`, `certifi >= 2026.10.19` (and `uv >= 0.13.4` if used) in Dockerfile and local virtualenvs.
+2. Rebuild Docker images with `--no-cache` (`docker build --no-cache ...`) so the base OS image pulls the latest `ca-certificates` package and updated `pip`/`certifi`.
+
+
+## [1.0.0] 24.10.2026
 
 ### Added
-- **`@deprecated` decorator enhancements:**
+- **`@deprecated` decorator enhancements (`warning.py`):**
   - Added `stacklevel` parameter (defaulting to `1`) to allow callers to adjust warning stack frames.
   - Added `__deprecated__` attribute on wrapped functions for runtime introspection (per PEP 702 convention).
-  - Support for bare `@deprecated` usage without parentheses and 
-  - direct invocation `deprecated(fn, version="1.0")`, in addition to the `@deprecated(...)` factory syntax.
+  - Support for bare `@deprecated` usage without parentheses and direct invocation `deprecated(fn, version="1.0")`, in addition to the `@deprecated(...)` factory syntax.
   - Full support for coroutine functions (`async def`), generator functions (`yield`), and async generator functions (`async def ... yield`), preserving `inspect.iscoroutinefunction()`, `inspect.isgeneratorfunction()`, and `inspect.isasyncgenfunction()` introspection across Python 3.10+ as well as full generator delegation protocols (`send`/`throw`/`close` and `asend`/`athrow`/`aclose`).
   - Added `@overload` static type annotations preserving the decorated callable's signature.
   - Added strict runtime validation for decorator parameters (`version`, `reason`, `for_removal`, `warning_class`, `stacklevel`) and decorated targets (raising a descriptive `TypeError` if applied to classes, callable instances, or on top of `@classmethod`, `@staticmethod`, or `@property`).
+- **Async/threading utilities (`thread_locals.py`):**
+  - Added `resolve_awaitable(source, target_future, *, loop=None)` to resolve arbitrary awaitables (`asyncio.Future`, `asyncio.Task`, `FutureWrapper`, `concurrent.futures.Future`, coroutines, and general `Awaitable` objects) and safely propagate results, exceptions, and cancellations across threads and event loops.
+  - Added `_resolve_active_loop()` to consistently resolve the target event loop, prioritizing any event loop currently running in the calling thread (including dedicated worker-thread event loops) and falling back to `_EVENT_LOOP` initialized via `initConfig()`.
+  - Added `_unwrap_future()` to unwrap potentially nested `FutureWrapper` instances while tracking consumption state.
+  - Added automatic unwrapping of nested `Awaitable` and `Future` objects returned by callables executed via `exec_in_executor()`, `exec_in_executor_threading_future()`, and `AsyncExecutionQueue`.
 
 ### Changed
-- **`@deprecated` behavior and message formatting:**
+- **`@deprecated` behavior and message formatting (`warning.py`):**
   - Configuration parameters (`version`, `reason`, `for_removal`, `warning_class`, `stacklevel`) are now keyword-only.
   - When `for_removal=True` and `warning_class` is not explicitly specified, the emitted warning now defaults to `FutureWarning` instead of `DeprecationWarning` so that upcoming removals are visible by default in user code.
   - Coroutines and generators now emit the deprecation warning when execution begins (when awaited or iterated) rather than when the coroutine/generator object is created.
   - Improved warning message formatting: uses `__qualname__` (falling back to `__name__` and `repr()`), strips surrounding whitespace from `version` and `reason`, places `"and is marked for removal"` before `: <reason>`, omits redundant `"and will be removed in a future version"` text when `for_removal=False`, and avoids duplicate trailing punctuation.
+- **Execution, future wrapping, and `AsyncExecutionQueue` semantics (`thread_locals.py`):**
+  - **BREAKING CHANGE** `AsyncExecutionQueue.add_task(func, /, *args, **kwargs)` no longer takes a separate `executor` parameter; tasks now consistently use the queue's configured `executor` (or `_GLOBAL_EXECUTOR` / default executor).
+  - `AsyncExecutionQueue.aclose()` now waits for all queued and in-flight tasks to finish executing via `queue.join()` before cancelling and awaiting the worker task, rather than cancelling pending queue items and exiting via `_CLOSE_SENTINEL`.
+  - `AsyncExecutionQueue` now lazily starts the worker task if `aadd_task()` or `add_task()` is called before entering `async with`, rejects new task submissions while closing, and recreates its internal `asyncio.Queue` upon closing so the instance can be reused across different event loops.
+  - `AsyncExecutionQueue.aadd_task()` and `AsyncExecutionQueue.add_task()` now respect the running worker task's event loop when called from another thread or from a dedicated worker event loop.
+  - `FutureWrapper.add_done_callback()` now supports the optional `context` keyword argument.
 
-  
+### Deprecated
+- **`thread_locals.py`:**
+  - Deprecated `chain_future_results()` in favor of `resolve_awaitable()` (delegates to `resolve_awaitable()` for backward compatibility).
+  - Deprecated unused internal helper `_execute_task()` (`for_removal=True`).
+
+### Fixed
+- **`thread_locals.py`:**
+  - Fixed `RLock.async_acquire()` so that if a waiting task is cancelled while waiting on the condition variable, it removes itself from `_async_waiting` and notifies remaining waiters instead of corrupting the lock queue, and removed the unused `_async_lock` attribute.
+  - Fixed `AsyncContextManagerMixin.__aexit__()` missing `await` when calling `self._lock.async_release()`.
+  - Fixed `LockingAsyncIterableMixin.__aiter__()` and `LockingAsyncIterator.__anext__()` to use `aiter()` and `anext()`.
+  - Fixed `LockingDefaultLockMixin.__init__()` to check `lock is None` rather than truthiness.
+  - Removed duplicate `__setitem__()` definition from `LockingGetItemMixin` and duplicate class declaration of `LockingBaseLanguageModelMixin`.
+  - Fixed fire-and-forget exception monitoring in `exec_in_executor()`, `AsyncExecutionQueue.aadd_task()`, `FutureWrapper`, and `handle_future_exception()`: wrapped futures are now returned to the caller so consumption is tracked accurately, `result()` / `exception()` only mark the wrapper as consumed once the future is `.done()`, cancelled futures are ignored, and callbacks are registered on the future's owning loop in a thread-safe manner.
+  - Fixed `exec_in_executor_threading_future()` so exceptions and cancellations are properly propagated between the underlying execution future and the returned `concurrent.futures.Future` instead of leaving callers blocked on `future.result()` indefinitely.
+  - Fixed `AsyncExecutionQueue.add_task()` to enqueue tasks on the queue's event loop in a thread-safe manner, capture `ContextVars` from the synchronous calling thread, propagate cancellation, and resolve the returned `concurrent.futures.Future` to the final outcome of `func` rather than the intermediate `asyncio.Future`.
+  - Fixed `StopIteration` and `StopAsyncIteration` handling across `lift_to_async()` and `exec_in_executor()` by converting both to `RuntimeError` so futures do not hang or fail with `TypeError`.
+  - Fixed `"RuntimeWarning: coroutine was never awaited"` when executor submission or `run_coroutine_threadsafe()` fails, or when a queued task is cancelled before its returned coroutine is awaited.
+  - Fixed `"Future exception was never retrieved"` warnings in `_chain_future_results()` when `target_future` is already completed or cancelled.
+  - Fixed `_execute_async_in_sync()` to prevent deadlocks when called from the target event loop's own thread, allow fallback to `_EVENT_LOOP` when called from a dedicated worker loop, and remove unsafe `asyncio.set_event_loop(_EVENT_LOOP)` calls on secondary threads.
+  - Fixed `ensure_thread_event_loop()` to recreate closed thread-local event loops and track dedicated worker loops separately from the main event loop.
+
 ## [0.15.4] 06.09.2026
 
 ### Changed

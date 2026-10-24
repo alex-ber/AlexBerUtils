@@ -1,28 +1,54 @@
-import logging
+from __future__ import annotations
+
+import asyncio
 import concurrent.futures
+import contextlib
 import contextvars
 import functools
 import inspect
-from concurrent.futures import Executor, Future
-from contextvars import copy_context
-from typing import Callable, Optional, TypeVar, Awaitable, Union
-from threading import local
-import asyncio
+import logging
 import threading
 from collections import deque
-from contextvars import ContextVar
-from typing import Callable, Any, List, Dict
+from concurrent.futures import Executor, Future
+from contextvars import ContextVar, copy_context
+from threading import local
+from typing import Any, Callable, List, Optional, TypeAlias, TypeVar, Awaitable
+
+from alexber.utils.warning import deprecated
+
 
 # Define type variables for the function signature
 T = TypeVar('T')
 
-# Define a type that can be awaited and will return T, compatible with both asyncio.Future and concurrent.futures.Future
-FutureType = Union[Awaitable[T], concurrent.futures.Future]
+FutureType: TypeAlias = (
+    asyncio.Future[T]
+    | concurrent.futures.Future[T]
+)
+
+AwaitableSource: TypeAlias = (
+    Awaitable[T]
+    | concurrent.futures.Future[T]
+)
+
+_CANCELLED_ERRORS = (
+    asyncio.CancelledError,
+    concurrent.futures.CancelledError,
+)
+
+_INVALID_STATE_ERRORS = (
+    asyncio.InvalidStateError,
+    concurrent.futures.InvalidStateError,
+)
+
+_STOP_ITERATION_ERRORS = (
+    StopIteration,
+    StopAsyncIteration,
+)
 
 logger = logging.getLogger(__name__)
 
 
-#should be initlialzied via initConfig() method, see below.
+# Should be initialized via initConfig() method, see below.
 _EVENT_LOOP = None
 
 
@@ -41,22 +67,21 @@ _GLOBAL_EXECUTOR = None
 # Thread-local storage to hold the event loop for each thread
 _event_loops_thread_locals = local()
 
-# _CLOSE_SENTINEL is a unique object used as a marker to signal the worker to stop processing tasks.
-# It is enqueued into the task queue to indicate that no more tasks will be added and the worker should exit.
-# This approach allows for a clean shutdown of the worker loop without requiring additional control structures.
+# _CLOSE_SENTINEL is retained for backward compatibility; worker shutdown is now coordinated
+# via queue.join() and task cancellation in AsyncExecutionQueue.aclose().
 _CLOSE_SENTINEL = object()
 
 def threadlocal_var(thread_locals, varname, factory, *args, **kwargs):
-  v = getattr(thread_locals, varname, None)
-  if v is None:
-    v = factory(*args, **kwargs)
-    setattr(thread_locals, varname, v)
-  return v
+    v = getattr(thread_locals, varname, None)
+    if v is None:
+        v = factory(*args, **kwargs)
+        setattr(thread_locals, varname, v)
+    return v
 
 def get_threadlocal_var(thread_locals, varname):
-    v = threadlocal_var(thread_locals, varname, lambda : None)
+    v = threadlocal_var(thread_locals, varname, lambda: None)
     if v is None:
-        raise ValueError(f"threadlocal's {varname} is not initilized")
+        raise ValueError(f"threadlocal's {varname} is not initialized")
     return v
 
 def del_threadlocal_var(thread_locals, varname):
@@ -82,14 +107,14 @@ class RootMixin:
 
 def validate_param(param_value, param_name):
     """
-     Validates that a required parameter is not None.
+    Validates that a required parameter is not None.
 
-     param_value (any): The value of the parameter to be validated.
-     param_name (str): The name of the parameter to be used in the error message.
+    param_value (any): The value of the parameter to be validated.
+    param_name (str): The name of the parameter to be used in the error message.
 
-     Raises:
-     ValueError: If the parameter value is None, indicating that the required parameter is missing.
-     """
+    Raises:
+    ValueError: If the parameter value is None, indicating that the required parameter is missing.
+    """
     if param_value is None:
         raise ValueError(f"Expected {param_name} param not found")
 
@@ -97,19 +122,32 @@ def validate_param(param_value, param_name):
 
 class RLock:
     """
-    A reentrant lock that supports both synchronous and asynchronous operations.
-    The `RLock` class provides mechanisms to acquire and release locks in both synchronous
-    and asynchronous contexts, ensuring proper synchronization and reentrancy.
+    A reentrant lock supporting independent synchronous and asynchronous locking.
+
+    Synchronous and asynchronous operations use separate locking mechanisms,
+    each providing reentrancy and fair policy (FIFO ordering) within its own domain.
+
+    The synchronous lock is owned by a thread, while the asynchronous lock
+    is owned by an asyncio.Task.
+
+    Important:
+        The synchronous and asynchronous locks are independent by design.
+        Acquiring one does not prevent acquisition of the other.
+        Mutual exclusion is guaranteed only within the same locking domain,
+        not between synchronous and asynchronous operations.
+
+        The asynchronous locking mechanism is intended for use within
+        a single event loop and is not thread-safe.
 
     See https://alex-ber.medium.com/a6b9a9021be8 for more details.
+
     """
 
     def __init__(self):
         """
-        Initializes the RLock instance with both synchronous and asynchronous locks.
+        Initialize the RLock instance with independent synchronous and asynchronous locking state.
         """
         self._sync_lock = threading.RLock()  # Synchronous reentrant lock
-        self._async_lock = asyncio.Lock()  # Asynchronous lock
 
         self._sync_owner = None  # Owner of the synchronous lock
         self._async_owner = None  # Owner of the asynchronous lock
@@ -177,8 +215,16 @@ class RLock:
 
             self._async_waiting.append(current_task)
 
-            while self._async_owner is not None or self._async_waiting[0] != current_task:
-                await self._async_condition.wait()  # Wait until the lock is available
+            try:
+                while (
+                        self._async_owner is not None
+                        or self._async_waiting[0] != current_task
+                ):
+                    await self._async_condition.wait()
+            except asyncio.CancelledError:
+                self._async_waiting.remove(current_task)
+                self._async_condition.notify_all()
+                raise
 
             self._async_waiting.popleft()  # Remove the task from waiting queue once it acquires the lock
             self._async_owner = current_task
@@ -331,7 +377,7 @@ class LockingAsyncIterableMixin(RootMixin):
         Returns:
         LockingAsyncIterator: A locking asynchronous iterator for the iterable object.
         """
-        return LockingAsyncIterator(self._obj, self._lock)
+        return LockingAsyncIterator(aiter(self._obj), self._lock)
 
 
 class LockingAsyncIterator:
@@ -373,7 +419,7 @@ class LockingAsyncIterator:
         StopAsyncIteration: If the iterator is exhausted.
         """
         async with self._lock:
-            return await self._async_iterator.__anext__()
+            return await anext(self._async_iterator)
 
 class LockingPedanticObjMixin(RootMixin):
     """
@@ -396,13 +442,13 @@ class LockingPedanticObjMixin(RootMixin):
         self._is_pedantic_obj = _is_pydantic_obj(self._obj)
 
 class LockingGetItemMixin(RootMixin):
-    """Mixin to provide thread-safe access and modification for collection-like objects.
+    """Mixin to provide thread-safe access for collection-like objects.
 
-    This mixin ensures that the `__getitem__` and `__setitem__` methods are thread-safe by using a lock.
-    It is intended to be used with objects that support item access and modification, such as lists or dictionaries.
+    This mixin ensures that the `__getitem__` method is thread-safe by using a lock.
+    It is intended to be used with objects that support item access, such as lists or dictionaries.
 
     Attributes:
-        _obj: The object being proxied, which supports item access and modification.
+        _obj: The object being proxied, which supports item access.
         _lock: A threading lock to ensure thread-safe operations.
     """
 
@@ -431,22 +477,6 @@ class LockingGetItemMixin(RootMixin):
                 return self._obj[key]
         return call(key)
 
-    def __setitem__(self, key, value):
-        """Set an item in the collection in a thread-safe manner.
-
-        Parameters:
-            key: The key or index of the item to set.
-            value: The value to associate with the given key.
-
-        Returns:
-            The value that was set.
-        """
-        @functools.wraps(self._obj.__setitem__)
-        def call(key, value):
-            with self._lock:
-                self._obj[key] = value
-            return value
-        return call(key, value)
 
 
 class LockingSetItemMixin(RootMixin):
@@ -501,6 +531,7 @@ class SyncContextManagerMixin:
                   and 'lock' for the lock.
         """
         super().__init__(**kwargs)
+
     def __enter__(self):
         self._lock.acquire()
         return self
@@ -528,7 +559,7 @@ class AsyncContextManagerMixin:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        self._lock.async_release()
+        await self._lock.async_release()
 
 class LockingAccessMixin(LockingPedanticObjMixin):
     """
@@ -562,35 +593,36 @@ class LockingAccessMixin(LockingPedanticObjMixin):
         Returns:
         any: The attribute value.
         """
-        attr = getattr(self._obj, name)
-        if inspect.isroutine(attr):
-            if self._is_pedantic_obj and name == '_copy_and_set_values':
-                # special case for Pydantic
-                @functools.wraps(attr)
-                def synchronized_method(*args, **kwargs):
-                    with self._lock:
-                        attr(*args, **kwargs)
-                    return self
-                return synchronized_method
-            elif inspect.iscoroutinefunction(attr):
-                @functools.wraps(attr)
-                async def asynchronized_method(*args, **kwargs):
-                    async with self._lock:
-                        return await attr(*args, **kwargs)
-                return asynchronized_method
+        with self._lock:
+            attr = getattr(self._obj, name)
+            if inspect.isroutine(attr):
+                if self._is_pedantic_obj and name == '_copy_and_set_values':
+                    # Special case for Pydantic
+                    @functools.wraps(attr)
+                    def synchronized_method(*args, **kwargs):
+                        with self._lock:
+                            attr(*args, **kwargs)
+                        return self
+                    return synchronized_method
+                elif inspect.iscoroutinefunction(attr):
+                    @functools.wraps(attr)
+                    async def asynchronized_method(*args, **kwargs):
+                        async with self._lock:
+                            return await attr(*args, **kwargs)
+                    return asynchronized_method
+                else:
+                    @functools.wraps(attr)
+                    def synchronized_method(*args, **kwargs):
+                        with self._lock:
+                            return attr(*args, **kwargs)
+                    return synchronized_method
+            elif hasattr(attr, '__get__') or hasattr(attr, '__set__') or hasattr(attr, '__delete__'):
+                # Handle property or descriptor
+                if hasattr(attr, '__get__'):
+                    return attr.__get__(self._obj, type(self._obj))
+                return attr
             else:
-                @functools.wraps(attr)
-                def synchronized_method(*args, **kwargs):
-                    with self._lock:
-                        return attr(*args, **kwargs)
-                return synchronized_method
-        elif hasattr(attr, '__get__') or hasattr(attr, '__set__') or hasattr(attr, '__delete__'):
-            # Handle property or descriptor
-            if hasattr(attr, '__get__'):
-                return attr.__get__(self._obj, type(self._obj))
-            return attr
-        else:
-            return attr
+                return attr
 
 class LockingCallableMixin(RootMixin):
     """
@@ -652,8 +684,8 @@ class LockingDefaultLockMixin(RootMixin):
         **kwargs: Arbitrary keyword arguments, including 'obj' for the object
                   and 'lock' for the lock.
         """
-        lock = kwargs.get("lock", None)
-        if not lock:
+        lock = kwargs.get("lock")
+        if lock is None:
             lock = RLock()
         kwargs['lock'] = lock
         self._lock = lock
@@ -708,28 +740,6 @@ class LockingDefaultAndBaseLanguageModelMixin(LockingDefaultLockMixin, LockingBa
                   and 'lock' for the lock.
         """
         super().__init__(**kwargs)
-
-
-class LockingBaseLanguageModelMixin(RootMixin):
-    """
-    A mixin class that provides locking for BaseLanguageModel objects.
-
-    The `LockingBaseLanguageModelMixin` class ensures that access to the wrapped
-    BaseLanguageModel object is thread-safe by using a provided lock.
-
-    """
-    def __init__(self, **kwargs):
-        """
-        Initializes the mixin with the BaseLanguageModel object.
-
-        Parameters:
-        **kwargs: Arbitrary keyword arguments, including 'obj' for the BaseLanguageModel object.
-        """
-        self._obj = kwargs.get('obj')
-        validate_param(self._obj, 'obj')
-        _coerce_base_language_model(self)
-        super().__init__(**kwargs)
-
 
 
 # Flags to check the availability of Pydantic and BaseLanguageModel
@@ -801,14 +811,12 @@ def _is_pydantic_obj(obj):
     """
     Checks if the given object is an instance of either Pydantic v1 or v2 models.
 
-
     Args:
         obj (Any): The object to be checked.
 
     Returns:
         bool: True if the object is an instance of either Pydantic v1 or v2 models, False otherwise.
     """
-
     ret = _is_pydantic_v1_obj(obj) or _is_pydantic_v2_obj(obj)
     return ret
 
@@ -857,6 +865,47 @@ def is_running_in_main_thread():
     return ret
 
 
+def ensure_thread_event_loop():
+    """
+    Initializes an event loop for the current thread if it does not already exist.
+
+    This function first checks if the current thread has an event loop stored in thread-local storage.
+    If not, it attempts to retrieve the current event loop. If no event loop is present, it creates a new one
+    and sets it as the current event loop for the thread. The event loop is then also stored in thread-local storage.
+    """
+    loop = getattr(_event_loops_thread_locals, 'loop', None)
+    if loop is None or loop.is_closed():
+        try:
+            # Try to get the currently running event loop in this thread
+            loop = asyncio.get_running_loop()
+            _event_loops_thread_locals.is_dedicated_worker_loop = False
+        except RuntimeError:
+            # If no running event loop is present in this thread, create a new dedicated one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            _event_loops_thread_locals.is_dedicated_worker_loop = True
+
+        # Store the event loop in thread-local storage
+        _event_loops_thread_locals.loop = loop
+    else:
+        # Ensure the thread's current event loop points to its dedicated loop
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.set_event_loop(loop)
+
+
+def _is_dedicated_worker_loop(loop: asyncio.AbstractEventLoop) -> bool:
+    """
+    Checks whether `loop` is a private worker event loop created for the current thread
+    rather than the main application event loop.
+    """
+    return  getattr(_event_loops_thread_locals, 'loop', None) is loop \
+        and getattr(_event_loops_thread_locals, 'is_dedicated_worker_loop', True) \
+        and loop is not _EVENT_LOOP
+
+
+
 def _execute_async_in_sync(afunc_call):
     """
     Executes an asynchronous function call in a synchronous context.
@@ -868,57 +917,33 @@ def _execute_async_in_sync(afunc_call):
         The result of the asynchronous function call.
 
     Raises:
-        RuntimeError: If the function is called from the main thread while an event loop is running.
+        RuntimeError: If the function is called from the thread of the target event loop,
+                      or if no target event loop is available.
     """
     logger.info("_execute_async_in_sync()")
+    loop, is_current_thread_loop = _resolve_active_loop()
 
-    has_running_loop = False
+    if is_current_thread_loop:
+        # If called from inside a dedicated worker loop, we cannot block the worker loop
+        # waiting on itself, so fall back to _EVENT_LOOP if available.
+        if (
+            _is_dedicated_worker_loop(loop)
+            and _EVENT_LOOP is not None
+            and not _EVENT_LOOP.is_closed()
+            and _EVENT_LOOP.is_running()
+        ):
+            loop = _EVENT_LOOP
+        else:
+            raise RuntimeError(
+                "Cannot synchronously wait for a coroutine "
+                "from its own event loop thread."
+            )
 
-    try:
-        loop = asyncio.get_running_loop()
-        has_running_loop = True
-    except RuntimeError:
-        logger.info("Resetting EVENT_LOOP")
-        loop = _EVENT_LOOP
-        asyncio.set_event_loop(loop)
+    logger.info("The event loop is NOT running in the current thread.")
+    logger.info("Submitting a coroutine to _EVENT_LOOP from a different thread in a thread-safe manner.")
+    logger.info("The current thread will block waiting for the result.")
 
-    if has_running_loop:
-        logger.info('The event loop is running.')
-        if is_running_in_main_thread():
-            s = """
-            If we have a running event loop, we should be on a non-MainThread; otherwise, we will block the event loop. 
-            The easiest way to achieve this is to use asyncio.to_thread() before making the call. 
-            In any case, you should execute your synchronous function on a separate thread, so any blocking will occur 
-            on that thread and not on the main thread that runs the event loop.			
-            """
-
-            raise RuntimeError(s)
-
-        logger.info("But we're running on a non-MainThread, so we're good.")
-        logger.info("Going to submit a coroutine to a given event loop from a different thread and execute it in a thread-safe way.")
-        logger.info("Going to block current thread and wait for result")
-
-        future = concurrent.futures.Future()
-
-        # Define a callback to set the result of the concurrent.futures.Future
-        def on_complete(task):
-            if task.exception():
-                future.set_exception(task.exception())
-            else:
-                future.set_result(task.result())
-
-        # Schedule the coroutine and add the callback
-        task = asyncio.run_coroutine_threadsafe(afunc_call(), loop)
-        task.add_done_callback(lambda t: on_complete(t))
-        result = future.result()
-
-    else:
-        logger.info("The event loop is NOT running.")
-        logger.info("Submitting a coroutine to the event loop from a different thread in a thread-safe manner.")
-        logger.info("This will start the event loop.")
-        logger.info("The current thread will continue to run.")
-
-        result = asyncio.run_coroutine_threadsafe(afunc_call(), loop).result()
+    result = asyncio.run_coroutine_threadsafe(afunc_call(), loop).result()
 
     return result
 
@@ -936,15 +961,15 @@ def lift_to_async(afunc, /, *args, **kwargs):
     """
     logger.info("lift_to_async()")
 
-    #see https://github.com/alex-ber/AlexBerUtils/issues/14
+    # See https://github.com/alex-ber/AlexBerUtils/issues/14
     def wrapper():
         try:
             return afunc(*args, **kwargs)
-        except StopAsyncIteration as exc:
-            # StopIteration can't be set on an asyncio.Future
-            # it raises a TypeError and leaves the Future pending forever
-            # so we need to convert it to a RuntimeError
-            raise RuntimeError("Async generator exhausted unexpectedly") from exc
+        except _STOP_ITERATION_ERRORS as exc:
+            # StopIteration / StopAsyncIteration can't be set on an asyncio.Future
+            # directly without risking TypeError or leaving the Future pending forever,
+            # so we convert it to a RuntimeError.
+            raise RuntimeError("Async callable or generator exhausted unexpectedly") from exc
 
     ctx = contextvars.copy_context()
     afunc_call = functools.partial(ctx.run, wrapper)
@@ -965,15 +990,26 @@ class FutureWrapper:
         return self._fut.__await__()
 
     def result(self):
-        self._consumed = True
-        return self._fut.result()
+        try:
+            return self._fut.result()
+        finally:
+            if self._fut.done():
+                self._consumed = True
 
     def exception(self):
-        self._consumed = True
-        return self._fut.exception()
+        try:
+            return self._fut.exception()
+        finally:
+            if self._fut.done():
+                self._consumed = True
 
-    def add_done_callback(self, callback):
-        self._fut.add_done_callback(callback)
+    def add_done_callback(
+            self,
+            callback: Callable[[Any], Any],
+            *,
+            context: contextvars.Context | None = None,
+    ) -> None:
+        self._fut.add_done_callback(callback, context=context)
 
     def done(self):
         return self._fut.done()
@@ -1001,7 +1037,10 @@ def check_and_log_exception(wrapper: FutureWrapper):
         wrapper: An instance of FutureWrapper that encapsulates an asyncio Future.
     """
     # Note: We check the underlying future directly to avoid accidentally marking it as consumed.
+    wrapper, _ = _unwrap_future(wrapper, is_mark_consumed=False)
     if not wrapper._consumed and wrapper._fut.done():
+        if wrapper._fut.cancelled():
+            return
         try:
             exc = wrapper._fut.exception()
         except Exception as e:
@@ -1011,46 +1050,69 @@ def check_and_log_exception(wrapper: FutureWrapper):
             logger.exception("Unhandled exception in fire-and-forget task", exc_info=exc)
 
 
-
-def handle_future_exception(future, delay: float = 0):
+def handle_future_exception(
+    future: asyncio.Future | FutureWrapper,
+    delay: float = 0.1,
+) -> None:
     """
-    Schedule a callback to log any unconsumed exception from a future.
+    Schedule logging of an unconsumed exception from an asyncio Future.
 
-    This function schedules a callback,
-    after a specified delay (in seconds), to check whether the result of the future has been
-    consumed. If the future completed with an exception that was never retrieved, the exception
-    will be logged. This is particularly useful for detecting errors in fire-and-forget tasks.
+    The exception check is scheduled after the future completes,
+    with an additional configurable delay to allow the consumer
+    time to retrieve the result or exception.
+
+    Nested FutureWrappers are unwrapped to locate the underlying
+    asyncio Future, while preserving the innermost wrapper for
+    consumption tracking.
+
+    The callback is always registered on the future's owning
+    event loop, including when called from another thread.
+
+    Cancelled futures are ignored.
+
+    Note:
+        Consumption tracking is reliable only when the caller uses
+        the monitored FutureWrapper. If a raw asyncio.Future is
+        supplied, direct consumption cannot be detected.
 
     Args:
-        future: The asyncio Future to be monitored.
-        delay: The delay in seconds before performing the check.
+        future: The asyncio Future or FutureWrapper to monitor.
+        delay: Seconds to wait after completion before checking
+            for an unconsumed exception. Defaults to 0.1.
     """
-    loop = asyncio.get_running_loop()
-    wrapper = FutureWrapper(future)
-    loop.call_later(delay, check_and_log_exception, wrapper)
+    source_wrapper, raw_fut = _unwrap_future(future, is_mark_consumed=False)
+    loop = raw_fut.get_loop()
 
+    if loop.is_closed():
+        return
 
+    def _on_done(_):
+        loop.call_later(delay, check_and_log_exception, source_wrapper)
 
-def ensure_thread_event_loop():
-    """
-    Initializes an event loop for the current thread if it does not already exist.
+    def _register():
+        raw_fut.add_done_callback(_on_done)
 
-    This function first checks if the current thread has an event loop stored in thread-local storage.
-    If not, it attempts to retrieve the current event loop. If no event loop is present, it creates a new one
-    and sets it as the current event loop for the thread. The event loop is then also stored in thread-local storage.
-    """
-    # Check if the current thread already has an event loop in thread-local storage
-    if not hasattr(_event_loops_thread_locals, 'loop'):
+    try:
+        running_loop, is_current_thread_loop = _resolve_active_loop()
+    except RuntimeError:
+        running_loop, is_current_thread_loop = None, False
+
+    if is_current_thread_loop and running_loop is loop:
+        _register()
+    else:
         try:
-            # Try to get the current event loop
-            loop = asyncio.get_running_loop()
+            loop.call_soon_threadsafe(_register)
         except RuntimeError:
-            # If no event loop is present, create a new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            # Event loop closed concurrently.
+            pass
 
-        # Store the event loop in thread-local storage
-        _event_loops_thread_locals.loop = loop
+
+async def _await_source(source: Awaitable[T]) -> T:
+    """
+    Await a source object and return its result.
+    """
+    return await source
+
 
 def _run_coroutine_in_thread(coro):
     """
@@ -1071,65 +1133,117 @@ def _run_coroutine_in_thread(coro):
     return loop.run_until_complete(coro)
 
 
-def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> asyncio.Future:
+
+def _unwrap_future(
+    future: asyncio.Future | FutureWrapper,
+    *,
+    is_mark_consumed: bool = True,
+) -> tuple[FutureWrapper, asyncio.Future]:
     """
-    Execute a function or coroutine within a given executor while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries.
+    Unwrap nested FutureWrapper instances to obtain the underlying asyncio.Future.
 
-
-    The executor is resolved in the following order:
-    1. If the `executor` parameter is provided, it is used.
-    2. If an executor was passed via `initConfig()`, it is used.
-    3. If neither is set, `None` is used, which means the default asyncio executor will be used.
-
-    Note: as a side fact, threads in the executor may have an event loop attached. This allows for the execution of asynchronous tasks within those threads.
-
-    Additionally, the returned future is wrapped in a proxy that monitors
-    whether the consumer explicitly awaits or retrieves the result. In the fire-and-forget case
-    (when the result is not consumed), any exception is logged automatically.
+    If no wrapper exists, create one around the original future.
 
     Args:
-        executor (Optional[Executor]): The executor to run the function or coroutine. If None, the default asyncio executor is used.
-        func (Callable[..., T]): The function or coroutine to execute.
-        *args: Positional arguments to pass to the function or coroutine.
-        **kwargs: Keyword arguments to pass to the function or coroutine.
+        future: An asyncio.Future or a potentially nested FutureWrapper.
+        is_mark_consumed: Whether to mark all encountered wrappers as consumed.
 
     Returns:
-        asyncio.Future: A future representing the execution of the function or coroutine, which
-        is wrapped to log exceptions in fire-and-forget scenarios.
+        A tuple containing the innermost FutureWrapper and the underlying
+        asyncio.Future.
     """
-    loop = asyncio.get_running_loop()
-    resolved_executor = executor if executor is not None else _GLOBAL_EXECUTOR
+    wrapper: FutureWrapper | None = None
+    raw_fut = future
 
-    # Copy the current context
-    ctx = copy_context()
+    while isinstance(raw_fut, FutureWrapper):
+        wrapper = raw_fut
 
+        if is_mark_consumed:
+            wrapper._consumed = True
+
+        raw_fut = raw_fut._fut
+
+    if wrapper is None:
+        wrapper = FutureWrapper(raw_fut)
+
+    return wrapper, raw_fut
+
+
+def _resolve_returned_awaitable_in_thread(value: Any) -> Any:
+    """
+    Unwraps an Awaitable or Future returned by a callable running inside a worker thread.
+
+    If `value` is an `asyncio.Future` (or `FutureWrapper`) bound to a different event loop,
+    it is safely bridged via `resolve_awaitable` into a `concurrent.futures.Future` to avoid
+    cross-loop RuntimeError. Otherwise, it is awaited on the worker thread's event loop.
+    """
+    while isinstance(value, (Awaitable, concurrent.futures.Future, FutureWrapper)):
+        if isinstance(value, FutureWrapper):
+            _, value = _unwrap_future(value, is_mark_consumed=True)
+        if isinstance(value, concurrent.futures.Future):
+            value = value.result()
+        elif isinstance(value, asyncio.Future):
+            ensure_thread_event_loop()
+            thread_loop = _event_loops_thread_locals.loop
+            if value.get_loop() is thread_loop:
+                value = _run_coroutine_in_thread(_await_source(value))
+            else:
+                sync_fut: concurrent.futures.Future = concurrent.futures.Future()
+                resolve_awaitable(value, sync_fut, loop=value.get_loop())
+                value = sync_fut.result()
+        else:
+            value = _run_coroutine_in_thread(_await_source(value))
+
+    return value
+
+
+def _prepare_executor_callable(
+    ctx: contextvars.Context,
+    func: Callable[..., T],
+    *args,
+    **kwargs,
+) -> Callable[[], T]:
+    """
+    Prepares a callable that executes `func` (sync or async) inside `ctx`
+    within a worker thread, unwrapping any returned Awaitable and converting
+    `StopIteration` / `StopAsyncIteration` to `RuntimeError`.
+    """
     if asyncio.iscoroutinefunction(func):
-        # Wrap the coroutine function to handle exceptions, including StopIteration
         async def _coro_wrapper():
             try:
                 return await func(*args, **kwargs)
-            except StopIteration as exc:
-                # StopIteration can't be set on an asyncio.Future
+            except _STOP_ITERATION_ERRORS as exc:
+                # StopIteration / StopAsyncIteration can't be set on an asyncio.Future
                 # It raises a TypeError and leaves the Future pending forever
                 raise RuntimeError from exc
             except Exception:
                 # Re-raise any other exceptions to propagate them properly
                 raise
 
-        # Create the coroutine in the original context
-        coro = _coro_wrapper()
-        # run it in the same context in an executor guarded against StopIteration
-        base_future =  loop.run_in_executor(resolved_executor,
-                                    lambda: ctx.run(_run_coroutine_in_thread, coro))
-    else:
+        def run_async_in_thread() -> T:
+            # Create the coroutine right before running it in the worker thread to avoid
+            # 'RuntimeWarning: coroutine was never awaited' if the executor rejects the task.
+            coro = _coro_wrapper()
+            try:
+                res = _run_coroutine_in_thread(coro)
+                if isinstance(res, (Awaitable, concurrent.futures.Future)):
+                    res = _resolve_returned_awaitable_in_thread(res)
+                return res
+            except _STOP_ITERATION_ERRORS as exc:
+                raise RuntimeError from exc
 
+        return lambda: ctx.run(run_async_in_thread)
+    else:
         @functools.wraps(func)
         def wrapper() -> T:
             ensure_thread_event_loop()
             try:
-                return func(*args, **kwargs)
-            except StopIteration as exc:
-                # StopIteration can't be set on an asyncio.Future
+                res = func(*args, **kwargs)
+                if isinstance(res, (Awaitable, concurrent.futures.Future)):
+                    res = _resolve_returned_awaitable_in_thread(res)
+                return res
+            except _STOP_ITERATION_ERRORS as exc:
+                # StopIteration / StopAsyncIteration can't be set on an asyncio.Future
                 # it raises a TypeError and leaves the Future pending forever
                 # so we need to convert it to a RuntimeError
                 raise RuntimeError from exc
@@ -1137,21 +1251,85 @@ def exec_in_executor(executor: Optional[Executor], func: Callable[..., T], *args
                 # Re-raise any other exceptions to propagate them properly
                 raise
 
-        # run it in the same context in an executor guarded against StopIteration
-        base_future = loop.run_in_executor(resolved_executor, lambda: ctx.run(wrapper))
+        return lambda: ctx.run(wrapper)
 
-    # Attach a done callback that will, after a short delay, log the exception
-    # if the user never consumed the result.
 
-    base_future.add_done_callback(lambda fut: handle_future_exception(fut, delay=0.1))
-    return base_future
+
+def exec_in_executor(
+    executor: Optional[Executor],
+    func: Callable[..., T],
+    *args,
+    **kwargs,
+) -> FutureWrapper:
+    """
+    Execute a function or coroutine in an executor while preserving ContextVars.
+
+    The executor is resolved in the following order:
+    1. The explicitly provided executor.
+    2. The executor configured via initConfig().
+    3. The default asyncio executor.
+
+    The event loop is resolved in the following order:
+    1. The currently running event loop in the current thread.
+    2. The main event loop configured via initConfig().
+
+    If called from another thread, submission is dispatched to the
+    target event loop in a thread-safe manner. The call blocks only
+    until the task has been submitted, not until it completes.
+
+    The returned FutureWrapper tracks explicit consumption via
+    await, result(), or exception(). Exceptions from unconsumed
+    futures are logged automatically after a short delay.
+
+    Note:
+        The returned wrapper remains bound to the target event loop.
+        It cannot be awaited from a different event loop while pending.
+
+    Args:
+        executor: Optional executor. Defaults to the configured
+            executor or the default asyncio executor.
+        func: Function or coroutine function to execute.
+        *args: Positional arguments for func.
+        **kwargs: Keyword arguments for func.
+
+    Returns:
+        asyncio.Future-proxy: An awaitable proxy representing the
+        submitted execution.
+    """
+    loop, is_current_thread_loop = _resolve_active_loop()
+    resolved_executor = executor if executor is not None else _GLOBAL_EXECUTOR
+
+    ctx = copy_context()
+    callable_task = _prepare_executor_callable(
+        ctx, func, *args, **kwargs
+    )
+
+    def _submit() -> FutureWrapper:
+        fut = loop.run_in_executor(resolved_executor, callable_task)
+        wrapper = FutureWrapper(fut)
+
+        handle_future_exception(wrapper)
+
+        return wrapper
+
+    if is_current_thread_loop:
+        return _submit()
+
+    async def _schedule_on_loop():
+        return _submit()
+
+    concurrent_fut = asyncio.run_coroutine_threadsafe(
+        _schedule_on_loop(), loop
+    )
+
+    return concurrent_fut.result()
 
 
 def exec_in_executor_threading_future(executor: Optional[Executor], func: Callable[..., T], *args, **kwargs) -> Future:
     """
-    Execute a function or coroutine within a given executor and return a threading.Future.
+    Execute a function or coroutine within a given executor and return a concurrent.futures.Future.
 
-    This function executes a function or coroutine while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries. It provides a threading.Future to handle the result or exception of the task execution.
+    This function executes a function or coroutine while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries. It provides a concurrent.futures.Future to handle the result or exception of the task execution.
 
     The executor is resolved in the following order:
     1. If the `executor` parameter is provided, it is used.
@@ -1167,60 +1345,270 @@ def exec_in_executor_threading_future(executor: Optional[Executor], func: Callab
         **kwargs: Keyword arguments to pass to the function or coroutine.
 
     Returns:
-        threading.Future: A future representing the execution of the function or coroutine.
+        concurrent.futures.Future: A future representing the execution of the function or coroutine.
     """
-
     future = concurrent.futures.Future()
+    ctx = copy_context()
+    callable_task = _prepare_executor_callable(ctx, func, *args, **kwargs)
 
-    if asyncio.iscoroutinefunction(func):
-        @functools.wraps(func)
-        async def wrapper(fut):
-            coro = func(*args, **kwargs)
-            result = await coro
-            fut.set_result(result)
-    else:
-        @functools.wraps(func)
-        def wrapper(fut):
-            result = func(*args, **kwargs)
-            fut.set_result(result)
+    def _worker_task() -> None:
+        if not future.set_running_or_notify_cancel():
+            return
+        try:
+            res = callable_task()
+        except _CANCELLED_ERRORS:
+            future.cancel()
+        except Exception as exc:
+            future.set_exception(exc)
+        else:
+            future.set_result(res)
 
-    exec_in_executor(executor, wrapper, future)
+    exec_in_executor(executor, _worker_task)
     return future
 
 
-def chain_future_results(source_future: FutureType, target_future: FutureType):
+
+@deprecated(version='1.0.0', reason="Use resolve_awaitable() instead.", for_removal=False)
+def chain_future_results(
+    source_future: FutureType[T],
+    target_future: FutureType[T],
+) -> None:
     """
-    Safely propagates the outcome from a source future to a target future.
+    Propagate the outcome of a Future to another Future.
 
-    This function is called when the source_future is completed. It retrieves the result or exception
-    from the source_future and sets it on the target_future, ensuring that the outcome of the task execution
-    is properly propagated. This function is generic and can be used with any types of futures.
-
-    To use this function, add it as a callback to the source_future:
-
-    Typically, this function is added as a callback to `source_future`:
-
-        source_future.add_done_callback(lambda fut: chain_future_results(fut, target_future))
+    This function is retained for backward compatibility. It delegates
+    to resolve_awaitable(), which also supports arbitrary awaitable sources.
+    The source result, exception, or cancellation is propagated to
+    target_future. asyncio.Future instances owned by different event loops
+    are supported, provided the relevant loops remain operational.
 
     Args:
-        source_future: The future from which to retrieve the result or exception.
-        target_future: The future on which to set the result or exception.
+        source_future:
+            The source Future.
+        target_future:
+            The Future that receives the source outcome.
+    """
+    resolve_awaitable(source_future, target_future)
+
+
+def resolve_awaitable(
+    source: AwaitableSource[T],
+    target_future: FutureType[T],
+    *,
+    loop: Optional[asyncio.AbstractEventLoop] = None
+) -> None:
+    """
+    Resolve an awaitable source and propagate its outcome to a target Future.
+
+    Supported sources include asyncio.Future, asyncio.Task, FutureWrapper,
+    concurrent.futures.Future, coroutine objects, and other awaitables.
+    Existing Future objects are chained directly. Other awaitables are
+    scheduled in the selected event loop and their outcomes are propagated
+    to target_future.
+
+    Source cancellation propagates as target cancellation. Ordinary
+    exceptions and explicitly handled cancellation exceptions are propagated
+    to the target. Other BaseException subclasses are not caught.
+    """
+    # Unwrap FutureWrapper and mark it as consumed since its outcome
+    # is now being forwarded to target_future.
+    if isinstance(source, FutureWrapper):
+        _, source = _unwrap_future(source)
+    if isinstance(target_future, FutureWrapper):
+        _, target_future = _unwrap_future(target_future, is_mark_consumed=False)
+
+
+    if isinstance(
+        source,
+        (asyncio.Future, concurrent.futures.Future),
+    ):
+        _chain_future_results(source, target_future)
+        return
+
+    if loop is None:
+        loop, _ = _resolve_active_loop()
+
+    coro = _await_source(source)
+    try:
+        source_future = asyncio.run_coroutine_threadsafe(
+            coro,
+            loop,
+        )
+    except RuntimeError as exc:
+        # Close the wrapper coroutine and underlying coroutine if the loop is closed/stopped
+        # to prevent 'RuntimeWarning: coroutine was never awaited'.
+        coro.close()
+        if inspect.iscoroutine(source):
+            source.close()
+        _deliver_exception(target_future, exc)
+        return
+
+    _chain_future_results(source_future, target_future)
+
+
+def _chain_future_results(
+    source_future: FutureType[T],
+    target_future: FutureType[T],
+) -> None:
+    """
+    Transfer the outcome of a completed Future to a target Future.
     """
 
-    if target_future.done():
-        return  # Already resolved by another callback
+    def on_source_done(source: FutureType[T]) -> None:
+        if source.cancelled():
+            _deliver_cancel(target_future)
+            return
+
+        try:
+            # Always retrieve the result/exception from source to avoid
+            # "Future exception was never retrieved" warnings, even if target_future is already done.
+            result = source.result()
+        except _CANCELLED_ERRORS as exc:
+            _deliver_exception(target_future, exc)
+        except Exception as exc:
+            _deliver_exception(target_future, exc)
+        else:
+            _deliver_result(target_future, result)
+
+    if isinstance(source_future, asyncio.Future):
+        if source_future.done():
+            # Already completed; read state and forward directly without requiring an active source loop.
+            on_source_done(source_future)
+            return
+
+        source_loop = source_future.get_loop()
+        if source_loop.is_closed():
+            _deliver_exception(
+                target_future,
+                RuntimeError("Source future's event loop is closed before completion."),
+            )
+            return
+
+        try:
+            source_loop.call_soon_threadsafe(
+                source_future.add_done_callback,
+                on_source_done,
+            )
+        except RuntimeError as exc:
+            # The source event loop was closed concurrently.
+            if source_future.done():
+                on_source_done(source_future)
+            else:
+                _deliver_exception(target_future, exc)
+    else:
+        source_future.add_done_callback(on_source_done)
+
+
+def _deliver_cancel(target: FutureType[T]) -> None:
+    """
+    Schedule cancellation of the target Future if it is still pending.
+    """
+    _dispatch_to_target_loop(target, _cancel_if_pending)
+
+
+def _deliver_result(
+    target: FutureType[T],
+    result: T,
+) -> None:
+    """
+    Schedule delivery of a result to the target Future.
+    """
+    _dispatch_to_target_loop(
+        target,
+        _set_result_if_pending,
+        result,
+    )
+
+
+def _deliver_exception(
+    target: FutureType[T],
+    exc: BaseException,
+) -> None:
+    """
+    Schedule delivery of an exception to the target Future.
+    """
+    _dispatch_to_target_loop(
+        target,
+        _set_exception_if_pending,
+        exc,
+    )
+
+
+def _dispatch_to_target_loop(
+    target: FutureType[T],
+    callback: Callable[..., None],
+    *args: object,
+) -> None:
+    """
+    Dispatch a Future update in the context required by its implementation.
+    """
+    if isinstance(target, asyncio.Future):
+        loop = target.get_loop()
+        if loop.is_closed():
+            return
+        try:
+            loop.call_soon_threadsafe(
+                callback,
+                target,
+                *args,
+            )
+        except RuntimeError:
+            # The event loop was closed concurrently; ignore delivery.
+            pass
+    else:
+        callback(target, *args)
+
+def _cancel_if_pending(target: FutureType[T]) -> None:
+    """
+    Cancel the target Future if it has not already completed.
+    """
+    if target.done():
+        return
 
     try:
-        result = source_future.result()
-        if not target_future.done():
-            target_future.set_result(result)
-    except Exception as e:
-        if not target_future.done():
-            target_future.set_exception(e)
+        target.cancel()
+    except _INVALID_STATE_ERRORS:
+        if not target.done():
+            raise
+
+
+def _set_result_if_pending(
+    target: FutureType[T],
+    result: T,
+) -> None:
+    """
+    Set the target Future's result if it is still pending.
+    """
+    if target.done():
+        return
+
+    try:
+        target.set_result(result)
+    except _INVALID_STATE_ERRORS:
+        if not target.done():
+            raise
+
+
+def _set_exception_if_pending(
+    target: FutureType[T],
+    exc: BaseException,
+) -> None:
+    """
+    Set the target Future's exception if it is still pending.
+    """
+    if target.done():
+        return
+
+    try:
+        target.set_exception(exc)
+    except _INVALID_STATE_ERRORS:
+        if not target.done():
+            raise
+
 
 def get_main_event_loop():
     """
-    Returns the event loop that was set via initConf(). This function should be called from the MainThread
+    Returns the event loop that was set via initConfig(). This function should be called from the MainThread
     during the application startup. If such a call was not made, None will be returned.
 
     Returns:
@@ -1229,170 +1617,410 @@ def get_main_event_loop():
     return _EVENT_LOOP
 
 
-
+@deprecated(version="1.0.0", reason="Not in use", for_removal=True)
 def _execute_task(task, task_future, executor):
     """
-    Executes the given task in the executor and propagates the result or exception
-    to task_future using a safe pattern. It also wraps the underlying future using
-    FutureWrapper to log any unconsumed exceptions.
+    Executes a task in the executor and propagates its outcome to task_future.
+
+    Exception monitoring for base_future is handled by exec_in_executor().
     """
     func, args, kwargs = task
-    loop = asyncio.get_running_loop()
+    base_future_wrapper = exec_in_executor(executor, func, *args, **kwargs)
+    resolve_awaitable(base_future_wrapper, task_future)
+    return base_future_wrapper
 
-    base_future = exec_in_executor(executor, func, *args, **kwargs)
 
-    # Attach a done callback that will, after a short delay, log the exception
-    # if the user never consumed the result.
-    base_future.add_done_callback(lambda fut: handle_future_exception(fut, delay=0.1))
-    # Use the chain_future_results helper function to transfer the outcome
-    base_future.add_done_callback(lambda fut: chain_future_results(fut, task_future))
-    return base_future
 
+def _resolve_active_loop() -> tuple[asyncio.AbstractEventLoop, bool]:
+    """
+    Resolves the active event loop for scheduling tasks.
+
+    First checks if there is an event loop running in the current thread
+    (including a dedicated worker event loop). If not, falls back to the
+    main `_EVENT_LOOP` initialized via `initConfig()`.
+
+    Returns:
+        tuple[asyncio.AbstractEventLoop, bool]: A tuple of (loop, is_current_thread_loop).
+
+    Raises:
+        RuntimeError: If no running event loop is found in the current thread and `_EVENT_LOOP`
+                      is not initialized or not running.
+    """
+    try:
+        running_loop = asyncio.get_running_loop()
+        return running_loop, True
+    except RuntimeError:
+        pass
+
+    if _EVENT_LOOP is not None and not _EVENT_LOOP.is_closed() and _EVENT_LOOP.is_running():
+        return _EVENT_LOOP, False
+
+    raise RuntimeError(
+        "No running event loop in the current thread and _EVENT_LOOP is not running. "
+        "Ensure initConfig() was called from the main thread with a running event loop."
+    )
 
 class AsyncExecutionQueue(RootMixin):
     """
-    A class representing an asynchronous task queue that manages task execution using a specified executor.
+    An asynchronous execution queue supporting synchronous functions
+    and coroutine functions, with per-task executor selection.
 
-    This class provides a context manager interface to start and stop a worker that processes tasks from the queue.
-    Tasks are executed asynchronously, and the queue can be closed gracefully.
-
-    The executor is resolved in the following order:
-    1. If the `executor` parameter is provided, it is used.
-    2. If an executor was passed via `initConfig()`, it is used.
-    3. If neither is set, `None` is used, which means the default asyncio executor will be used.
-
-    Note: as a side fact, threads in the executor may have an event loop attached. This allows for the execution of asynchronous tasks within those threads.
-
-
-    Attributes:
-        queue (asyncio.Queue): The queue that holds tasks to be executed.
-        executor (Executor): The executor to run tasks.
-
-    Methods:
-        worker(): Continuously processes tasks from the queue until the `aclose()` method is called.
-        aadd_task(func, *args, **kwargs): Asynchronously adds a task to the queue for execution and returns a future.
-        aclose(): Asynchronously closes the queue and waits for the worker to finish processing.
+    Tasks are submitted through a shared asyncio.Queue. The worker
+    dispatches each task through exec_in_executor(), preserving
+    ContextVars and propagating the final result or exception.
     """
 
     def __init__(self, **kwargs):
-        """
-        Initializes the TaskQueue with a specified queue and executor.
-
-        Args:
-            **kwargs: Optional keyword arguments to configure the queue and executor.
-                - queue (asyncio.Queue, optional): A custom queue to use. If not provided, a new asyncio.Queue is created.
-                - executor (Executor): The executor to run tasks. This parameter is required.
-
-        Execute a function or coroutine within a given executor while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries.
-        """
-        self.queue = kwargs.pop("queue", None)
-        if not self.queue:
-            self.queue = asyncio.Queue()
-        #if None, default asyncio ThreadPoolExecutor will be used.
+        custom_queue = kwargs.pop("queue", None)
+        self._is_owns_queue = custom_queue is None
+        self.queue = custom_queue if custom_queue is not None else asyncio.Queue()
+        # If None, default asyncio ThreadPoolExecutor will be used.
         self.executor = kwargs.pop("executor", None)
-        self._worker_task = None
+        self._worker_task: Optional[asyncio.Task] = None
+        self._closing: bool = False
         super().__init__(**kwargs)
 
     async def __aenter__(self):
-        """
-        Starts the worker when entering the context.
-        """
-        self._worker_task = asyncio.create_task(self.worker())
+        if self._closing:
+            raise RuntimeError(
+                "Cannot enter AsyncExecutionQueue while closing."
+            )
+
+        if self._worker_task is None or self._worker_task.done():
+            loop, _ = _resolve_active_loop()
+            self._worker_task = loop.create_task(self.worker())
+
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """
-        Closes the queue and stops the worker when exiting the context.
-        """
+        """Wait for queued tasks to finish and stop the worker."""
         await self.aclose()
+        return False
+
+    async def aclose(self):
+        """Wait for queued tasks to finish and stop the worker."""
+        self._closing = True
+        try:
+            if self._worker_task is not None:
+                await self.queue.join()
+                self._worker_task.cancel()
+
+                with contextlib.suppress(asyncio.CancelledError):
+                    await self._worker_task
+
+                self._worker_task = None
+
+            if self._is_owns_queue:
+                # Recreate the internal queue so the instance can be safely reused
+                # across different event loops after closing.
+                self.queue = asyncio.Queue()
+        finally:
+            self._closing = False
+
+    async def aadd_task(self, func, /, *args, **kwargs) -> asyncio.Future:
+        """
+        Adds a task to the queue for asynchronous execution.
+
+        The returned FutureWrapper tracks explicit consumption via
+        await, result(), or exception(). Exceptions from unconsumed
+        futures are logged automatically after a short delay.
+
+        Args:
+            func (Callable[..., Any]):
+                The function or coroutine to execute.
+            *args (Any):
+                Positional arguments passed to func.
+            **kwargs (Any):
+                Keyword arguments passed to func.
+
+        Returns:
+            asyncio.Future:
+                An awaitable future proxy representing the execution of func.
+        """
+        if self._worker_task is not None and not self._worker_task.done():
+            worker_loop = self._worker_task.get_loop()
+            loop, _ = _resolve_active_loop()
+            if worker_loop is not loop and not worker_loop.is_closed() and worker_loop.is_running():
+                # The queue worker is running on a different event loop (e.g. _EVENT_LOOP
+                # while caller is in a worker_loop); bridge via add_task().
+                bridged_fut = asyncio.wrap_future(
+                    self.add_task(func, *args, **kwargs),
+                    loop=loop,
+                )
+                wrapper = FutureWrapper(bridged_fut)
+                handle_future_exception(wrapper)
+                return wrapper
+
+        return await self._aadd_task_with_executor(
+            None,
+            func,
+            *args,
+            **kwargs,
+        )
+
+    async def _aadd_task_with_executor(
+        self,
+        ctx: Optional[contextvars.Context],
+        func,
+        /,
+        *args,
+        **kwargs,
+    ) -> asyncio.Future:
+        """Enqueue a task together with its executor and context."""
+        loop, _ = _resolve_active_loop()
+
+        if self._closing:
+            raise RuntimeError(
+                "Cannot add task while AsyncExecutionQueue is closing."
+            )
+
+        if self._worker_task is None or self._worker_task.done():
+            self._worker_task = loop.create_task(self.worker())
+
+        if ctx is None:
+            ctx = copy_context()
+
+        # Pass the raw Future to the worker so internal completion/chaining
+        # does not prematurely mark the public FutureWrapper as consumed.
+        task_future = loop.create_future()
+        wrapper = FutureWrapper(task_future)
+        handle_future_exception(wrapper)
+
+        await self.queue.put(
+            (
+                (func, args, kwargs),
+                task_future,
+                ctx,
+            )
+        )
+
+        return wrapper
 
     async def worker(self):
         """
-        Continuously processes tasks from the queue until the `aclose()` method is called.
+        Consume queued tasks and dispatch them for execution.
 
-        This method continuously fetches tasks from the queue and executes them asynchronously using the specified executor.
-        Execute a function or coroutine within a given executor while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries.
+        A single consumer worker processes submissions sequentially,
+        but submitted functions may execute concurrently in the executor.
+        The worker does not wait for each function to finish before
+        dispatching the next task. queue.join() waits for completion
+        of all dispatched tasks.
         """
+        loop, _ = _resolve_active_loop()
+        if self._worker_task is None or self._worker_task.done():
+            self._worker_task = asyncio.current_task()
+
         while True:
             task, task_future, ctx = await self.queue.get()
-            try:
-                if task is _CLOSE_SENTINEL:
-                    return  # Exit the worker loop
 
-                # Execute the task within the stored context.
-                ctx.run(_execute_task, task, task_future, self.executor)
-
-            finally:
-                # Mark the task as done, regardless of what the task was
+            if task_future.cancelled():
                 self.queue.task_done()
+                continue
 
+            func, args, kwargs = task
+            resolved_executor = self.executor if self.executor is not None else _GLOBAL_EXECUTOR
 
-    async def aadd_task(self, func, /, *args, **kwargs):
-        """
-        Asynchronously adds a task to the queue for execution and returns a future.
+            try:
+                execution_future: FutureWrapper = ctx.run(
+                    exec_in_executor,
+                    resolved_executor,
+                    func,
+                    *args,
+                    **kwargs,
+                )
+            except Exception as exc:
+                if not task_future.done():
+                    task_future.set_exception(exc)
 
-        Args:
-            func (Callable): The function to be executed, which can be synchronous or asynchronous.
-            *args: Positional arguments to pass to the function.
-            **kwargs: Keyword arguments to pass to the function.
+                self.queue.task_done()
+                continue
 
-        Execute a function or coroutine within a given executor while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries.
+            execution_future, _ = _unwrap_future(execution_future)
 
-        Returns:
-            asyncio.Future: A future representing the execution of the function or coroutine.
-        """
-        ctx = copy_context()  # Copy context at submission
-        future = asyncio.get_running_loop().create_future()
-        await self.queue.put(((func, args, kwargs), future, ctx))
-        return future
+            def on_execution_done(
+                source_future,
+                *,
+                target_future=task_future,
+                queue=self.queue,
+            ):
 
-    def add_task(self, executor, func, /, *args, **kwargs):
+                unwrapping_awaitable = False
+                try:
+                    if target_future.done():
+                        # If target_future was already cancelled/completed, ensure that any
+                        # coroutine returned by source_future is properly closed to avoid RuntimeWarning.
+                        if not source_future.cancelled():
+                            try:
+                                unused_res = source_future.result()
+                            except Exception:
+                                pass
+                            else:
+                                if inspect.iscoroutine(unused_res):
+                                    unused_res.close()
+                        return
+
+                    try:
+                        result = source_future.result()
+                    except _CANCELLED_ERRORS:
+                        target_future.cancel()
+                    except Exception as exc:
+                        target_future.set_exception(exc)
+                    else:
+                        # If source_future resolved to an Awaitable or Future (e.g. when exec_in_executor
+                        # is overridden/mocked or returns an awaitable directly), unwrap it via resolve_awaitable.
+                        if isinstance(result, (Awaitable, concurrent.futures.Future)):
+                            try:
+                                resolve_awaitable(result, target_future, loop=loop)
+                            except Exception as exc:
+                                if not target_future.done():
+                                    target_future.set_exception(exc)
+                            else:
+                                target_future.add_done_callback(
+                                    lambda _: queue.task_done()
+                                )
+                                # Mark as unwrapping and delay task_done() only after resolve_awaitable
+                                # succeeds without raising a synchronous exception.
+                                unwrapping_awaitable = True
+                        else:
+                            target_future.set_result(result)
+
+                except asyncio.InvalidStateError:
+                    # The target may have been cancelled concurrently.
+                    pass
+                finally:
+                    if not unwrapping_awaitable:
+                        queue.task_done()
+
+            execution_future.add_done_callback(on_execution_done)
+
+    def add_task(self, func, /, *args, **kwargs):
         """
         Adds a task to the queue for asynchronous execution and returns a future.
 
-        The executor is resolved in the following order:
-        1. If the `executor` parameter is provided, it is used.
-        2. If an executor was passed via `initConfig()`, it is used.
-        3. If neither is set, `None` is used, which means the default asyncio executor will be used.
-
+        The returned concurrent Future resolves to the final result of func,
+        rather than the intermediate asyncio.Future returned by aadd_task().
 
         Args:
-            executor (Executor): The executor to run the asynchronous task.
-            func (Callable[..., Any]): The function to be executed, which can be synchronous or asynchronous.
-            *args (Any): Positional arguments to pass to the function.
-            **kwargs (Any): Keyword arguments to pass to the function.
-
-        Execute a function or coroutine within a given executor while preserving `ContextVars`, ensuring that context is maintained across asynchronous boundaries.
+            func (Callable[..., Any]):
+                The function to execute, which can be synchronous or asynchronous.
+            *args (Any):
+                Positional arguments to pass to func.
+            **kwargs (Any):
+                Keyword arguments to pass to func.
 
         Returns:
-            threading.Future: A future representing the execution of the function or coroutine.
+            concurrent.futures.Future:
+                A future representing the final result of func.
         """
-        fut = exec_in_executor_threading_future(executor, self.aadd_task, func, *args, **kwargs)
-        return fut
+        result_future = concurrent.futures.Future()
 
-    async def aclose(self):
-        """
-        Asynchronously closes the queue and waits for the worker to finish processing.
+        if self._closing:
+            result_future.set_exception(
+                RuntimeError("Cannot add task while AsyncExecutionQueue is closing.")
+            )
+            return result_future
 
-        This method signals the worker to stop processing tasks and waits for the worker task to complete.
-        """
+        try:
+            if  self._worker_task is not None \
+                and not self._worker_task.done() \
+                and not self._worker_task.get_loop().is_closed() \
+                and self._worker_task.get_loop().is_running():
 
-        # Cancel all tasks waiting in the queue.
-        while not self.queue.empty():
-            _, task_future, _ = self.queue.get_nowait()
-            if task_future and not task_future.done():
-                task_future.cancel()  # Mark the future as cancelled.
-            self.queue.task_done()  # Manually mark as done.
-
-        # Now, signal the worker to exit.
-        await self.queue.put((_CLOSE_SENTINEL, None, copy_context()))
-        if self._worker_task:
-            await self._worker_task
-
+                loop = self._worker_task.get_loop()
+            else:
+                loop, _ = _resolve_active_loop()
+        except RuntimeError as exc:
+            result_future.set_exception(exc)
+            return result_future
 
 
+        if loop is None or loop.is_closed() or not loop.is_running():
+            result_future.set_exception(
+                RuntimeError("The configured event loop is not running.")
+            )
+            return result_future
 
-def get_context_vars(*modules, factory_method_creator = None) -> List:
+        # Keep a reference to the submitted task Future so cancellation
+        # of the concurrent Future can be propagated to the event loop.
+        task_future_ref = []
+
+        def cancel_task_if_needed(future):
+            if not future.cancelled():
+                return
+
+            if task_future_ref:
+                task_future = task_future_ref[0]
+
+                if not task_future.done() and not loop.is_closed():
+                    with contextlib.suppress(RuntimeError):
+                        loop.call_soon_threadsafe(task_future.cancel)
+
+        result_future.add_done_callback(cancel_task_if_needed)
+
+        # Capture the caller's context in the synchronous thread before scheduling on the loop
+        caller_ctx = copy_context()
+
+        async def submit_task():
+            if result_future.cancelled():
+                return
+
+            if self._closing:
+                result_future.set_exception(
+                    RuntimeError("Cannot add task while AsyncExecutionQueue is closing.")
+                )
+                return
+
+            # Pass caller_ctx directly so the task executes with the synchronous caller's
+            # ContextVars rather than the event loop task's context.
+            task_future = await self._aadd_task_with_executor(
+                caller_ctx,
+                func,
+                *args,
+                **kwargs,
+            )
+
+            task_future_ref.append(task_future)
+
+            if result_future.cancelled():
+                task_future.cancel()
+                return
+
+            resolve_awaitable(task_future, result_future, loop=loop)
+
+        coro = submit_task()
+
+        try:
+            submission_future = asyncio.run_coroutine_threadsafe(
+                coro,
+                loop,
+            )
+        except RuntimeError as exc:
+            coro.close()
+
+            try:
+                result_future.set_exception(exc)
+            except concurrent.futures.InvalidStateError:
+                pass
+
+            return result_future
+
+        def on_submission_done(future):
+            try:
+                future.result()
+            except _CANCELLED_ERRORS:
+                if not result_future.done():
+                    result_future.cancel()
+            except Exception as exc:
+                try:
+                    result_future.set_exception(exc)
+                except _INVALID_STATE_ERRORS:
+                    pass
+
+        submission_future.add_done_callback(on_submission_done)
+
+        return result_future
+
+def get_context_vars(*modules, factory_method_creator=None) -> List:
     """Collects top-level ContextVar instances from modules and associates them with factory methods.
 
     Args:
@@ -1483,7 +2111,7 @@ def initConfig(**kwargs):
     Returns:
         None
     """
-    _loop = asyncio.get_running_loop()  #raises exception, if there is no running event loop
+    _loop = asyncio.get_running_loop()  # Raises exception if there is no running event loop
     global _EVENT_LOOP
     _EVENT_LOOP = _loop
 
