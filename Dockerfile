@@ -1,4 +1,4 @@
-FROM alexberkovich/ubuntu2404-snapshot:2026-10-06
+FROM alexberkovich/ubuntu2404-snapshot:2026-10-26
 
 #[HARDWARE_CONFIG]: Deterministic execution and compilation flags
 # Consolidated environment variables to reduce layer allocation overhead.
@@ -19,7 +19,7 @@ WORKDIR /app
 
 #[HARDWARE_BRIDGE]: Injecting UV Compiler (AOT Dependency Graph Resolver)
 #https://github.com/astral-sh/uv/pkgs/container/uv/1073952945?tag=0.11.33-python3.12-trixie
-COPY --from=ghcr.io/astral-sh/uv:0.11.33@sha256:77280f2f771df71f90786c314fe1bbc1e023feac652969bbf139c280babf2eb7 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.4@sha256:77280f2f771df71f90786c314fe1bbc1e023feac652969bbf139c280babf2eb7 /uv /uvx /bin/
 
 COPY . .
 
@@ -45,7 +45,7 @@ RUN set -ex && \
 RUN set -ex && \
      # latest pip,setuptools,wheel
      # uv run python -m piptools compile --no-strip-extras --output-file=requirements.all requirements.in \
-     uv pip install --no-cache-dir pip==26.2.1 setuptools==80.9.0 pip-tools==7.6.1 wheel==0.48.0 click==8.4.2 tomli==2.4.1 && \
+     uv pip install --no-cache-dir pip==26.2.2 setuptools==80.9.0 pip-tools==7.6.1 wheel==0.48.0 click==8.4.2 tomli==2.4.1 && \
      uv pip install --no-cache-dir \
         -r requirements.txt \
         -r requirements-env.txt \
@@ -115,8 +115,8 @@ CMD ["sleep", "infinity"]
 
 
 #docker exec -it $(docker ps -q -n=1) bash
-#docker tag utils-i alexberkovich/alex_ber_utils:1.0.0
+#docker tag utils-i alexberkovich/alex_ber_utils:1.0.1
 #docker tag utils-i alexberkovich/alex_ber_utils:latest
-#docker push alexberkovich/alex_ber_utils:1.0.0
+#docker push alexberkovich/alex_ber_utils:1.0.1
 #docker push alexberkovich/alex_ber_utils:latest
 # EOF

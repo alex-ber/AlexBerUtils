@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- Base image to the latest `alexberkovich/ubuntu2404-snapshot:2026-10-26` where 
+`ca-certificates` and `curl` are pathed from the latest CVE's. 
+See `https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576` for mor details. 
+- `pip` version from 26.2.1 to 26.2.2.
+- `uv` version from 0.11.33 to 0.13.4.
+
+### Removed
+
+- Outdated information from `README.md` - I've leaved bare minimum.
+
 TODO:
 1. Update `pip >= 26.2.2`, `certifi >= 2026.10.19` (and `uv >= 0.13.4` if used) in Dockerfile and local virtualenvs.
 2. Rebuild Docker images with `--no-cache` (`docker build --no-cache ...`) so the base OS image pulls the latest `ca-certificates` package and updated `pip`/`certifi`.
