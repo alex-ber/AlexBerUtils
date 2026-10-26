@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [1.0.1] 26.10.2026
+
 ### Changed
 
 - Base image to the latest `alexberkovich/ubuntu2404-snapshot:2026-10-26` where 
